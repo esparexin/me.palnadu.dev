@@ -9,6 +9,7 @@
 import {readFile, readdir} from 'node:fs/promises';
 import {existsSync} from 'node:fs';
 import path from 'node:path';
+import {parseInventoryTable} from './lib/gate-inventory.mjs';
 
 const ROOT = process.cwd();
 const failures = [];
@@ -87,11 +88,15 @@ async function main() {
 
   // Gate inventory: every job named in CI_GATES.md must exist in a workflow,
   // and a workflow must not define a job CI_GATES.md does not document.
+  //
+  // Parsed by scripts/lib/gate-inventory.mjs so that a format change fails loudly
+  // instead of silently producing an empty comparison.
   const ciGates = await readFile(path.join(ROOT, 'CI_GATES.md'), 'utf8');
-  const tableSection = ciGates.split('## 3. Required status checks')[1]?.split('## 4.')[0] ?? '';
-  const documented = new Set(
-    [...tableSection.matchAll(/^\| `([a-z0-9-]+)` \| \d+ \|$/gm)].map((m) => m[1]),
-  );
+  const inventory = parseInventoryTable(ciGates);
+  for (const message of inventory.errors) fail(message);
+  const documentedJobs = new Set(inventory.rows.map((row) => row.jobId));
+  const documentedChecks = new Set(inventory.rows.map((row) => row.check));
+  note(`gate inventory: ${inventory.rows.length} required check(s) parsed from CI_GATES.md`);
 
   const workflowsDir = path.join(ROOT, '.github/workflows');
   const workflowFiles = existsSync(workflowsDir)
@@ -108,13 +113,17 @@ async function main() {
       const body = await readFile(path.join(workflowsDir, file), 'utf8');
       for (const match of body.matchAll(/^\s{2}([a-z0-9-]+):\s*$/gm)) defined.add(match[1]);
     }
-    for (const job of documented) {
+    for (const job of documentedJobs) {
       if (!defined.has(job)) fail(`CI_GATES.md documents job "${job}" but no workflow defines it`);
     }
     for (const job of defined) {
-      if (!documented.has(job)) note(`workflow job "${job}" is not a documented required check`);
+      if (!documentedJobs.has(job)) {
+        note(`workflow job "${job}" is not a documented required check (informational)`);
+      }
     }
-    note(`${workflowFiles.length} workflow file(s), ${defined.size} job(s) compared`);
+    note(
+      `${workflowFiles.length} workflow file(s), ${defined.size} job(s) compared against the inventory`,
+    );
   }
 
   // A control must not be described as enforced while it is specified.

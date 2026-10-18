@@ -19,12 +19,13 @@
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "check:contracts": "node scripts/validate-contracts.mjs",
     "check:ci": "node scripts/ci-integrity.mjs",
-    "verify": "pnpm run check:structure && pnpm run check:docs && pnpm run check:secrets && pnpm run check:workflows && pnpm run format:check && pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build && pnpm run check:boundaries && pnpm run check:contracts && pnpm run check:ci",
+    "verify": "pnpm run check:structure && pnpm run check:docs && pnpm run check:secrets && pnpm run check:workflows && pnpm run test:gates && pnpm run format:check && pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build && pnpm run check:boundaries && pnpm run check:contracts && pnpm run check:ci",
     "check:workflows": "node scripts/check-workflows.mjs",
     "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
     "test:a11y": "playwright test --config tests/e2e/playwright.config.ts tests/e2e/a11y",
     "format": "prettier --write \"**/*.{ts,tsx,mjs,json,css,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,mjs,json,css,md}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,mjs,json,css,md}\"",
+    "test:gates": "vitest run tests/gates"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
