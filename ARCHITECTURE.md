@@ -238,7 +238,8 @@ choice is recorded in `docs/adr/0002`.
 
 | Collection | Purpose | Key fields |
 | --- | --- | --- |
-| `AdminUser` | Allowlisted GitHub identities | `githubId` (unique), `login`, `role`, `lastLoginAt` |
+| `AdminUser` | Allowlisted GitHub identities | `githubId` (unique), `login`, `role`, `tokenVersion`, `lastLoginAt` |
+| `AdminSession` | Server-side session records for revocation and audit | `sid` (unique), `userId`, `ip`, `userAgent`, `createdAt`, `lastSeenAt`, `revokedAt` |
 | `Experience` | Career timeline entries | `org`, `title`, `startDate`, `endDate`, `current`, `highlights[]`, `tech[]`, `sortIndex`, `published` |
 | `Project` | Portfolio projects | `slug` (unique), `title`, `summary`, `body`, `role`, `tech[]`, `links`, `status`, `featured`, `publishedAt` |
 | `Skill` | Skill taxonomy | `name`, `category`, `proficiency`, `sortIndex` |
