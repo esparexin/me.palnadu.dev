@@ -6,6 +6,10 @@ import {defineConfig, devices} from '@playwright/test';
  * These run against a production build served by `next start`, never against the
  * dev server: a dev build tolerates things a production build rejects, so testing
  * the dev server would let a broken production bundle pass.
+ *
+ * The build itself is a separate step in the calling job, because a clean
+ * workspace has no compiled output for the shared packages: building only the web
+ * app fails to resolve `@me-palnadu/ui` unless the packages were built first.
  */
 const PORT = Number.parseInt(process.env['E2E_PORT'] ?? '3100', 10);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
@@ -30,7 +34,7 @@ export default defineConfig({
     {name: 'mobile', use: {...devices['Pixel 7']}},
   ],
   webServer: {
-    command: `pnpm --filter @me-palnadu/web build && pnpm --filter @me-palnadu/web exec next start --port ${PORT}`,
+    command: `pnpm --filter @me-palnadu/web exec next start --port ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: false,
     timeout: 180_000,

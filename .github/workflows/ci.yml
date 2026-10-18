@@ -227,6 +227,10 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The whole dependency graph, not just the web app: a clean checkout has no
+      # compiled output for the shared packages.
+      - name: Build every package and application
+        run: pnpm build
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
       - name: Run the critical journeys against a production build
@@ -256,6 +260,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Build every package and application
+        run: pnpm build
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
       - name: Zero serious or critical axe violations
