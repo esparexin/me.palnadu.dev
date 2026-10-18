@@ -33,6 +33,17 @@ import {createServer} from 'node:net';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 
+/**
+ * State lives in a directory created with owner-only permissions.
+ *
+ * The OS temp directory is world-writable, so anything created inside it with the
+ * default mode can be read or pre-created by another local user. CodeQL flagged
+ * exactly this (`js/insecure-temporary-file`), and it is a real weakness: a
+ * predictable path in a shared directory allows a local attacker to substitute a
+ * pid file or a log. The directory is therefore created with mode 0700 and every
+ * file inside it inherits that owner-only access.
+ */
+const STATE_DIR_MODE = 0o700;
 const STATE_DIR = path.join(tmpdir(), 'me-palnadu-test-replica');
 const STATE_FILE = path.join(STATE_DIR, 'state.json');
 const DATA_DIR = path.join(STATE_DIR, 'data');
@@ -53,7 +64,8 @@ export const fail = (message) => {
 const readState = () =>
   existsSync(STATE_FILE) ? JSON.parse(readFileSync(STATE_FILE, 'utf8')) : null;
 
-const writeState = (state) => writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+const writeState = (state) =>
+  writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), {mode: STATE_DIR_MODE, flag: 'w'});
 
 const readPid = () =>
   existsSync(PID_FILE) ? Number.parseInt(readFileSync(PID_FILE, 'utf8').trim(), 10) : null;
@@ -183,7 +195,9 @@ export const up = async ({port = DEFAULT_PORT, quiet = false} = {}) => {
   }
 
   rmSync(STATE_DIR, {recursive: true, force: true});
-  mkdirSync(DATA_DIR, {recursive: true});
+  // Owner-only: the data directory holds a live database for the duration of a run.
+  mkdirSync(STATE_DIR, {recursive: true, mode: STATE_DIR_MODE});
+  mkdirSync(DATA_DIR, {recursive: true, mode: STATE_DIR_MODE});
 
   // A previous run may still be releasing the port for a moment after its teardown.
   // Wait briefly for it to free rather than failing a clean run on that race. The

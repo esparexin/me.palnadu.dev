@@ -252,10 +252,21 @@ describe('Experience persistence', () => {
     const row = await prisma.experience.findUnique({where: {slug: 'out-of-contract-value'}});
     expect(row?.kind).toBe('a_kind_the_contracts_reject');
 
-    const {slug: _slug, ...withoutSlug} = baseRecord();
+    // Built explicitly rather than by destructuring a slug out of the fixture,
+    // which leaves an unused binding behind.
+    const valid = baseRecord();
     const rejected = ExperienceCreateSchema.safeParse({
-      ...withoutSlug,
+      org: valid.org,
+      title: valid.title,
+      startDate: valid.startDate,
+      endDate: valid.endDate,
+      current: valid.current,
       kind: 'a_kind_the_contracts_reject',
+      summary: valid.summary,
+      highlights: valid.highlights,
+      tech: valid.tech,
+      sortIndex: valid.sortIndex,
+      published: valid.published,
     });
     expect(rejected.success).toBe(false);
   });
