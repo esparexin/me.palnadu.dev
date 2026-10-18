@@ -104,9 +104,10 @@ advisory.
 
 - **Class:** Required
 - **Jobs:** `secrets`, `workflow-security`, plus `codeql`
-- **Status:** `ENFORCED` in run 39153866220 (job `secrets`). The history scan is
-  implemented by `scripts/scan-secrets.mjs` rather than gitleaks; the allowlist file
-  named above does not exist yet and is marked `SPECIFIED`.
+- **Status:** `ENFORCED` in run 39153866220 (job `secrets`). Implemented by
+  `scripts/scan-secrets.mjs` rather than gitleaks; its allowlist is the `ALLOW` array in
+  that script rather than a separate file, which is a deviation from the mechanism
+  above recorded here rather than silently.
 - **Mechanism:**
   - `secrets`: history-inclusive secret scan (gitleaks or equivalent) over the full
     history and the current tree, with a documented allowlist file that itself is
@@ -210,10 +211,14 @@ advisory.
 - **Class:** External, and required before the first merge to `main`
 - **Mechanism:** a GitHub ruleset on `main`, verified by reading it back through the
   GitHub API from a scheduled job and a pull-request-time check that fails when the
-  policy has drifted. The ruleset must require: pull request rather than direct push,
-  at least one approving review from a code owner, dismissal of stale approvals on new
-  commits, resolution of all review threads, linear history, no force-push, no deletion,
-  and the exact required status checks from the table in §3.
+  policy has drifted. The ruleset requires: pull request rather than direct push,
+  resolution of all review threads, dismissal of stale approvals on new commits, linear
+  history, no force-push, no deletion, and the exact required status checks from §3.
+- **Approving reviews are required at count zero.** `ADR-0005` records why: this
+  repository has a single operator, GitHub does not permit an author to approve their
+  own pull request, and a count above zero would make `main` permanently unmergeable
+  rather than safer. The compensating control is the required check set. If a second
+  operator is added, `ADR-0005` is superseded rather than this line being edited.
 - **Verification:** read back from the GitHub API and compared against the table in §3.
 - **Applied on 2026-10-18:** ruleset `Main Branch`, id `25352862`, `enforcement: active`,
   targeting `~DEFAULT_BRANCH`, with 14 required status checks, `strict` mode on, zero
@@ -222,9 +227,14 @@ advisory.
   deletion blocked. The scheduled drift job itself is `SPECIFIED`: it is written in this
   area but no scheduled workflow runs it yet.
 - **Evidence:** the API response for the ruleset, cited in the run.
-- **Current status:** `IMPLEMENTED` as a specification, **not `ENFORCED`**. `main` is
-  unprotected and no ruleset exists. The ruleset is created only after every check in
-  §3 has passed on a pull request, which is why this area is listed last in the rollout.
+- **Current status:** the ruleset itself is `ENFORCED` — ruleset `25352862`, read back
+  from the API on 2026-10-18 and re-verified against the checks that ran on `main` at
+  commit `353a84e`: all 14 required checks present and successful, none required but
+  missing, none running but unrequired.
+  The **scheduled drift job is `SPECIFIED`**: the comparison described above is
+  currently performed manually, and no workflow performs it on a schedule. The
+  distinction matters — a rule that is only checked when a human remembers to check it
+  is not enforced in any meaningful sense.
 
 ### Area 13 — Deployment security, environment separation, release integrity, rollback readiness, post-deployment verification
 

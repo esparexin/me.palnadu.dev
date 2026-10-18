@@ -25,7 +25,9 @@ explicit for future contributors, not because multiple owners currently exist.
 ## 2. Change authority
 
 1. **Nobody** may merge to `main` without a pull request that has passed every
-   **required** gate in `CI_GATES.md`.
+   **required** gate in `CI_GATES.md`. This is enforced by ruleset `25352862`. An
+   approving review is not required, deliberately: see `ADR-0005` for the single-operator
+   reasoning and the compensating control.
 2. Only the owner may change required-gate thresholds, `SECURITY.md` allowlists, or
    the dependency direction in `ARCHITECTURE.md`.
 3. An agent may propose changes to any file. An agent may **not** self-approve,
