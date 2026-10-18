@@ -68,3 +68,6 @@ Thumbs.db
 #   pnpm-lock.yaml   — gate 9 integrity depends on it
 #   .github/workflows/ — gate 6 depends on them
 # ---------------------------------------------------------------------------
+# Playwright
+tests/e2e/playwright-report/
+tests/e2e/test-results/
