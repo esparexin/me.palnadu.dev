@@ -56,11 +56,15 @@ describe('persistence error mapping', () => {
   });
 
   it('never forwards driver text for an unmapped failure', () => {
-    const mapped = mapPersistenceError(
-      new Error('mongodb://user:placeholder@127.0.0.1:27017/db timed out'),
-    );
+    const driverText = 'mongodb://user:placeholder@127.0.0.1:27017/db timed out';
+    const mapped = mapPersistenceError(new Error(driverText));
+
+    expect(mapped.error.code).toBe('INTERNAL_ERROR');
     expect(mapped.error.message).toBe('Internal server error');
-    expect(mapped.logMessage).toContain('hunter2');
+    // The detail reaches the operator's log and never the client.
+    expect(mapped.logMessage).toContain(driverText);
+    expect(mapped.error.message).not.toContain('mongodb://');
+    expect(mapped.error.message).not.toContain('placeholder');
   });
 
   it('passes an ApiError through unchanged', () => {
