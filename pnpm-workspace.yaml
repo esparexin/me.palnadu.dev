@@ -2,11 +2,28 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
+# Lifecycle scripts are blocked by default. Exactly four dependencies are
+# allowed to run one, each with a reason:
+#
+#   esbuild          - required by vitest/tsx; supplies the native binary the
+#                      test runner executes.
+#   prisma           - downloads the query-engine binary and generates the client.
+#   @prisma/engines  - same binary as the prisma package.
+#   @prisma/client   - same client generation as the prisma package.
+#
+# All three Prisma entries are pinned to an exact version (6.19.3) and are covered
+# by the dependency audit in CI area 7. The reason for the pin is recorded in
+# docs/adr/0006. Every other dependency installs without executing anything, so a
+# compromised transitive dependency cannot run code at install time.
+allowBuilds:
+  esbuild: true
+  prisma: true
+  '@prisma/engines': true
+  '@prisma/client': true
+
+# pnpm refuses to install a package published less than this many minutes ago,
+# which blocks compromised releases during the window in which they are yanked.
+# knip 6.42.0 was released too recently to satisfy the default window at the time
+# of the Phase 3 scaffold and is recorded here as an explicit, reviewable exception.
 minimumReleaseAgeExclude:
   - knip@6.42.0
-
-# pnpm >= 10 blocks lifecycle scripts by default. Only esbuild is allowed to run
-# one; it is required by vitest/tsx and is the single source of build-time
-# native code. Every other dependency must install without executing anything.
-onlyBuiltDependencies:
-  - esbuild
