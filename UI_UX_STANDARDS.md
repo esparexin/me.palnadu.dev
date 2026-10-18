@@ -75,7 +75,9 @@ Font stack:
 
 Rules:
 
-- Minimum text size is `meta` (13px). `text-[11px]` and `text-[10px]` are banned.
+- Type-size floor: 12px, permitted **only** for the uppercase, letter-spaced `eyebrow`
+  label. Body-adjacent text is `meta` (13px) at minimum, and body copy is `body`
+  (17px). `text-[11px]` and `text-[10px]` are banned outright.
 - Body measure 60–75 characters; paragraphs over `body` width are wrapped in
   `Container` with a `measure` constraint.
 - Exactly one `h1` per route; heading levels never skip a level.
