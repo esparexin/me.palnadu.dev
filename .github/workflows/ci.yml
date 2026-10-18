@@ -285,15 +285,23 @@ jobs:
       # standalone server is not sufficient. The job fails rather than skips when the
       # database is unavailable (TESTING.md section 4a).
       - name: Install MongoDB
+        env:
+          # Pinned so the test database cannot change under a green run. The apt
+          # repository does not publish a build for Ubuntu 24.04 (noble) on the 7.0
+          # line, which is why the official tarball is used rather than a package.
+          MONGODB_VERSION: '7.0.29'
         run: |
           set -euo pipefail
-          codename=$(lsb_release -cs)
-          curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc \
-            | gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
-          echo "deb [ arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu ${codename}/mongodb-org/7.0 multiverse" \
-            | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends mongodb-org-server
-          mongod --version
+          archive="mongodb-linux-x86_64-ubuntu2204-${MONGODB_VERSION}.tgz"
+          curl -fsSL "https://downloads.mongodb.org/linux/${archive}" -o /tmp/mongodb.tgz
+          mkdir -p /tmp/mongodb
+          tar -xzf /tmp/mongodb.tgz -C /tmp/mongodb --strip-components=1
+          echo "/tmp/mongodb/bin" >> "$GITHUB_PATH"
+          reported="$(/tmp/mongodb/bin/mongod --version | head -1)"
+          echo "installed: ${reported}"
+          case "${reported}" in
+            *"v${MONGODB_VERSION}"*) ;;
+            *) echo "FAIL expected mongod v${MONGODB_VERSION}, got: ${reported}"; exit 1 ;;
+          esac
       - name: Run integration tests against an ephemeral replica set
         run: pnpm db:integration
