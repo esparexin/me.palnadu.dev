@@ -97,6 +97,25 @@ Procedure:
 | `ci-integrity` fails on your own workflow edit | Re-read `CI_GATES.md` area 11                                 | An edit that neutralises a gate is rejected at review                              |
 | `governance` fails                             | Check the index in `AGENTS.md` and `docs/exceptions.md`       | Add the document or correct the stale claim                                        |
 
+## 4a. CodeQL review threads before merge
+
+`main` requires all review threads to be resolved. CodeQL opens a thread on every
+pull request, so **a CodeQL summary thread is expected on every PR** and will block the
+merge until it is handled.
+
+Procedure:
+
+1. Read the thread. It names the rule, the path, and the line.
+2. Check for open code-scanning alerts:
+   `gh api repos/esparexin/me.palnadu.dev/code-scanning/alerts --jq '.[] | {rule: .rule.id, path: .most_recent_instance.location.path}'`
+3. **If an alert is open, fix the code and push.** Do not resolve the thread first.
+4. Only when there are no open alerts for the thread's finding may the thread be
+   resolved, and the resolution is recorded in the pull request with the evidence.
+
+Resolving a thread removes the blocker, not the defect. The two threads raised on the
+Phase 6A pull request were a real insecure-temporary-file finding and a real unused
+variable, both fixed before resolution.
+
 ## 5. Security incident
 
 1. **Contain.** Revoke first: rotate `AUTH_SECRET` (logs out every administrator),
