@@ -1,0 +1,137 @@
+/**
+ * Tailwind theme for both Next.js applications.
+ *
+ * This file IS the design-token source of truth for CSS consumers (Tailwind v4 is
+ * CSS-first). `src/index.ts` mirrors the same values for runtime consumers, and
+ * `src/theme.test.ts` fails the build if the two ever disagree.
+ *
+ * Apps import this file and nothing else:
+ *   @import "tailwindcss";
+ *   @import "@me-palnadu/design-tokens/theme.css";
+ *
+ * Do not add a token here that is not in UI_UX_STANDARDS.md section 2, and do not
+ * add a theme primitive in an app config (AGENTS.md 2.4).
+ */
+@theme {
+  /* --- Colour (UI_UX_STANDARDS 2.1) --------------------------------------- */
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f5f5f7;
+  --color-surface-muted: #e8e8ed;
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: #424245;
+  --color-text-tertiary: #6e6e73;
+  --color-text-inverse: #ffffff;
+  --color-accent: #0071e3;
+  --color-accent-hover: #0077ed;
+  --color-accent-subtle: #e8f2fe;
+  /* Small-text accent. #0071e3 measures 4.31:1 on surface-subtle, below the
+     4.5:1 floor for text under 18.66px, so small text uses this darker step. */
+  --color-accent-text: #005cb4;
+  --color-border-default: #d2d2d7;
+  --color-border-subtle: #e8e8ed;
+  --color-focus: #0071e3;
+  --color-success: #1d8a4e;
+  --color-warning: #b25000;
+  --color-danger: #c8102e;
+  --color-info: #0b6bcb;
+
+  /* --- Typography (UI_UX_STANDARDS 2.2) ----------------------------------- */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1rem;
+  --text-eyebrow--letter-spacing: 0.08em;
+
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.125rem;
+  --text-meta--letter-spacing: 0.01em;
+
+  --text-body-sm: 0.9375rem;
+  --text-body-sm--line-height: 1.4375rem;
+
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.6875rem;
+
+  /* Fluid type: clamp() between the documented bounds, because a fixed 21px
+     breaks the 320px viewport (UI_UX_STANDARDS 3). Upper bound 21px. */
+  --text-lead: clamp(1.125rem, 1rem + 0.625vw, 1.3125rem);
+  --text-lead--line-height: 1.875rem;
+  --text-lead--letter-spacing: -0.01em;
+
+  --text-h3: 1.3125rem;
+  --text-h3--line-height: 1.75rem;
+  --text-h3--letter-spacing: -0.01em;
+
+  --text-h2: clamp(1.5rem, 1.3125rem + 0.9375vw, 1.75rem);
+  --text-h2--line-height: 2.125rem;
+  --text-h2--letter-spacing: -0.015em;
+
+  --text-h1: clamp(2rem, 1.5rem + 2.5vw, 2.5rem);
+  --text-h1--line-height: 2.875rem;
+  --text-h1--letter-spacing: -0.02em;
+
+  --text-display: clamp(2.25rem, 1.5rem + 3.75vw, 3.5rem);
+  --text-display--line-height: 3.75rem;
+  --text-display--letter-spacing: -0.02em;
+
+  /* --- Spacing scale (UI_UX_STANDARDS 2.3) -------------------------------- */
+  --spacing: 0.25rem;
+  --spacing-px: 1px;
+  --spacing-0: 0rem;
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-20: 5rem;
+  --spacing-24: 6rem;
+  --spacing-32: 8rem;
+
+  /* --- Radius (UI_UX_STANDARDS 2.3) --------------------------------------- */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-pill: 999px;
+
+  /* --- Elevation (UI_UX_STANDARDS 2.3) ------------------------------------ */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-md: 0 8px 30px rgb(0 0 0 / 0.07);
+  --shadow-lg: 0 20px 60px rgb(0 0 0 / 0.1);
+
+  /* --- Motion (UI_UX_STANDARDS 2.4) -------------------------------------- */
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+
+  /* --- Breakpoints (UI_UX_STANDARDS 2.5) --------------------------------- */
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+
+  /* --- Layout (UI_UX_STANDARDS 2.3) -------------------------------------- */
+  --container-measure: 720px;
+  --container-page: 1120px;
+  --gutter-mobile: 20px;
+  --gutter-desktop: 32px;
+
+  /* --- Z-index scale (UI_UX_STANDARDS 2.5) ------------------------------- */
+  --z-index-base: 0;
+  --z-index-sticky-header: 100;
+  --z-index-fab: 200;
+  --z-index-fab-panel: 210;
+  --z-index-dialog: 300;
+  --z-index-toast: 400;
+}
