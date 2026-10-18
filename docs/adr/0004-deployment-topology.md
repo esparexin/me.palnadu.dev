@@ -30,9 +30,16 @@ Supporting decisions:
   exactly what CI verified.
 - **Environment separation is enforced by GitHub environments.** Production secrets are
   environment-scoped, so a pull-request job cannot read them.
-- **Domains.** `me.palnadu.dev` for the public site; the admin and API domains are
-  recorded in `DEPLOYMENT_MAP.md` §7 as unresolved and must be fixed before the release
-  workflow is written.
+- **Domains.** `me.palnadu.dev` for the public site; `admin.me.palnadu.dev` for the
+  administration application and `api.me.palnadu.dev` for the API
+  (`DEPLOYMENT_MAP.md` §7.1). None of the three holds a DNS record yet, so none is in
+  use; the records are created at provisioning time.
+
+## Amendment — 2026-10-18
+
+The domains listed as unresolved when this ADR was accepted are now fixed. The topology
+decision is unchanged; this amendment records only the concrete hostnames and the DNS
+verification performed. No superseding ADR is required.
 
 ## Consequences
 

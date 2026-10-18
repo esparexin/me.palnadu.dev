@@ -13,8 +13,8 @@ provisioning.
 | Component | Platform | Public address | Notes |
 | --- | --- | --- | --- |
 | `apps/web` | Vercel | `me.palnadu.dev` | Public portfolio, CDN edge, static + ISR |
-| `apps/admin` | Vercel | **unresolved** (§7) | Separate Vercel project; authorization enforced by the API, not by the URL |
-| `apps/api` | Render | **unresolved** (§7) | Single instance by documented design (`SECURITY.md` §5), private network where possible |
+| `apps/admin` | Vercel | `admin.me.palnadu.dev` | Separate Vercel project; authorization enforced by the API, not by the URL |
+| `apps/api` | Render | `api.me.palnadu.dev` | Single instance by documented design (`SECURITY.md` §5), private network where possible |
 | Database | MongoDB Atlas | `*.mongodb.net` | Separate clusters per environment |
 | CI/CD | GitHub Actions | — | Verification, then controlled release |
 
@@ -93,8 +93,8 @@ repository secrets, so that a pull-request-triggered job cannot read production 
 | --- | --- |
 | `local` | `http://localhost:3000`, `http://localhost:3001` |
 | `preview` | The exact preview origin issued by Vercel, injected at build time |
-| `staging` | The staging web origin and the staging admin origin, exact |
-| `production` | `https://me.palnadu.dev` and the production admin origin, exact |
+| `staging` | The staging web origin and `https://admin-staging.me.palnadu.dev`, exact |
+| `production` | `https://me.palnadu.dev` and `https://admin.me.palnadu.dev`, exact |
 
 Rules: exact-match strings, never a wildcard; `credentials: false` because the API does
 not authenticate by cookie (§ `SECURITY.md` §4.4); `Access-Control-Max-Age: 600`;
@@ -110,8 +110,8 @@ One GitHub OAuth app per environment, so a staging compromise cannot reach produ
 | Environment | Callback URL |
 | --- | --- |
 | `local` | `http://localhost:3001/api/auth/callback/github` |
-| `staging` | `https://<ADMIN_STAGING_DOMAIN>/api/auth/callback/github` |
-| `production` | `https://<ADMIN_DOMAIN>/api/auth/callback/github` |
+| `staging` | `https://admin-staging.me.palnadu.dev/api/auth/callback/github` |
+| `production` | `https://admin.me.palnadu.dev/api/auth/callback/github` |
 
 The OAuth app authorises exactly the `read:user` scope; no repository, organisation, or
 email scope is requested. The allowlist in `SECURITY.md` §4.1 is what actually grants
@@ -131,20 +131,55 @@ changes are Prisma migrations applied as an explicit release step, never automat
 on application start; every migration must be backwards-compatible with the previous
 application version so that a rollback does not require a data rollback.
 
-## 7. Unresolved decisions (blocking provisioning)
+## 7. Decision log
+
+### 7.1 Resolved
+
+| # | Decision | Value | Verified | Resolved |
+| --- | --- | --- | --- | --- |
+| 1 | Production admin domain | `admin.me.palnadu.dev` | DNS: no existing A or CNAME record; free to claim | 2026-10-18 |
+| 2 | API subdomain | `api.me.palnadu.dev` | DNS: no existing A or CNAME record; free to claim | 2026-10-18 |
+| 3 | Admin origin reachability | Publicly reachable, protected by the API allowlist; the URL is not a control | `SECURITY.md` §2 assumption 2 and §4.1 | 2026-10-18 |
+
+DNS verification performed on 2026-10-18:
+
+```
+$ dig +short NS palnadu.dev
+dns1.registrar-servers.com.
+dns2.registrar-servers.com.
+$ dig +short A palnadu.dev
+216.198.79.1                    # registrar parking; apex not in use
+$ for h in me admin.me api.me.palnadu.dev -> dig +short A|CNAME $h
+                                # no records exist for any of the three
+```
+
+Interpretation and its limits. The apex domain is registered and delegated to
+registrar-hosted nameservers, and none of the three subdomains currently holds a DNS
+record, so none of them is in use and none will conflict with a future CNAME. What this
+does **not** prove: that the repository owner controls the DNS account, that the
+registrar permits adding these records, or that Vercel and Render will accept them.
+Those are verified when the records are created and the deployments are provisioned, and
+recorded here at that time. Until then the entries above are `SPECIFIED`, not `ENFORCED`.
+
+Derived values fixed by these decisions:
+
+| Value | Value |
+| --- | --- |
+| Production cookie scope | host-only on `admin.me.palnadu.dev` |
+| Production API origin allowed by CORS | `https://api.me.palnadu.dev` is the target; the two allowed *origins* are the web and admin sites |
+| Production OAuth callback | `https://admin.me.palnadu.dev/api/auth/callback/github` |
+
+### 7.2 Still open (blocking provisioning of those specific items)
 
 | # | Decision | Recommended default | Consequence if left open |
 | --- | --- | --- | --- |
-| 1 | Production admin domain | A separate Vercel project on a dedicated subdomain, with access additionally gated by the API allowlist | The OAuth callback URL, CORS allowlist, and cookie scope cannot be configured |
-| 2 | API subdomain | `api.<domain>` with TLS and Render's managed certificate | The client base URL, CORS allowlist, and smoke tests cannot be written |
-| 3 | Whether the admin origin is publicly reachable | Keep it reachable but allowlist-protected; if obscurity is desired, add an identity-aware proxy — never rely on the URL for security | Affects `SECURITY.md` §4 and the threat model |
 | 4 | Render region and Atlas region | Same region, nearest the audience | Latency and, for Atlas, data-residency |
 | 5 | Staging necessity and retention | Keep staging; delete its cluster when not in use for 30 days | `CI_GATES.md` area 13 has nothing to verify against |
-| 6 | DNS ownership | Single owner account, MFA required, change log kept here | Incident response and rollback timing |
+| 6 | DNS account ownership and MFA | Single owner account, MFA required, change log kept here | Incident response and rollback timing |
 | 7 | Production deploy approval | Owner approval on the `production` GitHub environment | Whether release is automatic after merge or manual |
 
-Until items 1 and 2 are decided, `SECURITY.md` §4.4 implementation and any deployment
-workflow remain blocked, as required by that document.
+`SECURITY.md` §4.4 implementation is no longer blocked by items 1 and 2. It remains
+blocked by item 7 for deployment and by the absence of a provisioned GitHub OAuth app.
 
 ## 8. Ownership
 
