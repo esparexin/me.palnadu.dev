@@ -23,7 +23,7 @@ Exceptions to the rules in `AGENTS.md`, `ARCHITECTURE.md`, `SSOT_POLICY.md`,
 
 | Field | Value |
 | --- | --- |
-| Rule | `AI_WORKFLOW.md` §1 (merge only when every required gate in `CI_GATES.md` passed on the PR head commit) and `GOVERNANCE.md` §2.1 (no merge without required gates passing) |
+| Rule | `AI_WORKFLOW.md` §1 (merge only when every required gate in `CI_GATES.md` passed on the PR head commit) and `GOVERNANCE.md` §2 item 1 (no merge without required gates passing) |
 | Scope | PR #1, `chore/governance-baseline` → `main`. Documentation only. Expires at the first merge that lands after `CI_GATES.md` area 1 is implemented |
 | Requirement | The gates do not exist yet. `gh api repos/esparexin/me.palnadu.dev/actions/workflows` → `total_count: 0`, and `CI_GATES.md` labels all 13 areas `SPECIFIED`. Requiring gates that have not been written would deadlock the repository permanently |
 | Justification | The repository has exactly one commit (an auto-generated README). The change adds no runtime, no schema, no dependency, and no data. Deferring the merge would mean implementing Phase 3 on top of an unmerged governance baseline, which `GOVERNANCE.md` §3 forbids in the other direction |
