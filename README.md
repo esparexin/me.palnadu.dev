@@ -3,11 +3,12 @@
 Personal professional portfolio: public site, administration interface, and API, with
 shared contracts and a design-token source of truth.
 
-> **Status: Phase 3 — workspace scaffolded and gated; content arrives next.**
-> The monorepo, shared contracts, design tokens, UI primitives, and the three apps now
-> exist and build. Ten local gates pass, and the corresponding GitHub Actions workflows
-> are written but **not yet proven by a run**, so no control is `ENFORCED`
-> (`GOVERNANCE.md` §6). `main` has no branch protection.
+> **Status: Phase 3 — workspace scaffolded; areas 1-7, 9-11 and merge policy enforced.**
+> The monorepo, shared contracts, design tokens, UI primitives, and the three apps exist
+> and build. Fourteen required checks run on every pull request, and `main` is protected
+> by ruleset `25352862`. Areas 8, 12 (drift job), and 13, plus every authentication and
+> deployment control, remain `SPECIFIED` — nothing is deployed and no content exists
+> (`GOVERNANCE.md` §6).
 
 ## Read first
 
