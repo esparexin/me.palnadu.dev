@@ -5,10 +5,10 @@
   "type": "module",
   "description": "NestJS REST API: the only authority for validation, authorization, and persistence.",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma generate && tsc -p tsconfig.json",
     "dev": "node --watch dist/main.js",
     "start": "node dist/main.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run",
     "db:generate": "prisma generate",

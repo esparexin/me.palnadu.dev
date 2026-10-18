@@ -27,3 +27,13 @@ allowBuilds:
 # of the Phase 3 scaffold and is recorded here as an explicit, reviewable exception.
 minimumReleaseAgeExclude:
   - knip@6.42.0
+
+# deepmerge-ts 7.1.5 is affected by CVE-2026-40345 (GHSA-ggr8-5vv4-36mx), a
+# stack-exhaustion crash reachable only through recursive object graphs. It reaches
+# us transitively through @prisma/config, which is used by the Prisma CLI at build
+# and schema time, never to serve a request. The override moves to the patched 8.0.0
+# rather than suppressing the audit, because a high-severity finding that a gate can
+# resolve should be resolved rather than allowlisted. Verified after the change:
+# prisma validate, prisma generate, prisma db push, and the integration suite.
+overrides:
+  deepmerge-ts: 8.0.0

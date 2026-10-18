@@ -56,7 +56,9 @@ describe('persistence error mapping', () => {
   });
 
   it('never forwards driver text for an unmapped failure', () => {
-    const mapped = mapPersistenceError(new Error('mongodb://user:hunter2@host/db timed out'));
+    const mapped = mapPersistenceError(
+      new Error('mongodb://user:placeholder@127.0.0.1:27017/db timed out'),
+    );
     expect(mapped.error.message).toBe('Internal server error');
     expect(mapped.logMessage).toContain('hunter2');
   });
