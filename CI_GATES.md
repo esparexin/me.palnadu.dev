@@ -221,8 +221,10 @@ advisory.
     automatic rollback where the provider supports it, and always pages the owner.
 - **Evidence:** deployment URLs, the smoke-test report, and the environment-guard
   assertions.
-- **Current status:** `SPECIFIED`. No deployment workflow exists and the production
-  domains are not finalised (`DEPLOYMENT_MAP.md` §7).
+- **Current status:** `SPECIFIED`. No deployment workflow exists. Domains are fixed
+  (`DEPLOYMENT_MAP.md` §7.1) but the Vercel projects, the Render service, and the Atlas
+  clusters are not provisioned, so the environment-guard assertions have nothing to
+  verify against yet.
 
 ## 3. Required status checks for the ruleset
 

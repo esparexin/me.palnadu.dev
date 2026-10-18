@@ -166,10 +166,12 @@ API credential in a way an attacker can read.**
 round trip per admin request. This is acceptable for a single-administrator portfolio
 and is the deliberate cost of immediate revocation.
 
-**Blocking dependency:** implementation of §4 cannot begin until `ADMIN_DOMAIN` and
-`API_DOMAIN` are fixed, because both are baked into the cookie scope, the OAuth
-callback URL, and the CORS allowlist. These are recorded as open decisions in
-`DEPLOYMENT_MAP.md` §7.
+**Resolved dependency:** the domains are fixed — `admin.me.palnadu.dev` for the admin
+application and `api.me.palnadu.dev` for the API, with no existing DNS record on either
+(`DEPLOYMENT_MAP.md` §7.1). The production cookie scope is host-only on
+`admin.me.palnadu.dev` and the OAuth callback is
+`https://admin.me.palnadu.dev/api/auth/callback/github`. Implementation of §4 may begin
+once the GitHub OAuth app exists; until then this control remains `SPECIFIED`.
 
 ## 5. Public surface hardening
 

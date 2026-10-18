@@ -2,7 +2,7 @@
 
 Application boundaries, package ownership, folder ownership, and import boundaries
 for `me.palnadu.dev`. Machine-checkable rules live in `tests/architecture/` and are
-executed by gate 10 (`CI_GATES.md` §10).
+executed by gate 10 (`CI_GATES.md` area 10).
 
 ## 1. Principles
 
@@ -288,7 +288,7 @@ database, and neither Next.js app holds a database credential.
 
 ## 10. How the boundaries are checked
 
-Gate 10 (`CI_GATES.md` §10) fails on:
+Gate 10 (`CI_GATES.md` area 10) fails on:
 
 1. any import that violates the matrix in §3,
 2. any import cycle within or across packages,

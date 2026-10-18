@@ -53,9 +53,11 @@ allowlist keyed on the immutable numeric GitHub user id**.
 - `SameSite=Lax` is required for the OAuth redirect to return the cookie, so the
   strongest available cookie prefix is `__Secure-` rather than `__Host-`.
 
-**Blocking dependency:** the admin domain and API domain must be fixed before
-implementation, because both are baked into the cookie scope, the OAuth callback URL,
-and the CORS allowlist (`DEPLOYMENT_MAP.md` §7).
+**Blocking dependency:** ~~the admin domain and API domain must be fixed before
+implementation~~ — **resolved 2026-10-18** by amendment: `admin.me.palnadu.dev` and
+`api.me.palnadu.dev` (`DEPLOYMENT_MAP.md` §7.1). Implementation of the session design
+proceeds; it still requires a provisioned GitHub OAuth app before it can be exercised
+end to end.
 
 ## Alternatives considered
 

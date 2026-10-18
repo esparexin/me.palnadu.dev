@@ -111,7 +111,7 @@ Current truth for this repository, as of Phase 2:
 | SSOT | Single definition of domain types and rules | `SPECIFIED` | `SSOT_POLICY.md` |
 | Boundaries | One-way dependency direction | `SPECIFIED` | `ARCHITECTURE.md` §3 |
 | CI | 13 verification areas | `SPECIFIED` | `CI_GATES.md` |
-| PR policy | Branch protection / required reviews | `SPECIFIED` | `CI_GATES.md` §12 |
+| PR policy | Branch protection / required reviews | `SPECIFIED` | `CI_GATES.md` area 12 |
 | Deployment | Environments, secrets, rollback | `SPECIFIED` | `DEPLOYMENT_MAP.md`, `RUNBOOK.md` |
 | Auth | GitHub OAuth allowlist + server-side enforcement | `SPECIFIED` | `SECURITY.md` §4 |
 
