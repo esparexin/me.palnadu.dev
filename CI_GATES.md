@@ -249,6 +249,20 @@ ruleset.
 Advisory, therefore **not** required status checks: `deadcode` (8),
 `performance` (advisory portion of 4), license policy portion of 7.
 
+Areas 12 and 13 are deliberately **not** pull-request status checks, and this is a
+decision rather than an omission:
+
+- Area 12 verifies the ruleset that *contains* the required checks, so it cannot itself
+  be one of them. It runs on a schedule and on `main` pushes, and it fails when the live
+  ruleset drifts from the table above.
+- Area 13 describes what happens after merge. Requiring a deployment check to pass before
+  merging would mean deploying to production on every pull request. It runs on
+  `main` pushes and on manual dispatch (`workflow_dispatch`).
+
+Consequently the ten areas with required checks are 1–7 and 9–11; areas 8, 12, and 13
+are gated by a different mechanism, and that mechanism is documented rather than
+implied.
+
 ## 4. Promotion rule for advisory checks
 
 An advisory check becomes required only when **all** of the following are true:
