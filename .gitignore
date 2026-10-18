@@ -1,0 +1,70 @@
+# ---------------------------------------------------------------------------
+# Secrets — never commit. Rotating a leaked secret is a security incident, not
+# a cleanup task. See SECURITY.md section 7.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+service-account*.json
+id_rsa*
+id_ed25519*
+
+# ---------------------------------------------------------------------------
+# Dependencies
+# ---------------------------------------------------------------------------
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-error.log*
+
+# ---------------------------------------------------------------------------
+# Build output
+# ---------------------------------------------------------------------------
+.next/
+out/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+
+# NestJS / Prisma generated
+apps/api/dist/
+apps/api/generated/
+
+# ---------------------------------------------------------------------------
+# Test + tooling output
+# ---------------------------------------------------------------------------
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+.lighthouseci/
+
+# ---------------------------------------------------------------------------
+# Local data + editor + OS
+# ---------------------------------------------------------------------------
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ---------------------------------------------------------------------------
+# Vercel
+# ---------------------------------------------------------------------------
+.vercel/
+
+# ---------------------------------------------------------------------------
+# Explicitly NOT ignored (guards against careless over-broad rules):
+#   pnpm-lock.yaml   — gate 9 integrity depends on it
+#   .github/workflows/ — gate 6 depends on them
+# ---------------------------------------------------------------------------
