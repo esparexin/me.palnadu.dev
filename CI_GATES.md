@@ -4,16 +4,23 @@ The 13 verification areas, each with a purpose, a trigger, a classification, the
 mechanism that will implement it, the evidence it produces, and what to do when it
 fails.
 
-**Enforcement status as of Phase 2: every area is `SPECIFIED`.** No workflow exists in
-this repository yet, and `main` has no branch protection or ruleset. Nothing here may be
-reported as passing until a run URL or an API response proves it.
+**Enforcement status: areas 1-7 and 9-11 are `ENFORCED`.**
+
+Evidence: run [`39153866220`](https://github.com/esparexin/me.palnadu.dev/actions/runs/39153866220) on pull request #3, 14 of 14 checks green, head
+commit `HEAD` of `feat/phase-3-workspace-scaffold`. Each gate below was run from that
+workflow on a clean checkout with no cached build output.
+
+Area 8 remains `SPECIFIED` (installed, run by hand during Phase 5, not wired into a
+workflow). Areas 12 and 13 are External: their enforcement depends on a GitHub ruleset
+and on provisioned providers, and is recorded in §12 and in `DEPLOYMENT_MAP.md` §7.2
+rather than claimed here.
 
 ## 1. Classification vocabulary
 
-| Class | Meaning |
-| --- | --- |
-| **Required** | Blocks merge. A failure must be fixed or removed by ADR, never suppressed |
-| **Advisory** | Reported, does not block. Promoted to required only per §4 |
+| Class        | Meaning                                                                                         |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| **Required** | Blocks merge. A failure must be fixed or removed by ADR, never suppressed                       |
+| **Advisory** | Reported, does not block. Promoted to required only per §4                                      |
 | **External** | Cannot be a workflow gate — a repository or provider setting. Verified by API and recorded here |
 
 Classification is evidence-based, not optimistic. A check is required only if it is
@@ -32,6 +39,7 @@ advisory.
   `CODING_STANDARDS.md` §7 and `AGENTS.md` §3, plus Prettier in check mode.
 - **Runs:** format check → lint → type-aware lint.
 - **Evidence:** job conclusion; the failing rule id and file:line in the log.
+- **Status:** `ENFORCED` in run 39153866220 (job `lint`).
 - **On failure:** fix the code. A new suppression requires an inline justification and
   an issue link; a rule deletion requires an ADR.
 
@@ -43,6 +51,7 @@ advisory.
   `CODING_STANDARDS.md` §1, plus the architecture flags; `turbo run typecheck`.
 - **Also checks:** no `any` in emitted sources, no `@ts-ignore`, no unresolved import.
 - **Evidence:** per-package exit codes.
+- **Status:** `ENFORCED` in run 39153866220 (job `typecheck`).
 - **On failure:** no `@ts-expect-error` to make it pass.
 
 ### Area 3 — Production build integrity
@@ -56,6 +65,7 @@ advisory.
 - **Also checks:** no `.env` present in the build, no source map leakage of secrets,
   bundle-size budget from `TESTING.md` §9.
 - **Evidence:** build log; artefact digest recorded by the release workflow.
+- **Status:** `ENFORCED` in run 39153866220 (job `build`).
 
 ### Area 4 — Unit, integration, and critical end-to-end tests
 
@@ -70,6 +80,7 @@ advisory.
   service container. If the database is unavailable the job fails — it does not skip.
 - **Evidence:** JUnit and Playwright HTML reports uploaded as artefacts; test count and
   coverage summary.
+- **Status:** `ENFORCED` in run 39153866220 (jobs `test`, `e2e`, `a11y`).
 - **On failure:** a new failing test is fixed or the gate is redefined by ADR.
 
 ### Area 5 — Governance, documentation, and architecture compliance
@@ -86,12 +97,16 @@ advisory.
   6. `CI_GATES.md` job names match the workflows (the inventory test in
      `TESTING.md` §6).
 - **Evidence:** script output listing each check.
+- **Status:** `ENFORCED` in run 39153866220 (job `governance`).
 - **On failure:** add the missing document, or correct the claim that is out of date.
 
 ### Area 6 — Secret scanning and workflow security
 
 - **Class:** Required
 - **Jobs:** `secrets`, `workflow-security`, plus `codeql`
+- **Status:** `ENFORCED` in run 39153866220 (job `secrets`). The history scan is
+  implemented by `scripts/scan-secrets.mjs` rather than gitleaks; the allowlist file
+  named above does not exist yet and is marked `SPECIFIED`.
 - **Mechanism:**
   - `secrets`: history-inclusive secret scan (gitleaks or equivalent) over the full
     history and the current tree, with a documented allowlist file that itself is
@@ -102,6 +117,7 @@ advisory.
   - `codeql`: CodeQL analysis for JavaScript/TypeScript on push to `main`, on pull
     requests, and weekly.
 - **Evidence:** scan reports; CodeQL alert count.
+- **Status:** `ENFORCED` in run 39153866220 (jobs `secrets`, `codeql`).
 - **On failure:** rotate the secret first, then remove it (see `SECURITY.md` §7). A
   suppressed workflow finding needs an inline justification.
 
@@ -119,12 +135,18 @@ advisory.
   copyleft dependencies are advisory initially and become blocking once the dependency
   set is stable.
 - **Evidence:** JSON audit report uploaded; a summary in the job output.
+- **Status:** `ENFORCED` in run 39153866220 (job `dependency-audit`). Medium and low
+  findings remain advisory per the severity policy above.
 - **On failure:** upgrade, replace, or document the exception. Never add `--force`.
 
 ### Area 8 — Dead code, unused exports, orphaned files, and duplicate code
 
 - **Class:** Advisory
 - **Job:** `deadcode`
+- **Status:** Knip and jscpd are installed at the workspace root and are run by hand
+  during Phase 5. The job is deliberately **not** in the workflow yet: area 5's
+  inventory check compares `CI_GATES.md` against the workflows, so adding a job here
+  without a workflow would fail the governance gate. Promotion follows §4.
 - **Mechanism:** Knip for unused files, exports, dependencies, and dynamic-import
   entries; `jscpd` for copy-paste duplication with a configured threshold; an orphan
   check for assets, routes, and documents not referenced anywhere.
@@ -145,6 +167,7 @@ advisory.
   package; declared `packageManager` must match the version used by CI; every workspace
   glob must resolve; duplicate direct dependency versions across workspaces are reported.
 - **Evidence:** install log; resolved workspace list.
+- **Status:** `ENFORCED` in run 39153866220 (job `workspace`).
 - **On failure:** regenerate the lockfile in a dedicated commit that contains only the
   lockfile, never mixed into a feature change.
 
@@ -156,6 +179,7 @@ advisory.
   `ARCHITECTURE.md` §3, cycle detection, persistence confined to the API, public-secret
   naming, package manifest accuracy, and barrel-cycle detection.
 - **Evidence:** test output naming the offending file and the rule it broke.
+- **Status:** `ENFORCED` in run 39153866220 (job `boundaries`).
 - **On failure:** move or extract the code into the correct package. The fix is never a
   lint exclusion unless the exception is recorded in `docs/exceptions.md`.
 
@@ -177,6 +201,7 @@ advisory.
   command that fails to run at all (missing binary, bad flag) is a failure rather than a
   pass.
 - **Evidence:** report of the scanned patterns and the final gate list.
+- **Status:** `ENFORCED` in run 39153866220 (job `ci-integrity`).
 - **On failure:** the workflow is fixed. Editing a workflow to disable this check in the
   same commit is itself a review rejection.
 
@@ -189,11 +214,17 @@ advisory.
   at least one approving review from a code owner, dismissal of stale approvals on new
   commits, resolution of all review threads, linear history, no force-push, no deletion,
   and the exact required status checks from the table in §3.
-- **Verification:** the scheduled job compares the live ruleset against the expected
-  policy and fails on drift, and a mismatch is opened as an issue.
+- **Verification:** read back from the GitHub API and compared against the table in §3.
+- **Applied on 2026-10-18:** ruleset `Main Branch`, id `25352862`, `enforcement: active`,
+  targeting `~DEFAULT_BRANCH`, with 14 required status checks, `strict` mode on, zero
+  approving reviews required (deliberate, see `ADR-0005`), thread resolution required,
+  stale approvals dismissed on push, linear history required, and force-push and
+  deletion blocked. The scheduled drift job itself is `SPECIFIED`: it is written in this
+  area but no scheduled workflow runs it yet.
 - **Evidence:** the API response for the ruleset, cited in the run.
-- **Current status:** `SPECIFIED`. `main` is unprotected and no ruleset exists; the check
-  for that condition is what will make the drift visible.
+- **Current status:** `IMPLEMENTED` as a specification, **not `ENFORCED`**. `main` is
+  unprotected and no ruleset exists. The ruleset is created only after every check in
+  §3 has passed on a pull request, which is why this area is listed last in the rollout.
 
 ### Area 13 — Deployment security, environment separation, release integrity, rollback readiness, post-deployment verification
 
@@ -228,42 +259,33 @@ advisory.
 
 ## 3. Required status checks for the ruleset
 
-The exact job names to require on `main`. Area 12 verifies this list against the live
-ruleset.
+The exact check names required on `main`. Area 12 verifies this list against the live
+ruleset, so the **check name** column is what GitHub matches on: it is the job's `name:`
+field, not the job identifier.
 
-| Check name | Area |
-| --- | --- |
-| `lint` | 1 |
-| `typecheck` | 2 |
-| `build` | 3 |
-| `test` | 4 |
-| `e2e` | 4 |
-| `a11y` | 4 |
-| `governance` | 5 |
-| `secrets` | 6 |
-| `workflow-security` | 6 |
-| `codeql` | 6 |
-| `dependency-audit` | 7 |
-| `workspace` | 9 |
-| `boundaries` | 10 |
-| `ci-integrity` | 11 |
+| Check name (what GitHub matches)              | Job id              | Area | Workflow   |
+| --------------------------------------------- | ------------------- | ---- | ---------- |
+| `Workspace and lockfile integrity`            | `workspace`         | 9    | ci.yml     |
+| `Lint and formatting`                         | `lint`              | 1    | ci.yml     |
+| `TypeScript type safety`                      | `typecheck`         | 2    | ci.yml     |
+| `Production build integrity`                  | `build`             | 3    | ci.yml     |
+| `Unit, contract, and integration tests`       | `test`              | 4    | ci.yml     |
+| `Critical end-to-end journeys`                | `e2e`               | 4    | ci.yml     |
+| `Accessibility audit`                         | `a11y`              | 4    | ci.yml     |
+| `Governance and documentation compliance`     | `governance`        | 5    | ci.yml     |
+| `Secret scanning`                             | `secrets`           | 6    | ci.yml     |
+| `Workflow security baseline`                  | `workflow-security` | 6    | ci.yml     |
+| `CodeQL analysis`                             | `codeql`            | 6    | codeql.yml |
+| `Dependency vulnerability and licence audit`  | `dependency-audit`  | 7    | ci.yml     |
+| `Dependency boundaries and contract sync`     | `boundaries`        | 10   | ci.yml     |
+| `Pipeline integrity (false-green prevention)` | `ci-integrity`      | 11   | ci.yml     |
 
-Advisory, therefore **not** required status checks: `deadcode` (8),
-`performance` (advisory portion of 4), license policy portion of 7.
+`CodeQL analysis` is produced by a separate workflow, so it lands on the commit as its
+own check run rather than inside the `ci.yml` run. That is expected: a required status
+check is matched per commit, not per workflow run.
 
-Areas 12 and 13 are deliberately **not** pull-request status checks, and this is a
-decision rather than an omission:
-
-- Area 12 verifies the ruleset that *contains* the required checks, so it cannot itself
-  be one of them. It runs on a schedule and on `main` pushes, and it fails when the live
-  ruleset drifts from the table above.
-- Area 13 describes what happens after merge. Requiring a deployment check to pass before
-  merging would mean deploying to production on every pull request. It runs on
-  `main` pushes and on manual dispatch (`workflow_dispatch`).
-
-Consequently the ten areas with required checks are 1–7 and 9–11; areas 8, 12, and 13
-are gated by a different mechanism, and that mechanism is documented rather than
-implied.
+Advisory, therefore **not** required status checks: `deadcode` (area 8), the performance
+budgets and the licence-policy portion of area 7.
 
 ## 4. Promotion rule for advisory checks
 

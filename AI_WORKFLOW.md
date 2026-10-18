@@ -10,15 +10,15 @@ Evidence Audit → Implementation → Manual Verification Gate → Pull Request
       → Merge → Branch Cleanup → Trunk Sync
 ```
 
-| Step | Owner | Requirement |
-| --- | --- | --- |
-| Evidence Audit | Agent | State what exists today with command output. No claims from memory or assumption |
-| Implementation | Agent | Small, auditable commits on a dedicated branch |
-| Manual Verification Gate | Agent | Exercise the change as a user; record what was done and observed |
-| Pull Request | Agent | Descriptive title, summary, evidence, risks, rollback |
-| Merge | Owner | Only when every required gate in `CI_GATES.md` passed on the PR head commit |
-| Branch Cleanup | Agent | `git branch -d` merged branches locally; delete the remote branch |
-| Trunk Sync | Agent | Local `main` matches `origin/main`; no stale feature branches remain |
+| Step                     | Owner | Requirement                                                                      |
+| ------------------------ | ----- | -------------------------------------------------------------------------------- |
+| Evidence Audit           | Agent | State what exists today with command output. No claims from memory or assumption |
+| Implementation           | Agent | Small, auditable commits on a dedicated branch                                   |
+| Manual Verification Gate | Agent | Exercise the change as a user; record what was done and observed                 |
+| Pull Request             | Agent | Descriptive title, summary, evidence, risks, rollback                            |
+| Merge                    | Owner | Only when every required gate in `CI_GATES.md` passed on the PR head commit      |
+| Branch Cleanup           | Agent | `git branch -d` merged branches locally; delete the remote branch                |
+| Trunk Sync               | Agent | Local `main` matches `origin/main`; no stale feature branches remain             |
 
 **Branch naming:** `<type>/<kebab-case-description>` where `type` is one of `feat`,
 `fix`, `docs`, `refactor`, `test`, `ci`, `chore`, `perf`, `build`.
@@ -39,17 +39,17 @@ Format: Conventional Commits 1.0.0.
 Refs: <document or gate reference>
 ```
 
-| Scope | Use for |
-| --- | --- |
-| `contracts` | `packages/contracts` schemas, types, enums |
-| `design-tokens` | `packages/design-tokens` |
-| `ui` | `packages/ui` |
-| `shared` | `packages/shared` |
-| `web` | `apps/web` |
-| `admin` | `apps/admin` |
-| `api` | `apps/api` |
-| `ci` | GitHub Actions and gate scripts |
-| `docs` | Governance and documentation |
+| Scope           | Use for                                    |
+| --------------- | ------------------------------------------ |
+| `contracts`     | `packages/contracts` schemas, types, enums |
+| `design-tokens` | `packages/design-tokens`                   |
+| `ui`            | `packages/ui`                              |
+| `shared`        | `packages/shared`                          |
+| `web`           | `apps/web`                                 |
+| `admin`         | `apps/admin`                               |
+| `api`           | `apps/api`                                 |
+| `ci`            | GitHub Actions and gate scripts            |
+| `docs`          | Governance and documentation               |
 
 Rules:
 

@@ -1,0 +1,12 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+minimumReleaseAgeExclude:
+  - knip@6.42.0
+
+# pnpm >= 10 blocks lifecycle scripts by default. Only esbuild is allowed to run
+# one; it is required by vitest/tsx and is the single source of build-time
+# native code. Every other dependency must install without executing anything.
+onlyBuiltDependencies:
+  - esbuild

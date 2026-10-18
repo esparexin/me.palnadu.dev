@@ -28,22 +28,22 @@ app defines, overrides, or hardcodes a visual value.
 
 ### 2.1 Colour
 
-| Token | Value | Use |
-| --- | --- | --- |
-| `surface` | `#ffffff` | Page and card background |
-| `surface-subtle` | `#f5f5f7` | Section alternation, hover fill, code blocks |
-| `surface-muted` | `#e8e8ed` | Dividers, track rails |
-| `text-primary` | `#1d1d1f` | Headings and body |
-| `text-secondary` | `#424245` | Supporting copy |
-| `text-tertiary` | `#6e6e73` | Meta, captions, timestamps |
-| `text-inverse` | `#ffffff` | Text on accent or dark surface |
-| `accent` | `#0071e3` | Primary CTA, active state, links |
-| `accent-hover` | `#0077ed` | Hover/active of accent |
-| `accent-subtle` | `#e8f2fe` | Selected row, chip background |
-| `border` | `#d2d2d7` | Input and card borders |
-| `border-subtle` | `#e8e8ed` | Hairline dividers |
-| `focus` | `#0071e3` | Focus ring |
-| `success` / `warning` / `danger` / `info` | `#1d8a4e` / `#b25000` / `#c8102e` / `#0b6bcb` | Status only, never decoration |
+| Token                                     | Value                                         | Use                                          |
+| ----------------------------------------- | --------------------------------------------- | -------------------------------------------- |
+| `surface`                                 | `#ffffff`                                     | Page and card background                     |
+| `surface-subtle`                          | `#f5f5f7`                                     | Section alternation, hover fill, code blocks |
+| `surface-muted`                           | `#e8e8ed`                                     | Dividers, track rails                        |
+| `text-primary`                            | `#1d1d1f`                                     | Headings and body                            |
+| `text-secondary`                          | `#424245`                                     | Supporting copy                              |
+| `text-tertiary`                           | `#6e6e73`                                     | Meta, captions, timestamps                   |
+| `text-inverse`                            | `#ffffff`                                     | Text on accent or dark surface               |
+| `accent`                                  | `#0071e3`                                     | Primary CTA, active state, links             |
+| `accent-hover`                            | `#0077ed`                                     | Hover/active of accent                       |
+| `accent-subtle`                           | `#e8f2fe`                                     | Selected row, chip background                |
+| `border`                                  | `#d2d2d7`                                     | Input and card borders                       |
+| `border-subtle`                           | `#e8e8ed`                                     | Hairline dividers                            |
+| `focus`                                   | `#0071e3`                                     | Focus ring                                   |
+| `success` / `warning` / `danger` / `info` | `#1d8a4e` / `#b25000` / `#c8102e` / `#0b6bcb` | Status only, never decoration                |
 
 Rules:
 
@@ -61,21 +61,23 @@ Font stack:
 "Helvetica Neue", Arial, sans-serif
 ```
 
-| Token | Size / line-height | Weight | Tracking | Use |
-| --- | --- | --- | --- | --- |
-| `display` | 56 / 60 | 600 | -0.02em | Hero only, one per page |
-| `h1` | 40 / 46 | 600 | -0.02em | Page title |
-| `h2` | 28 / 34 | 600 | -0.015em | Section title |
-| `h3` | 21 / 28 | 600 | -0.01em | Card title |
-| `lead` | 21 / 30 | 400 | -0.01em | Intro paragraph |
-| `body` | 17 / 27 | 400 | 0 | Body copy |
-| `body-sm` | 15 / 23 | 400 | 0 | Dense body, list items |
-| `meta` | 13 / 18 | 500 | 0.01em | Dates, tags, captions |
-| `eyebrow` | 12 / 16 | 600 | 0.08em, uppercase | Section eyebrow |
+| Token     | Size / line-height | Weight | Tracking          | Use                     |
+| --------- | ------------------ | ------ | ----------------- | ----------------------- |
+| `display` | 56 / 60            | 600    | -0.02em           | Hero only, one per page |
+| `h1`      | 40 / 46            | 600    | -0.02em           | Page title              |
+| `h2`      | 28 / 34            | 600    | -0.015em          | Section title           |
+| `h3`      | 21 / 28            | 600    | -0.01em           | Card title              |
+| `lead`    | 21 / 30            | 400    | -0.01em           | Intro paragraph         |
+| `body`    | 17 / 27            | 400    | 0                 | Body copy               |
+| `body-sm` | 15 / 23            | 400    | 0                 | Dense body, list items  |
+| `meta`    | 13 / 18            | 500    | 0.01em            | Dates, tags, captions   |
+| `eyebrow` | 12 / 16            | 600    | 0.08em, uppercase | Section eyebrow         |
 
 Rules:
 
-- Minimum text size is `meta` (13px). `text-[11px]` and `text-[10px]` are banned.
+- Type-size floor: 12px, permitted **only** for the uppercase, letter-spaced `eyebrow`
+  label. Body-adjacent text is `meta` (13px) at minimum, and body copy is `body`
+  (17px). `text-[11px]` and `text-[10px]` are banned outright.
 - Body measure 60–75 characters; paragraphs over `body` width are wrapped in
   `Container` with a `measure` constraint.
 - Exactly one `h1` per route; heading levels never skip a level.
@@ -97,13 +99,13 @@ Rules:
 
 ### 2.4 Motion
 
-| Token | Duration | Easing | Use |
-| --- | --- | --- | --- |
-| `duration-fast` | 120ms | `cubic-bezier(0.4, 0, 0.2, 1)` | Hover, focus, colour |
-| `duration-base` | 200ms | `cubic-bezier(0.4, 0, 0.2, 1)` | Expand, fade, tooltip |
-| `duration-slow` | 320ms | `cubic-bezier(0.32, 0.72, 0, 1)` | Drawer, panel, page transition |
-| `ease-out` | — | `cubic-bezier(0.32, 0.72, 0, 1)` | Entrances |
-| `ease-in-out` | — | `cubic-bezier(0.65, 0, 0.35, 1)` | Reversible transitions |
+| Token           | Duration | Easing                           | Use                            |
+| --------------- | -------- | -------------------------------- | ------------------------------ |
+| `duration-fast` | 120ms    | `cubic-bezier(0.4, 0, 0.2, 1)`   | Hover, focus, colour           |
+| `duration-base` | 200ms    | `cubic-bezier(0.4, 0, 0.2, 1)`   | Expand, fade, tooltip          |
+| `duration-slow` | 320ms    | `cubic-bezier(0.32, 0.72, 0, 1)` | Drawer, panel, page transition |
+| `ease-out`      | —        | `cubic-bezier(0.32, 0.72, 0, 1)` | Entrances                      |
+| `ease-in-out`   | —        | `cubic-bezier(0.65, 0, 0.35, 1)` | Reversible transitions         |
 
 Rules:
 
@@ -147,15 +149,15 @@ compose; they do not re-implement.
 `Popover`, `Tabs`, `Card`, `Badge`, `SectionHeading`, `Container`, `Prose`, `Skeleton`,
 `Toast`, `FloatingMenu` (composition built from the primitives, not a primitive).
 
-| Component | Requirement |
-| --- | --- |
-| `Button` | Three variants: primary (filled accent), secondary (outline), tertiary (text). Three sizes: `sm` 32px, `md` 40px, `lg` 48px. Min target 44×44 for anything primary |
-| `Input`, `Textarea`, `Select` | Always a real `<label>` bound by id, visible placeholder only as a format hint, error text linked with `aria-describedby`, `aria-invalid` on error |
-| `Dialog` | Focus trap, `Escape` to close, focus returns to the trigger, `role="dialog"` + `aria-modal="true"` |
-| `Popover` | Non-modal, dismisses on outside pointerdown and `Escape`, no scroll lock |
-| `Card` | Entire card clickable ⇒ it is a `<button>` or a single `<a>`; never a `<div>` with an `onClick` |
-| `Skeleton` | Mirrors final layout dimensions; never a spinner for content |
-| `Prose` | The only renderer of rich content; `h2`–`h4`, lists, code, tables. Raw HTML injection is banned |
+| Component                     | Requirement                                                                                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Button`                      | Three variants: primary (filled accent), secondary (outline), tertiary (text). Three sizes: `sm` 32px, `md` 40px, `lg` 48px. Min target 44×44 for anything primary |
+| `Input`, `Textarea`, `Select` | Always a real `<label>` bound by id, visible placeholder only as a format hint, error text linked with `aria-describedby`, `aria-invalid` on error                 |
+| `Dialog`                      | Focus trap, `Escape` to close, focus returns to the trigger, `role="dialog"` + `aria-modal="true"`                                                                 |
+| `Popover`                     | Non-modal, dismisses on outside pointerdown and `Escape`, no scroll lock                                                                                           |
+| `Card`                        | Entire card clickable ⇒ it is a `<button>` or a single `<a>`; never a `<div>` with an `onClick`                                                                    |
+| `Skeleton`                    | Mirrors final layout dimensions; never a spinner for content                                                                                                       |
+| `Prose`                       | The only renderer of rich content; `h2`–`h4`, lists, code, tables. Raw HTML injection is banned                                                                    |
 
 ## 5. Content layout rules
 
@@ -175,24 +177,24 @@ compose; they do not re-implement.
 Automated checks are necessary and not sufficient; manual keyboard and screen-reader
 verification is required at the Manual Verification Gate.
 
-| Criterion | Requirement |
-| --- | --- |
-| 1.3.1 Info and relationships | Semantic elements; headings in order; lists for lists; `alt` present |
-| 1.4.3 Contrast | 4.5:1 text, 3:1 large text and UI boundaries |
-| 1.4.4 Resize text | Legible at 200% zoom without loss |
-| 1.4.10 Reflow | No two-dimensional scrolling at 320px width |
-| 1.4.11 Non-text contrast | 3:1 for focus rings, borders that convey state, control outlines |
-| 1.4.12 Text spacing | No clipping when the user overrides line height, spacing |
-| 2.1.1 / 2.1.2 Keyboard | Every interactive element operable; no keyboard trap except a modal dialog |
-| 2.4.1 Bypass blocks | A "Skip to content" link is the first focusable element |
-| 2.4.3 Focus order | Order follows DOM order; no positive `tabindex` |
-| 2.4.7 Focus visible | 2px `focus` ring with 3:1 contrast, offset, never `outline: none` |
-| 2.4.11 Focus not obscured | Sticky header and floating menu must never cover the focused element |
-| 2.5.5 Target size | Minimum 24×24 CSS px; 44×44 for primary actions |
-| 2.5.7 Dragging movements | Every swipe/drag has a single-pointer button equivalent |
-| 2.5.8 Target size (minimum) | Same as 2.5.5, enforced as AA in WCAG 2.2 |
-| 3.2.3 Consistent navigation | Navigation order is identical on every page |
-| 4.1.2 Name, role, value | Every control has an accessible name and correct state |
+| Criterion                    | Requirement                                                                |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| 1.3.1 Info and relationships | Semantic elements; headings in order; lists for lists; `alt` present       |
+| 1.4.3 Contrast               | 4.5:1 text, 3:1 large text and UI boundaries                               |
+| 1.4.4 Resize text            | Legible at 200% zoom without loss                                          |
+| 1.4.10 Reflow                | No two-dimensional scrolling at 320px width                                |
+| 1.4.11 Non-text contrast     | 3:1 for focus rings, borders that convey state, control outlines           |
+| 1.4.12 Text spacing          | No clipping when the user overrides line height, spacing                   |
+| 2.1.1 / 2.1.2 Keyboard       | Every interactive element operable; no keyboard trap except a modal dialog |
+| 2.4.1 Bypass blocks          | A "Skip to content" link is the first focusable element                    |
+| 2.4.3 Focus order            | Order follows DOM order; no positive `tabindex`                            |
+| 2.4.7 Focus visible          | 2px `focus` ring with 3:1 contrast, offset, never `outline: none`          |
+| 2.4.11 Focus not obscured    | Sticky header and floating menu must never cover the focused element       |
+| 2.5.5 Target size            | Minimum 24×24 CSS px; 44×44 for primary actions                            |
+| 2.5.7 Dragging movements     | Every swipe/drag has a single-pointer button equivalent                    |
+| 2.5.8 Target size (minimum)  | Same as 2.5.5, enforced as AA in WCAG 2.2                                  |
+| 3.2.3 Consistent navigation  | Navigation order is identical on every page                                |
+| 4.1.2 Name, role, value      | Every control has an accessible name and correct state                     |
 
 Additional rules:
 
@@ -222,16 +224,16 @@ Additional rules:
 
 A menu button fixed to the right edge, vertically centred.
 
-| Property | Value |
-| --- | --- |
-| Position | `position: fixed; right: 16px; top: 50%; transform: translateY(-50%)` |
-| Size | 48×48, radius `pill` |
-| Appearance | `surface` at 96% with `border` and `md` shadow, accent glyph |
-| Behaviour | `z-index: fab` (200). Hidden at `lg` and above |
-| Markup | `<button>` with `aria-expanded`, `aria-controls="floating-nav-panel"`, `aria-label="Open navigation menu"` |
-| Toggle | Activating the button opens when closed and closes when open |
-| Panel | `id="floating-nav-panel"`, `role="dialog"`, `aria-label="Site navigation"`, `z-index: fab-panel` (210), width ≤ 280px, origin bottom-right, `duration-slow` |
-| Panel content | A visible close control, then Experience, Projects, Knowledge Hub, Resume, Contact |
+| Property      | Value                                                                                                                                                       |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Position      | `position: fixed; right: 16px; top: 50%; transform: translateY(-50%)`                                                                                       |
+| Size          | 48×48, radius `pill`                                                                                                                                        |
+| Appearance    | `surface` at 96% with `border` and `md` shadow, accent glyph                                                                                                |
+| Behaviour     | `z-index: fab` (200). Hidden at `lg` and above                                                                                                              |
+| Markup        | `<button>` with `aria-expanded`, `aria-controls="floating-nav-panel"`, `aria-label="Open navigation menu"`                                                  |
+| Toggle        | Activating the button opens when closed and closes when open                                                                                                |
+| Panel         | `id="floating-nav-panel"`, `role="dialog"`, `aria-label="Site navigation"`, `z-index: fab-panel` (210), width ≤ 280px, origin bottom-right, `duration-slow` |
+| Panel content | A visible close control, then Experience, Projects, Knowledge Hub, Resume, Contact                                                                          |
 
 Close conditions — **all four are mandatory**:
 
@@ -318,12 +320,12 @@ returns it; the UI never re-sorts.
 
 ## 8. Documented exceptions to the visual rules
 
-| Exception | Condition | Requirement |
-| --- | --- | --- |
-| Inline `style` for a CSS custom property | Setting a token value sourced from contracts data (for example a per-article accent) | The value must come from a token or contracts enum, never a literal |
-| `!important` | A third-party stylesheet cannot be overridden otherwise | Comment naming the library and the reason; removed when the library is replaced |
-| Arbitrary value | A token does not exist and no semantic need can be defined | Add a token instead; a literal is not acceptable |
-| `overflow-x: hidden` on a specific fixed-position layer | Never | Fix the offending element |
+| Exception                                               | Condition                                                                            | Requirement                                                                     |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Inline `style` for a CSS custom property                | Setting a token value sourced from contracts data (for example a per-article accent) | The value must come from a token or contracts enum, never a literal             |
+| `!important`                                            | A third-party stylesheet cannot be overridden otherwise                              | Comment naming the library and the reason; removed when the library is replaced |
+| Arbitrary value                                         | A token does not exist and no semantic need can be defined                           | Add a token instead; a literal is not acceptable                                |
+| `overflow-x: hidden` on a specific fixed-position layer | Never                                                                                | Fix the offending element                                                       |
 
 ## 9. Design review checklist
 

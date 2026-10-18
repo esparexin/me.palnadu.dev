@@ -1,0 +1,29 @@
+{
+  "name": "@me-palnadu/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Public portfolio: hero, career timeline, projects, resume, and Knowledge Hub.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@me-palnadu/contracts": "workspace:*",
+    "@me-palnadu/design-tokens": "workspace:*",
+    "@me-palnadu/shared": "workspace:*",
+    "@me-palnadu/ui": "workspace:*",
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.3"
+  }
+}

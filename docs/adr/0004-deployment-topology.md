@@ -13,13 +13,13 @@ be separated so that a preview build can never read production data or secrets.
 
 ## Decision
 
-| Component | Platform | Environment variables |
-| --- | --- | --- |
-| `apps/web` | Vercel | `NEXT_PUBLIC_*` only, no secrets |
-| `apps/admin` | Vercel, **separate project** | OAuth credentials, `AUTH_SECRET`, server-side API URL |
-| `apps/api` | Render, **single instance** | `DATABASE_URL`, `AUTH_SECRET`, CORS allowlist |
-| Database | MongoDB Atlas, separate clusters per environment | Credentials per environment |
-| Orchestration | GitHub Actions, build once and promote | Provider tokens as environment secrets |
+| Component     | Platform                                         | Environment variables                                 |
+| ------------- | ------------------------------------------------ | ----------------------------------------------------- |
+| `apps/web`    | Vercel                                           | `NEXT_PUBLIC_*` only, no secrets                      |
+| `apps/admin`  | Vercel, **separate project**                     | OAuth credentials, `AUTH_SECRET`, server-side API URL |
+| `apps/api`    | Render, **single instance**                      | `DATABASE_URL`, `AUTH_SECRET`, CORS allowlist         |
+| Database      | MongoDB Atlas, separate clusters per environment | Credentials per environment                           |
+| Orchestration | GitHub Actions, build once and promote           | Provider tokens as environment secrets                |
 
 Supporting decisions:
 
@@ -66,12 +66,12 @@ verification performed. No superseding ADR is required.
 
 ## Alternatives considered
 
-| Alternative | Why not |
-| --- | --- |
-| All three apps on Vercel | The API becomes serverless or a hosted container, which removes the single-instance predictability that the rate-limit decision relies on |
-| All apps on Render behind a proxy | Fewer providers, but forfeits Vercel's edge caching for the public site |
-| Container images on a single VPS | Full control, but introduces host patching, TLS renewal, backup scheduling, and a second on-call surface for one-person operation |
-| Self-hosted MongoDB | Rejected: backups, upgrades, and failover would become the project's primary operational burden |
+| Alternative                       | Why not                                                                                                                                   |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| All three apps on Vercel          | The API becomes serverless or a hosted container, which removes the single-instance predictability that the rate-limit decision relies on |
+| All apps on Render behind a proxy | Fewer providers, but forfeits Vercel's edge caching for the public site                                                                   |
+| Container images on a single VPS  | Full control, but introduces host patching, TLS renewal, backup scheduling, and a second on-call surface for one-person operation         |
+| Self-hosted MongoDB               | Rejected: backups, upgrades, and failover would become the project's primary operational burden                                           |
 
 ## References
 

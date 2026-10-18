@@ -8,31 +8,31 @@ and gate 8 (dead code / duplication) in `CI_GATES.md`.
 When two sources appear to disagree about a shared concept, the higher entry wins and
 the lower one is a defect.
 
-| Rank | Concern | Single source of truth |
-| --- | --- | --- |
-| 1 | Domain types, enums, validation schemas, error codes, pagination, API paths | `packages/contracts` |
-| 2 | Visual values: color, type scale, spacing, radius, shadow, motion, breakpoints | `packages/design-tokens` |
-| 3 | Calculations and comparators: tenure, reading time, ordering, slug, date ranges | `packages/shared` |
-| 4 | Persistence shape | `apps/api/prisma/schema.prisma` |
-| 5 | Authored content | MongoDB, via the admin application |
-| 6 | Seed and reference content | `content/` (never read at runtime) |
-| 7 | Presentation | `apps/web`, `apps/admin` (must consume 1–3) |
+| Rank | Concern                                                                         | Single source of truth                      |
+| ---- | ------------------------------------------------------------------------------- | ------------------------------------------- |
+| 1    | Domain types, enums, validation schemas, error codes, pagination, API paths     | `packages/contracts`                        |
+| 2    | Visual values: color, type scale, spacing, radius, shadow, motion, breakpoints  | `packages/design-tokens`                    |
+| 3    | Calculations and comparators: tenure, reading time, ordering, slug, date ranges | `packages/shared`                           |
+| 4    | Persistence shape                                                               | `apps/api/prisma/schema.prisma`             |
+| 5    | Authored content                                                                | MongoDB, via the admin application          |
+| 6    | Seed and reference content                                                      | `content/` (never read at runtime)          |
+| 7    | Presentation                                                                    | `apps/web`, `apps/admin` (must consume 1–3) |
 
 Two sources of the same concept at the same rank is duplication, not redundancy.
 
 ## 2. What must never be duplicated
 
-| Category | Canonical form | Forbidden duplicate |
-| --- | --- | --- |
-| Domain type | Zod schema → inferred type in contracts | A local `interface` or `type` for the same entity |
+| Category            | Canonical form                                                            | Forbidden duplicate                                                       |
+| ------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Domain type         | Zod schema → inferred type in contracts                                   | A local `interface` or `type` for the same entity                         |
 | Enum / string union | `ArticleStatus`, `ExperienceKind`, `ProjectStatus`, `Role`, `ArticleKind` | Literal unions, string arrays, or `Record<string, string>` maps elsewhere |
-| Validation rule | Zod schema in contracts | Hand-rolled `if` chains in a handler, controller, or form |
-| API contract | Route constants, request/response schemas, error envelope in contracts | Response interfaces in `web` or `admin` |
-| Error code | Contract error-code map → `ApiError` in `api` | Inline strings, HTTP 200 with a `"error"` field |
-| Calculation | Exported function in `shared` | The same arithmetic in `web`, `admin`, and `api` |
-| Comparator | `compareExperience`, `comparePublishedDesc` | Inline `.sort()` with inline logic |
-| Design value | Token in `design-tokens` | A hex, `px`, `rem`, or shadow literal in any file |
-| Component | Primitive in `packages/ui` | A second button, input, dialog, or field in an app |
+| Validation rule     | Zod schema in contracts                                                   | Hand-rolled `if` chains in a handler, controller, or form                 |
+| API contract        | Route constants, request/response schemas, error envelope in contracts    | Response interfaces in `web` or `admin`                                   |
+| Error code          | Contract error-code map → `ApiError` in `api`                             | Inline strings, HTTP 200 with a `"error"` field                           |
+| Calculation         | Exported function in `shared`                                             | The same arithmetic in `web`, `admin`, and `api`                          |
+| Comparator          | `compareExperience`, `comparePublishedDesc`                               | Inline `.sort()` with inline logic                                        |
+| Design value        | Token in `design-tokens`                                                  | A hex, `px`, `rem`, or shadow literal in any file                         |
+| Component           | Primitive in `packages/ui`                                                | A second button, input, dialog, or field in an app                        |
 
 ## 3. Contracts rules
 
@@ -70,12 +70,12 @@ delivered ahead of its consumers.
 
 ## 4. Validation layers
 
-| Layer | Responsibility | Trust |
-| --- | --- | --- |
-| Contracts (Zod) | The rule itself, defined once | Canonical |
-| `apps/api` validation pipe | Enforce the rule at the boundary | **Authoritative** |
-| `apps/admin` form validation | Immediate feedback while typing | UX affordance only |
-| `apps/web` input hints | Avoid a pointless round trip | Never a security control |
+| Layer                        | Responsibility                   | Trust                    |
+| ---------------------------- | -------------------------------- | ------------------------ |
+| Contracts (Zod)              | The rule itself, defined once    | Canonical                |
+| `apps/api` validation pipe   | Enforce the rule at the boundary | **Authoritative**        |
+| `apps/admin` form validation | Immediate feedback while typing  | UX affordance only       |
+| `apps/web` input hints       | Avoid a pointless round trip     | Never a security control |
 
 The API re-validates every write even when the client already validated. Client
 validation exists to reduce failed round trips, not to establish correctness.
@@ -104,16 +104,16 @@ Every shared concept has exactly one owning path. When implementing:
 
 ## 7. Detection
 
-| Violation | Detected by |
-| --- | --- |
-| Cross-app or wrong-direction import | Gate 10 boundary tests |
-| Import cycle | Gate 10 cycle detection |
-| Second definition of an enum or status | Gate 10 lint rule plus reviewer checklist |
-| Inline sort/filter duplicating a comparator | Gate 8 duplication scan plus review |
-| Token literal in app code | Gate 1 `no-restricted-syntax` rules |
-| Unused file, export, or dependency | Gate 8 (Knip) |
-| Copy-pasted blocks | Gate 8 (jscpd) |
-| Stale seed content | Import command diffs `content/` against the database and reports, without mutating |
+| Violation                                   | Detected by                                                                        |
+| ------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Cross-app or wrong-direction import         | Gate 10 boundary tests                                                             |
+| Import cycle                                | Gate 10 cycle detection                                                            |
+| Second definition of an enum or status      | Gate 10 lint rule plus reviewer checklist                                          |
+| Inline sort/filter duplicating a comparator | Gate 8 duplication scan plus review                                                |
+| Token literal in app code                   | Gate 1 `no-restricted-syntax` rules                                                |
+| Unused file, export, or dependency          | Gate 8 (Knip)                                                                      |
+| Copy-pasted blocks                          | Gate 8 (jscpd)                                                                     |
+| Stale seed content                          | Import command diffs `content/` against the database and reports, without mutating |
 
 Findings are triaged before deletion: framework conventions, dynamic imports, route
 files, and generated assets legitimately appear unused. Confirm, then delete, then

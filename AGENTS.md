@@ -10,18 +10,18 @@ these documents is **specified, not enforced**. Enforcement evidence is tracked 
 
 ## 1. Read before you change anything
 
-| Document | Governs |
-| --- | --- |
-| `GOVERNANCE.md` | Ownership, change authority, phase gates, exceptions |
-| `AI_WORKFLOW.md` | Mandatory delivery workflow, branches, commits, PR rules |
-| `ARCHITECTURE.md` | Apps, packages, dependency direction, folder ownership |
-| `SSOT_POLICY.md` | Single source of truth for types, enums, rules, validation |
-| `CODING_STANDARDS.md` | TypeScript, naming, imports, errors, no-bans |
-| `UI_UX_STANDARDS.md` | Design tokens, accessibility, interaction specs |
-| `SECURITY.md` | Threat model, admin auth, session design, secret handling |
-| `TESTING.md` | Test layers, coverage floors, what must pass |
-| `CI_GATES.md` | The 13 verification areas and their enforcement state |
-| `DEPLOYMENT_MAP.md` / `RUNBOOK.md` | Environments, secrets, deploy and rollback |
+| Document                           | Governs                                                    |
+| ---------------------------------- | ---------------------------------------------------------- |
+| `GOVERNANCE.md`                    | Ownership, change authority, phase gates, exceptions       |
+| `AI_WORKFLOW.md`                   | Mandatory delivery workflow, branches, commits, PR rules   |
+| `ARCHITECTURE.md`                  | Apps, packages, dependency direction, folder ownership     |
+| `SSOT_POLICY.md`                   | Single source of truth for types, enums, rules, validation |
+| `CODING_STANDARDS.md`              | TypeScript, naming, imports, errors, no-bans               |
+| `UI_UX_STANDARDS.md`               | Design tokens, accessibility, interaction specs            |
+| `SECURITY.md`                      | Threat model, admin auth, session design, secret handling  |
+| `TESTING.md`                       | Test layers, coverage floors, what must pass               |
+| `CI_GATES.md`                      | The 13 verification areas and their enforcement state      |
+| `DEPLOYMENT_MAP.md` / `RUNBOOK.md` | Environments, secrets, deploy and rollback                 |
 
 ## 2. Non-negotiable rules
 
@@ -35,7 +35,7 @@ these documents is **specified, not enforced**. Enforcement evidence is tracked 
    over HTTP and shared packages.
 4. **Design tokens live in `packages/design-tokens` only.** No app-level or
    component-level color, font, spacing, radius, or shadow literals. Tailwind theme
-   extension is allowed; Tailwind theme *additions of new primitives* are not.
+   extension is allowed; Tailwind theme _additions of new primitives_ are not.
 5. **Validation happens at the API boundary using contracts schemas.** Client-side
    validation is a UX affordance only and is never trusted.
 6. **Authorization is server-side, always.** Hiding a button is not access control. Every

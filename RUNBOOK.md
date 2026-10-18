@@ -9,17 +9,17 @@ tested.
 
 ## 1. Release: merge to production
 
-| # | Step | Verification |
-| --- | --- | --- |
-| 1 | Merge to `main` is accepted by the ruleset | All required checks green on the head commit; approval recorded |
-| 2 | Release workflow builds once and publishes an immutable artefact tagged with the commit SHA | Artefact digest in the run log; no rebuild afterwards |
-| 3 | Deploy the same artefact to `staging`; run readiness and smoke checks | Staging smoke report |
-| 4 | Verify staging manually: home, experience timeline, one knowledge article, admin login redirect | Notes in the pull request or the release issue |
-| 5 | Approve the `production` GitHub environment | Approval recorded with the approver's identity |
-| 6 | Promote the artefact to production: `apps/api`, then `apps/admin`, then `apps/web` | Deployment URLs per component |
-| 7 | Apply Prisma migrations as an explicit, backwards-compatible step | Migration log; `GET /health/ready` returns 200 |
-| 8 | Run the post-deployment verification in §2 | Full report |
-| 9 | Record the deployment in the release log: SHA, previous good SHA, duration, operator, outcome | Release log entry |
+| #   | Step                                                                                            | Verification                                                    |
+| --- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 1   | Merge to `main` is accepted by the ruleset                                                      | All required checks green on the head commit; approval recorded |
+| 2   | Release workflow builds once and publishes an immutable artefact tagged with the commit SHA     | Artefact digest in the run log; no rebuild afterwards           |
+| 3   | Deploy the same artefact to `staging`; run readiness and smoke checks                           | Staging smoke report                                            |
+| 4   | Verify staging manually: home, experience timeline, one knowledge article, admin login redirect | Notes in the pull request or the release issue                  |
+| 5   | Approve the `production` GitHub environment                                                     | Approval recorded with the approver's identity                  |
+| 6   | Promote the artefact to production: `apps/api`, then `apps/admin`, then `apps/web`              | Deployment URLs per component                                   |
+| 7   | Apply Prisma migrations as an explicit, backwards-compatible step                               | Migration log; `GET /health/ready` returns 200                  |
+| 8   | Run the post-deployment verification in §2                                                      | Full report                                                     |
+| 9   | Record the deployment in the release log: SHA, previous good SHA, duration, operator, outcome   | Release log entry                                               |
 
 Ordering rationale: the API first so the frontends never point at a missing API; the
 admin second so content management is ready; the public site last so visitors are never
@@ -67,12 +67,12 @@ Decision: roll back if any verification in §2 fails, if the API error rate rise
 content is wrong or unpublished. Rolling back is the default; debugging in production
 is not.
 
-| Component | Mechanism | Time | Data implication |
-| --- | --- | --- | --- |
-| `apps/web` | Redeploy the previous known-good Vercel deployment | ~1 min | None |
-| `apps/admin` | Redeploy the previous known-good Vercel deployment | ~1 min | None |
-| `apps/api` | Roll back the Render deploy to the previous image tag | ~3 min | Requires the previous code to tolerate the current schema |
-| Database | No automatic rollback | Manual | Prisma migrations must be backwards-compatible; destructive migrations are forbidden in the same release that needs them |
+| Component    | Mechanism                                             | Time   | Data implication                                                                                                         |
+| ------------ | ----------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `apps/web`   | Redeploy the previous known-good Vercel deployment    | ~1 min | None                                                                                                                     |
+| `apps/admin` | Redeploy the previous known-good Vercel deployment    | ~1 min | None                                                                                                                     |
+| `apps/api`   | Roll back the Render deploy to the previous image tag | ~3 min | Requires the previous code to tolerate the current schema                                                                |
+| Database     | No automatic rollback                                 | Manual | Prisma migrations must be backwards-compatible; destructive migrations are forbidden in the same release that needs them |
 
 Procedure:
 
@@ -85,15 +85,15 @@ Procedure:
 
 ## 4. Gate failure triage
 
-| Symptom | First action | Then |
-| --- | --- | --- |
-| Required gate fails on your branch | Read the log; fix the cause | Never re-run to obtain a different result without a change |
-| `boundaries` fails | Find the violating import from the rule name | Move the code, or record an exception in `docs/exceptions.md` |
-| `e2e` fails only in CI | Compare environment differences (database seed, port, timing) | Fix the test's determinism (`TESTING.md` §3); do not add a retry to hide flakiness |
-| `a11y` fails | Treat as a product defect, not a gate problem | Fix the component |
-| `secrets` fails | Assume the secret is compromised | Rotate first (`SECURITY.md` §7), then remove |
-| `ci-integrity` fails on your own workflow edit | Re-read `CI_GATES.md` area 11 | An edit that neutralises a gate is rejected at review |
-| `governance` fails | Check the index in `AGENTS.md` and `docs/exceptions.md` | Add the document or correct the stale claim |
+| Symptom                                        | First action                                                  | Then                                                                               |
+| ---------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Required gate fails on your branch             | Read the log; fix the cause                                   | Never re-run to obtain a different result without a change                         |
+| `boundaries` fails                             | Find the violating import from the rule name                  | Move the code, or record an exception in `docs/exceptions.md`                      |
+| `e2e` fails only in CI                         | Compare environment differences (database seed, port, timing) | Fix the test's determinism (`TESTING.md` §3); do not add a retry to hide flakiness |
+| `a11y` fails                                   | Treat as a product defect, not a gate problem                 | Fix the component                                                                  |
+| `secrets` fails                                | Assume the secret is compromised                              | Rotate first (`SECURITY.md` §7), then remove                                       |
+| `ci-integrity` fails on your own workflow edit | Re-read `CI_GATES.md` area 11                                 | An edit that neutralises a gate is rejected at review                              |
+| `governance` fails                             | Check the index in `AGENTS.md` and `docs/exceptions.md`       | Add the document or correct the stale claim                                        |
 
 ## 5. Security incident
 
@@ -111,13 +111,13 @@ Procedure:
 
 ## 6. Administrator session operations
 
-| Task | Procedure | Verification |
-| --- | --- | --- |
-| Revoke one session | Set `revokedAt` on the `AdminSession` record | The next API request from that session returns `401` |
-| Revoke all sessions | Increment `AdminUser.tokenVersion` | All existing tokens fail the `tv` comparison |
-| Emergency global logout | Rotate `AUTH_SECRET` in both the admin and API environments | Every session invalid immediately; requires a coordinated redeploy |
+| Task                    | Procedure                                                                         | Verification                                                       |
+| ----------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Revoke one session      | Set `revokedAt` on the `AdminSession` record                                      | The next API request from that session returns `401`               |
+| Revoke all sessions     | Increment `AdminUser.tokenVersion`                                                | All existing tokens fail the `tv` comparison                       |
+| Emergency global logout | Rotate `AUTH_SECRET` in both the admin and API environments                       | Every session invalid immediately; requires a coordinated redeploy |
 | Remove an administrator | Delete the `AdminUser` record and remove the seed entry from `packages/contracts` | Requests fail at the allowlist lookup; the change is in `AuditLog` |
-| Audit a session | Query `AuditLog` by `sid` | Every write for that session is attributable |
+| Audit a session         | Query `AuditLog` by `sid`                                                         | Every write for that session is attributable                       |
 
 ## 7. Content operations
 
@@ -141,19 +141,19 @@ deletes records implicitly. It writes `content.import` audit entries.
 the content inventory and one published article, then delete the scratch cluster. Record
 the date and outcome here.
 
-| Date | Operator | Outcome |
-| --- | --- | --- |
-| — | — | Not yet performed |
+| Date | Operator | Outcome           |
+| ---- | -------- | ----------------- |
+| —    | —        | Not yet performed |
 
 ## 8. Scheduled maintenance
 
-| Cadence | Task |
-| --- | --- |
-| Weekly | Review CodeQL alerts; triage new advisories |
-| Monthly | Review dependency updates; confirm lockfile diff is intentional |
-| Monthly | Review `docs/exceptions.md` for entries approaching review |
-| Quarterly | Atlas restore drill (§7); provider access review; verify the ruleset still matches `CI_GATES.md` §3 |
-| On any rotation | Update `DEPLOYMENT_MAP.md` §3 if a key changed |
+| Cadence         | Task                                                                                                |
+| --------------- | --------------------------------------------------------------------------------------------------- |
+| Weekly          | Review CodeQL alerts; triage new advisories                                                         |
+| Monthly         | Review dependency updates; confirm lockfile diff is intentional                                     |
+| Monthly         | Review `docs/exceptions.md` for entries approaching review                                          |
+| Quarterly       | Atlas restore drill (§7); provider access review; verify the ruleset still matches `CI_GATES.md` §3 |
+| On any rotation | Update `DEPLOYMENT_MAP.md` §3 if a key changed                                                      |
 
 ## 9. Escalation
 

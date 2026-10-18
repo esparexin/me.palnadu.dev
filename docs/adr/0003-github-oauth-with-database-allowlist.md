@@ -61,13 +61,13 @@ end to end.
 
 ## Alternatives considered
 
-| Alternative | Why not |
-| --- | --- |
-| Local email and password | Password storage, reset flow, and credential-stuffing surface, for a single-administrator system |
-| Shared secret or bearer token in the admin UI | No per-identity attribution, no revocation granularity, and it would end up in a browser-reachable place |
-| Full RBAC with multiple administrators and invitations | The requirement is an allowlist. User management is explicitly out of scope |
-| Self-hosted OIDC provider | Additional infrastructure with no benefit for one provider |
-| A separate identity provider (Clerk, WorkOS, Auth0) | Third-party dependency holding all site credentials, and no requirement it would satisfy |
+| Alternative                                            | Why not                                                                                                  |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| Local email and password                               | Password storage, reset flow, and credential-stuffing surface, for a single-administrator system         |
+| Shared secret or bearer token in the admin UI          | No per-identity attribution, no revocation granularity, and it would end up in a browser-reachable place |
+| Full RBAC with multiple administrators and invitations | The requirement is an allowlist. User management is explicitly out of scope                              |
+| Self-hosted OIDC provider                              | Additional infrastructure with no benefit for one provider                                               |
+| A separate identity provider (Clerk, WorkOS, Auth0)    | Third-party dependency holding all site credentials, and no requirement it would satisfy                 |
 
 ## References
 

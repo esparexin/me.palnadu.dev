@@ -20,7 +20,7 @@ Required compiler options in every package and app:
   "verbatimModuleSyntax": true,
   "isolatedModules": true,
   "forceConsistentCasingInFileNames": true,
-  "skipLibCheck": true
+  "skipLibCheck": true,
 }
 ```
 
@@ -38,20 +38,20 @@ Hard requirements:
 
 ## 2. Naming
 
-| Kind | Convention | Example |
-| --- | --- | --- |
-| Files | `kebab-case.ts(x)` | `experience-card.tsx` |
-| Components | `PascalCase`, file name matches component | `ExperienceCard` |
-| Types / schemas | `PascalCase`, `Schema` suffix for Zod | `ExperienceCreateSchema` |
-| Functions, variables | `camelCase` | `computeTenure` |
-| Hooks | `useX` | `useExperienceTimeline` |
-| React contexts | `PascalCase` + `Context` | `SessionContext` |
-| Constants | `UPPER_SNAKE_CASE` | `ARTICLE_STATUSES` |
-| Booleans | `is`/`has`/`can`/`should` prefix | `isPublished`, `canEdit` |
-| Event handlers | `handle` prefix | `handleNavSelect` |
-| Props | `handle` prefix for callbacks | `onSelect`, `handleSelect` |
-| CSS classes | token utility names only | `text-body` (never `text-[11px]`) |
-| Test files | `*.test.ts(x)` colocated; `*.spec.ts(x)` for e2e in `tests/e2e` | |
+| Kind                 | Convention                                                      | Example                           |
+| -------------------- | --------------------------------------------------------------- | --------------------------------- |
+| Files                | `kebab-case.ts(x)`                                              | `experience-card.tsx`             |
+| Components           | `PascalCase`, file name matches component                       | `ExperienceCard`                  |
+| Types / schemas      | `PascalCase`, `Schema` suffix for Zod                           | `ExperienceCreateSchema`          |
+| Functions, variables | `camelCase`                                                     | `computeTenure`                   |
+| Hooks                | `useX`                                                          | `useExperienceTimeline`           |
+| React contexts       | `PascalCase` + `Context`                                        | `SessionContext`                  |
+| Constants            | `UPPER_SNAKE_CASE`                                              | `ARTICLE_STATUSES`                |
+| Booleans             | `is`/`has`/`can`/`should` prefix                                | `isPublished`, `canEdit`          |
+| Event handlers       | `handle` prefix                                                 | `handleNavSelect`                 |
+| Props                | `handle` prefix for callbacks                                   | `onSelect`, `handleSelect`        |
+| CSS classes          | token utility names only                                        | `text-body` (never `text-[11px]`) |
+| Test files           | `*.test.ts(x)` colocated; `*.spec.ts(x)` for e2e in `tests/e2e` |                                   |
 
 Files export the primary symbol by name. `export default` is allowed only for Next.js
 `page.tsx`, `layout.tsx`, `route.ts`, and error/not-found boundaries.
@@ -108,15 +108,15 @@ Files export the primary symbol by name. `export default` is allowed only for Ne
 
 ## 6. Formatting
 
-| Setting | Value |
-| --- | --- |
-| Indent | 2 spaces, spaces only (tabs are errors) |
-| Print width | 100 |
-| Semicolons | Always |
-| Quotes | Single |
-| Trailing comma | All (ES5-safe multi-line) |
-| Bracket spacing | No (`{ foo }`) |
-| Line ending | LF, final newline required |
+| Setting         | Value                                   |
+| --------------- | --------------------------------------- |
+| Indent          | 2 spaces, spaces only (tabs are errors) |
+| Print width     | 100                                     |
+| Semicolons      | Always                                  |
+| Quotes          | Single                                  |
+| Trailing comma  | All (ES5-safe multi-line)               |
+| Bracket spacing | No (`{ foo }`)                          |
+| Line ending     | LF, final newline required              |
 
 The committed `.prettierrc` and ESLint flat config land with the toolchain PR; the
 values above are the contract they must encode. Editor-level enforcement comes from
@@ -124,22 +124,22 @@ values above are the contract they must encode. Editor-level enforcement comes f
 
 ## 7. Forbidden patterns
 
-| Pattern | Rule | Why |
-| --- | --- | --- |
-| `bg-[#fff]`, `text-[#000]`, `style={{ color }}` | Banned | Tokens are the only source of visual values |
-| `p-[13px]`, `rounded-[7px]`, `shadow-[...]` | Banned when a token exists | Same |
-| `text-[11px]`, `text-[10px]` | Banned outright | Not accessible at any viewport |
-| `!important`, inline visual `style` | Banned | Unmaintainable; exceptions in `UI_UX_STANDARDS.md` §7 |
-| Raw `<input>`, `<select>`, `<button>` in `apps/admin` | Banned | Use `packages/ui` primitives |
-| `slate-*`, `gray-*`, `zinc-*`, `red-*`, `blue-*`, `emerald-*`, `purple-*` | Banned | Raw palette utilities |
-| `console.log` in app code | Banned | Structured logging instead |
-| Prisma / Mongo import outside `apps/api` | Banned | Persistence is the API's job |
-| `NEXT_PUBLIC_*` holding a non-public value | Banned | Anything `NEXT_PUBLIC_` is public |
-| `fetch` to the database | Banned | Same as the Prisma rule |
-| `Math.random()` in a render path | Banned | Causes hydration mismatch |
-| `dangerouslySetInnerHTML` | Banned | If genuinely required, it takes sanitization and an ADR |
-| `setTimeout` for visual sequencing longer than 400ms | Banned | Use a transition or `prefers-reduced-motion` |
-| `alert()`, `confirm()` | Banned | Use `packages/ui` dialogs |
+| Pattern                                                                   | Rule                       | Why                                                     |
+| ------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------- |
+| `bg-[#fff]`, `text-[#000]`, `style={{ color }}`                           | Banned                     | Tokens are the only source of visual values             |
+| `p-[13px]`, `rounded-[7px]`, `shadow-[...]`                               | Banned when a token exists | Same                                                    |
+| `text-[11px]`, `text-[10px]`                                              | Banned outright            | Not accessible at any viewport                          |
+| `!important`, inline visual `style`                                       | Banned                     | Unmaintainable; exceptions in `UI_UX_STANDARDS.md` §7   |
+| Raw `<input>`, `<select>`, `<button>` in `apps/admin`                     | Banned                     | Use `packages/ui` primitives                            |
+| `slate-*`, `gray-*`, `zinc-*`, `red-*`, `blue-*`, `emerald-*`, `purple-*` | Banned                     | Raw palette utilities                                   |
+| `console.log` in app code                                                 | Banned                     | Structured logging instead                              |
+| Prisma / Mongo import outside `apps/api`                                  | Banned                     | Persistence is the API's job                            |
+| `NEXT_PUBLIC_*` holding a non-public value                                | Banned                     | Anything `NEXT_PUBLIC_` is public                       |
+| `fetch` to the database                                                   | Banned                     | Same as the Prisma rule                                 |
+| `Math.random()` in a render path                                          | Banned                     | Causes hydration mismatch                               |
+| `dangerouslySetInnerHTML`                                                 | Banned                     | If genuinely required, it takes sanitization and an ADR |
+| `setTimeout` for visual sequencing longer than 400ms                      | Banned                     | Use a transition or `prefers-reduced-motion`            |
+| `alert()`, `confirm()`                                                    | Banned                     | Use `packages/ui` dialogs                               |
 
 ## 8. Comments
 
