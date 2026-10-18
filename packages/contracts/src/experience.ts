@@ -1,15 +1,6 @@
-import { z } from 'zod';
-import {
-  ExperienceKindSchema,
-  type ExperienceKind,
-} from './enums.js';
-import {
-  IdSchema,
-  MonthSchema,
-  NonEmptyTextSchema,
-  TechTagSchema,
-  toPatchShape,
-} from './common.js';
+import {z} from 'zod';
+import {ExperienceKindSchema, type ExperienceKind} from './enums.js';
+import {IdSchema, MonthSchema, NonEmptyTextSchema, TechTagSchema, toPatchShape} from './common.js';
 
 /**
  * Career timeline entry. Employment dates are professional claims (AGENTS.md 4),
@@ -45,7 +36,7 @@ const ExperienceShape = {
 export const ExperienceBaseSchema = z.object(ExperienceShape);
 
 const experienceCreateRules = (
-  value: { startDate: string; endDate?: string | undefined; current: boolean },
+  value: {startDate: string; endDate?: string | undefined; current: boolean},
   ctx: z.RefinementCtx,
 ) => {
   if (value.current && value.endDate !== undefined) {
@@ -77,7 +68,11 @@ const experienceCreateRules = (
  * completeness rule from create is deliberately not applied here.
  */
 const experienceUpdateRules = (
-  value: { startDate?: string | undefined; endDate?: string | undefined; current?: boolean | undefined },
+  value: {
+    startDate?: string | undefined;
+    endDate?: string | undefined;
+    current?: boolean | undefined;
+  },
   ctx: z.RefinementCtx,
 ) => {
   if (value.current === true && value.endDate !== undefined) {
@@ -110,7 +105,7 @@ export const ExperienceUpdateSchema = z
   .superRefine(experienceUpdateRules);
 export type ExperienceUpdateInput = z.infer<typeof ExperienceUpdateSchema>;
 
-export const ExperienceSchema = ExperienceBaseSchema.extend({ id: IdSchema });
+export const ExperienceSchema = ExperienceBaseSchema.extend({id: IdSchema});
 export type Experience = z.infer<typeof ExperienceSchema>;
 
 /** Shape a repository returns to the public site: published entries only. */
@@ -129,4 +124,4 @@ export const PublicExperienceSchema = ExperienceSchema.pick({
 });
 export type PublicExperience = z.infer<typeof PublicExperienceSchema>;
 
-export type { ExperienceKind };
+export type {ExperienceKind};

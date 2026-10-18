@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {
   clampPage,
   compareExperience,
@@ -31,24 +31,24 @@ describe('slugify', () => {
 
 describe('computeTenure', () => {
   it('counts whole years and remaining months', () => {
-    expect(computeTenure('2023-04', '2026-01')).toEqual({ years: 2, months: 9 });
+    expect(computeTenure('2023-04', '2026-01')).toEqual({years: 2, months: 9});
   });
 
   it('counts a partial year as months', () => {
-    expect(computeTenure('2025-01', '2025-08')).toEqual({ years: 0, months: 7 });
+    expect(computeTenure('2025-01', '2025-08')).toEqual({years: 0, months: 7});
   });
 
   it('treats an identical range as zero', () => {
-    expect(computeTenure('2025-01', '2025-01')).toEqual({ years: 0, months: 0 });
+    expect(computeTenure('2025-01', '2025-01')).toEqual({years: 0, months: 0});
   });
 
   it('returns zero rather than a negative tenure', () => {
-    expect(computeTenure('2026-01', '2023-01')).toEqual({ years: 0, months: 0 });
+    expect(computeTenure('2026-01', '2023-01')).toEqual({years: 0, months: 0});
   });
 
   it('refuses to guess at a malformed month', () => {
-    expect(computeTenure('2023-13', '2024-01')).toEqual({ years: 0, months: 0 });
-    expect(computeTenure('nonsense', '2024-01')).toEqual({ years: 0, months: 0 });
+    expect(computeTenure('2023-13', '2024-01')).toEqual({years: 0, months: 0});
+    expect(computeTenure('nonsense', '2024-01')).toEqual({years: 0, months: 0});
   });
 });
 
@@ -91,46 +91,46 @@ describe('computeReadingTime', () => {
 });
 
 describe('compareExperience', () => {
-  const base = { current: false, sortIndex: 0 };
+  const base = {current: false, sortIndex: 0};
 
   it('orders newest first', () => {
-    const older = { ...base, id: 'a', startDate: '2020-01' };
-    const newer = { ...base, id: 'b', startDate: '2024-01' };
+    const older = {...base, id: 'a', startDate: '2020-01'};
+    const newer = {...base, id: 'b', startDate: '2024-01'};
     expect([older, newer].sort(compareExperience)).toEqual([newer, older]);
   });
 
   it('puts a current role ahead of a past role with the same start month', () => {
-    const past = { id: 'a', startDate: '2024-01', current: false, sortIndex: 0 };
-    const current = { id: 'b', startDate: '2024-01', current: true, sortIndex: 5 };
+    const past = {id: 'a', startDate: '2024-01', current: false, sortIndex: 0};
+    const current = {id: 'b', startDate: '2024-01', current: true, sortIndex: 5};
     expect([past, current].sort(compareExperience)).toEqual([current, past]);
   });
 
   it('falls back to sortIndex, then id, for a total order', () => {
-    const low = { id: 'z', startDate: '2024-01', current: false, sortIndex: 1 };
-    const high = { id: 'a', startDate: '2024-01', current: false, sortIndex: 2 };
+    const low = {id: 'z', startDate: '2024-01', current: false, sortIndex: 1};
+    const high = {id: 'a', startDate: '2024-01', current: false, sortIndex: 2};
     expect([high, low].sort(compareExperience)).toEqual([low, high]);
-    const a = { ...low, id: 'a' };
-    const b = { ...low, id: 'b' };
+    const a = {...low, id: 'a'};
+    const b = {...low, id: 'b'};
     expect([b, a].sort(compareExperience)).toEqual([a, b]);
   });
 });
 
 describe('comparePublishedDesc', () => {
   it('prefers publishedAt over createdAt', () => {
-    const older = { publishedAt: '2026-01-01', createdAt: '2020-01-01' };
-    const newer = { publishedAt: '2026-02-01', createdAt: '2020-01-01' };
+    const older = {publishedAt: '2026-01-01', createdAt: '2020-01-01'};
+    const newer = {publishedAt: '2026-02-01', createdAt: '2020-01-01'};
     expect([older, newer].sort(comparePublishedDesc)).toEqual([newer, older]);
   });
 
   it('falls back to createdAt for an unpublished record', () => {
-    const a = { createdAt: '2026-01-01' };
-    const b = { createdAt: '2026-03-01' };
+    const a = {createdAt: '2026-01-01'};
+    const b = {createdAt: '2026-03-01'};
     expect([a, b].sort(comparePublishedDesc)).toEqual([b, a]);
   });
 
   it('is stable for identical dates', () => {
-    const a = { createdAt: '2026-01-01' };
-    const b = { createdAt: '2026-01-01' };
+    const a = {createdAt: '2026-01-01'};
+    const b = {createdAt: '2026-01-01'};
     expect(comparePublishedDesc(a, b)).toBe(0);
   });
 });

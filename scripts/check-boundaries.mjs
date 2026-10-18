@@ -5,8 +5,8 @@
  * Implements the allowed-import matrix in ARCHITECTURE.md section 3 against the
  * real source tree, plus the banned patterns from section 3 and 10.
  */
-import { readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import {readFile} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
@@ -14,13 +14,13 @@ const SCOPE = '@me-palnadu/';
 
 /** Which internal packages each workspace may import. ARCHITECTURE.md section 3. */
 const ALLOWED = {
-  'contracts': [],
+  contracts: [],
   'design-tokens': [],
-  'shared': ['contracts'],
-  'ui': ['contracts', 'design-tokens', 'shared'],
-  'api': ['contracts', 'shared'],
-  'admin': ['contracts', 'design-tokens', 'shared', 'ui'],
-  'web': ['contracts', 'design-tokens', 'shared', 'ui'],
+  shared: ['contracts'],
+  ui: ['contracts', 'design-tokens', 'shared'],
+  api: ['contracts', 'shared'],
+  admin: ['contracts', 'design-tokens', 'shared', 'ui'],
+  web: ['contracts', 'design-tokens', 'shared', 'ui'],
 };
 
 const WORKSPACES = {
@@ -41,8 +41,8 @@ const IMPORT_PATTERNS = [
 
 async function* walk(dir) {
   if (!existsSync(dir)) return;
-  const { readdir } = await import('node:fs/promises');
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
+  const {readdir} = await import('node:fs/promises');
+  for (const entry of await readdir(dir, {withFileTypes: true})) {
     if (['node_modules', '.next', 'dist', '.turbo', 'coverage'].includes(entry.name)) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) yield* walk(full);
@@ -87,19 +87,28 @@ async function main() {
           if (specifier.startsWith('.')) {
             const resolved = path.resolve(path.dirname(file), specifier);
             if (!resolved.startsWith(src)) {
-              fail(`${rel}: relative import "${specifier}" escapes ${workspaceDir} (ARCHITECTURE.md section 3)`);
+              fail(
+                `${rel}: relative import "${specifier}" escapes ${workspaceDir} (ARCHITECTURE.md section 3)`,
+              );
             }
             continue;
           }
 
           // App-to-app source imports must never appear.
           if (/^@?\/?(apps\/)?(web|admin|api)\//.test(specifier)) {
-            fail(`${rel}: cross-application import "${specifier}" is forbidden (ARCHITECTURE.md section 3)`);
+            fail(
+              `${rel}: cross-application import "${specifier}" is forbidden (ARCHITECTURE.md section 3)`,
+            );
           }
 
           // Persistence is confined to apps/api.
-          if (/(^|\/)(@prisma\/client|prisma|@nestjs\/mongoose|mongodb)(\/|$)/.test(specifier) && name !== 'api') {
-            fail(`${rel}: persistence import "${specifier}" is only allowed in apps/api (ARCHITECTURE.md section 5)`);
+          if (
+            /(^|\/)(@prisma\/client|prisma|@nestjs\/mongoose|mongodb)(\/|$)/.test(specifier) &&
+            name !== 'api'
+          ) {
+            fail(
+              `${rel}: persistence import "${specifier}" is only allowed in apps/api (ARCHITECTURE.md section 5)`,
+            );
           }
         }
       }
@@ -136,7 +145,9 @@ async function main() {
   for (const node of edges.keys()) dfs(node);
 
   notes.push(`${edges.size} workspace(s) scanned`);
-  notes.push(`edges: ${[...edges].map(([k, v]) => `${k}->{${[...v].join(',') || '-'}}`).join(' ')}`);
+  notes.push(
+    `edges: ${[...edges].map(([k, v]) => `${k}->{${[...v].join(',') || '-'}}`).join(' ')}`,
+  );
 
   for (const message of notes) console.log(`  ok   ${message}`);
   for (const message of failures) console.error(`  FAIL ${message}`);

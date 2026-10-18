@@ -1,8 +1,8 @@
-import { SectionHeading } from '@me-palnadu/ui';
-import { Navigation } from '../../components/navigation';
-import { PhaseNotice } from '../../components/phase-notice';
+import {SectionHeading} from '@me-palnadu/ui';
+import {Navigation} from '../../components/navigation';
+import {PhaseNotice} from '../../components/phase-notice';
 
-export const metadata = { title: 'Knowledge Hub' };
+export const metadata = {title: 'Knowledge Hub'};
 
 const CONTENTS = [
   'Articles grouped by kind: tutorials, KT guides, troubleshooting, interview preparation',

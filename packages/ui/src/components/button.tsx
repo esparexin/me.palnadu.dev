@@ -1,5 +1,5 @@
-import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react';
-import { cn } from '../lib/cn.js';
+import type {AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode} from 'react';
+import {cn} from '../lib/cn.js';
 
 /**
  * The only button implementation in the repository (UI_UX_STANDARDS 4).

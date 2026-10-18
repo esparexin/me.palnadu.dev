@@ -1,8 +1,8 @@
-import { SectionHeading } from '@me-palnadu/ui';
-import { Navigation } from '../../components/navigation';
-import { PhaseNotice } from '../../components/phase-notice';
+import {SectionHeading} from '@me-palnadu/ui';
+import {Navigation} from '../../components/navigation';
+import {PhaseNotice} from '../../components/phase-notice';
 
-export const metadata = { title: 'Projects' };
+export const metadata = {title: 'Projects'};
 
 const CONTENTS = [
   'Index and detail routes backed by published project records',

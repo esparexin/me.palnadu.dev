@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import {z} from 'zod';
 import {
   ArticleKindSchema,
   ContentStatusSchema,
@@ -10,13 +10,7 @@ import {
   type ContentStatus,
   type Difficulty,
 } from './enums.js';
-import {
-  IdSchema,
-  IsoDateSchema,
-  NonEmptyTextSchema,
-  SlugSchema,
-  toPatchShape,
-} from './common.js';
+import {IdSchema, IsoDateSchema, NonEmptyTextSchema, SlugSchema, toPatchShape} from './common.js';
 
 const ArticleShape = {
   slug: SlugSchema,
@@ -94,7 +88,7 @@ export const ArticlePatchShape = toPatchShape(ArticleBaseSchema.shape);
 export const ArticleUpdateSchema = z.object(ArticlePatchShape).superRefine(articleUpdateRules);
 export type ArticleUpdateInput = z.infer<typeof ArticleUpdateSchema>;
 
-export const ArticleSchema = ArticleBaseSchema.extend({ id: IdSchema });
+export const ArticleSchema = ArticleBaseSchema.extend({id: IdSchema});
 export type Article = z.infer<typeof ArticleSchema>;
 
 export const ArticleSummarySchema = ArticleSchema.pick({

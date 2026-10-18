@@ -1,6 +1,6 @@
-import { readFileSync } from 'node:fs';
+import {readFileSync} from 'node:fs';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {
   BREAKPOINTS,
   COLOR_TOKENS,
@@ -24,7 +24,9 @@ const css = readFileSync(path.join(import.meta.dirname, 'theme.css'), 'utf8');
 // Sub-properties such as `--text-display--line-height` must not be read as a
 // token named "display--line-height", so the name pattern forbids a double hyphen.
 const cssVariables = (prefix: string): string[] =>
-  [...css.matchAll(new RegExp(`--${prefix}-([a-z0-9]+(?:-[a-z0-9]+)*)\\s*:`, 'g'))].map((m) => m[1]);
+  [...css.matchAll(new RegExp(`--${prefix}-([a-z0-9]+(?:-[a-z0-9]+)*)\\s*:`, 'g'))].map(
+    (m) => m[1],
+  );
 
 describe('token parity between theme.css and the runtime mirror', () => {
   it('exposes exactly the same colour tokens in both representations', () => {
@@ -82,7 +84,8 @@ describe('token invariants', () => {
   });
 
   it('keeps motion durations within the documented ceiling', () => {
-    const ms = (token: string) => Number.parseInt(MOTION_TOKENS[token as keyof typeof MOTION_TOKENS], 10);
+    const ms = (token: string) =>
+      Number.parseInt(MOTION_TOKENS[token as keyof typeof MOTION_TOKENS], 10);
     expect(ms('duration-fast')).toBeLessThanOrEqual(ms('duration-base'));
     expect(ms('duration-base')).toBeLessThanOrEqual(ms('duration-slow'));
     expect(ms('duration-slow')).toBeLessThanOrEqual(320);
@@ -103,9 +106,23 @@ describe('token invariants', () => {
 
   it('defines no token outside UI_UX_STANDARDS section 2', () => {
     const allowedColors = new Set([
-      'surface', 'surface-subtle', 'surface-muted', 'text-primary', 'text-secondary',
-      'text-tertiary', 'text-inverse', 'accent', 'accent-hover', 'accent-subtle',
-      'border-default', 'border-subtle', 'focus', 'success', 'warning', 'danger', 'info',
+      'surface',
+      'surface-subtle',
+      'surface-muted',
+      'text-primary',
+      'text-secondary',
+      'text-tertiary',
+      'text-inverse',
+      'accent',
+      'accent-hover',
+      'accent-subtle',
+      'border-default',
+      'border-subtle',
+      'focus',
+      'success',
+      'warning',
+      'danger',
+      'info',
       'accent-text',
     ]);
     for (const token of Object.keys(COLOR_TOKENS)) {

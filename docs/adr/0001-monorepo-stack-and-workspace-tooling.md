@@ -19,14 +19,14 @@ GitHub Actions.
 
 Use **pnpm workspaces + Turborepo** as the monorepo, with:
 
-| Concern | Choice |
-| --- | --- |
-| Public site | Next.js, App Router, TypeScript, Tailwind CSS |
-| Admin | Next.js, App Router, TypeScript, Tailwind CSS, `packages/ui` primitives |
-| API | NestJS, TypeScript |
-| Persistence | MongoDB via Prisma (`ADR-0002`) |
-| Contracts | Zod schemas in `packages/contracts` (`ADR-0003` for auth) |
-| Node | 22 LTS, pinned in `.nvmrc` |
+| Concern     | Choice                                                                  |
+| ----------- | ----------------------------------------------------------------------- |
+| Public site | Next.js, App Router, TypeScript, Tailwind CSS                           |
+| Admin       | Next.js, App Router, TypeScript, Tailwind CSS, `packages/ui` primitives |
+| API         | NestJS, TypeScript                                                      |
+| Persistence | MongoDB via Prisma (`ADR-0002`)                                         |
+| Contracts   | Zod schemas in `packages/contracts` (`ADR-0003` for auth)               |
+| Node        | 22 LTS, pinned in `.nvmrc`                                              |
 
 Task orchestration runs through Turborepo with dependency-aware caching keyed on inputs
 and the lockfile hash.
@@ -51,12 +51,12 @@ and the lockfile hash.
 
 ## Alternatives considered
 
-| Alternative | Why not |
-| --- | --- |
-| npm or Yarn workspaces | No built-in strictness advantage; pnpm's isolated store and install-time scripts policy are a better fit for supply-chain control |
-| Nx | Stronger framework for large graphs; unnecessary for four packages, and its plugin machinery would add configuration to audit |
+| Alternative                                                      | Why not                                                                                                                                                           |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| npm or Yarn workspaces                                           | No built-in strictness advantage; pnpm's isolated store and install-time scripts policy are a better fit for supply-chain control                                 |
+| Nx                                                               | Stronger framework for large graphs; unnecessary for four packages, and its plugin machinery would add configuration to audit                                     |
 | Single Next.js app with route handlers instead of a separate API | Fewer deployables, but it would collapse the authorization boundary and mix public rendering with administration logic; the task also mandates a separate backend |
-| Separate repositories per app | Breaks the SSOT: contracts, tokens, and UI could not be versioned together |
+| Separate repositories per app                                    | Breaks the SSOT: contracts, tokens, and UI could not be versioned together                                                                                        |
 
 ## References
 

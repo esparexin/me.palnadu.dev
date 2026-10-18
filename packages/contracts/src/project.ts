@@ -1,8 +1,5 @@
-import { z } from 'zod';
-import {
-  ContentStatusSchema,
-  type ContentStatus,
-} from './enums.js';
+import {z} from 'zod';
+import {ContentStatusSchema, type ContentStatus} from './enums.js';
 import {
   IdSchema,
   IsoDateSchema,
@@ -35,7 +32,7 @@ const ProjectShape = {
 
 /** Create: a published record must carry its publication date. */
 const projectCreateRules = (
-  value: { status: ContentStatus; publishedAt?: string | undefined },
+  value: {status: ContentStatus; publishedAt?: string | undefined},
   ctx: z.RefinementCtx,
 ) => {
   if (value.status === 'published' && value.publishedAt === undefined) {
@@ -49,7 +46,7 @@ const projectCreateRules = (
 
 /** Patch: only refuse a contradiction that the patch itself introduces. */
 const projectUpdateRules = (
-  value: { status?: ContentStatus | undefined; publishedAt?: string | undefined },
+  value: {status?: ContentStatus | undefined; publishedAt?: string | undefined},
   ctx: z.RefinementCtx,
 ) => {
   if (value.status === 'published' && value.publishedAt === undefined) {
@@ -70,5 +67,5 @@ export const ProjectPatchShape = toPatchShape(ProjectBaseSchema.shape);
 export const ProjectUpdateSchema = z.object(ProjectPatchShape).superRefine(projectUpdateRules);
 export type ProjectUpdateInput = z.infer<typeof ProjectUpdateSchema>;
 
-export const ProjectSchema = ProjectBaseSchema.extend({ id: IdSchema });
+export const ProjectSchema = ProjectBaseSchema.extend({id: IdSchema});
 export type Project = z.infer<typeof ProjectSchema>;

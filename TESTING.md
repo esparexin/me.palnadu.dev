@@ -5,16 +5,16 @@ end-to-end paths. Enforcement state: `SPECIFIED` — see `CI_GATES.md`.
 
 ## 1. Layers
 
-| Layer | Scope | Location | Gate | Required |
-| --- | --- | --- | --- | --- |
-| Unit | Pure functions, schemas, comparators, components in isolation | `src/**/*.test.ts(x)` | 8 (test) | Yes |
-| Contract | Every contracts schema, including invalid-input rejection | `packages/contracts/src/**/*.test.ts` | 8 | Yes |
-| Integration | API modules against a real test database, repository and guard behaviour | `apps/api/test/**/*.int-spec.ts` | 8 | Yes |
-| Architecture | Import boundaries, cycles, banned patterns, package manifests | `tests/architecture/**` | 10 | Yes |
-| Accessibility | Automated axe analysis of critical routes | `tests/e2e/a11y/*.spec.ts` | 4 | Yes |
-| End-to-end | Critical user journeys across web and admin | `tests/e2e/**/*.spec.ts` | 4 | Yes |
-| Smoke (post-deploy) | Production health and rendered content | `tests/smoke/**` | 13 | Yes |
-| Performance | Bundle, LCP, CLS, INP budgets | `tests/performance/**` | 4 | Advisory initially |
+| Layer               | Scope                                                                    | Location                              | Gate     | Required           |
+| ------------------- | ------------------------------------------------------------------------ | ------------------------------------- | -------- | ------------------ |
+| Unit                | Pure functions, schemas, comparators, components in isolation            | `src/**/*.test.ts(x)`                 | 8 (test) | Yes                |
+| Contract            | Every contracts schema, including invalid-input rejection                | `packages/contracts/src/**/*.test.ts` | 8        | Yes                |
+| Integration         | API modules against a real test database, repository and guard behaviour | `apps/api/test/**/*.int-spec.ts`      | 8        | Yes                |
+| Architecture        | Import boundaries, cycles, banned patterns, package manifests            | `tests/architecture/**`               | 10       | Yes                |
+| Accessibility       | Automated axe analysis of critical routes                                | `tests/e2e/a11y/*.spec.ts`            | 4        | Yes                |
+| End-to-end          | Critical user journeys across web and admin                              | `tests/e2e/**/*.spec.ts`              | 4        | Yes                |
+| Smoke (post-deploy) | Production health and rendered content                                   | `tests/smoke/**`                      | 13       | Yes                |
+| Performance         | Bundle, LCP, CLS, INP budgets                                            | `tests/performance/**`                | 4        | Advisory initially |
 
 A change is not complete until its behaviour is covered at the layer that matches its
 risk: a calculation gets a unit test, an endpoint gets an integration test, a user
@@ -25,15 +25,15 @@ journey gets an end-to-end test.
 Floors are enforced by gate 8 once coverage tooling is installed. Until then they are
 targets, and no run has demonstrated them.
 
-| Package / app | Lines | Branches | Functions | Rationale |
-| --- | --- | --- | --- | --- |
-| `packages/contracts` | 95% | 95% | 100% | A schema defect corrupts every consumer |
-| `packages/shared` | 100% | 100% | 100% | Small, pure, and the SSOT for calculations |
-| `packages/design-tokens` | 100% | — | 100% | Data only; completeness is trivially checkable |
-| `packages/ui` | 80% | 75% | 90% | Accessibility behaviour matters more than the line count |
-| `apps/api` | 85% | 80% | 90% | Guards, validation, and business rules |
-| `apps/admin` | 70% | 65% | 80% | Lower risk: every write is API-validated |
-| `apps/web` | 70% | 65% | 80% | Interaction specs in `UI_UX_STANDARDS.md` §7 are covered by e2e |
+| Package / app            | Lines | Branches | Functions | Rationale                                                       |
+| ------------------------ | ----- | -------- | --------- | --------------------------------------------------------------- |
+| `packages/contracts`     | 95%   | 95%      | 100%      | A schema defect corrupts every consumer                         |
+| `packages/shared`        | 100%  | 100%     | 100%      | Small, pure, and the SSOT for calculations                      |
+| `packages/design-tokens` | 100%  | —        | 100%      | Data only; completeness is trivially checkable                  |
+| `packages/ui`            | 80%   | 75%      | 90%       | Accessibility behaviour matters more than the line count        |
+| `apps/api`               | 85%   | 80%      | 90%       | Guards, validation, and business rules                          |
+| `apps/admin`             | 70%   | 65%      | 80%       | Lower risk: every write is API-validated                        |
+| `apps/web`               | 70%   | 65%      | 80%       | Interaction specs in `UI_UX_STANDARDS.md` §7 are covered by e2e |
 
 Global floor: 80% lines. Excluded from coverage: generated code, Prisma client output,
 type-only files, and `*.d.ts`.
@@ -86,16 +86,16 @@ single source of truth rather than a documentation file:
 
 `tests/architecture/` holds at least:
 
-| Test | Asserts |
-| --- | --- |
-| `import-boundaries.spec.ts` | The matrix in `ARCHITECTURE.md` §3, row by row |
-| `no-cycles.spec.ts` | No import cycle within or across packages |
-| `no-persistence-outside-api.spec.ts` | Prisma/Mongo imports only under `apps/api` |
-| `no-public-secrets.spec.ts` | No `NEXT_PUBLIC_*` name that looks like a secret |
-| `package-manifests.spec.ts` | Each workspace declares exactly the dependencies it imports; no missing or unused entry |
-| `no-barrel-cycles.spec.ts` | No barrel file beyond a package's public entry point |
-| `required-docs.spec.ts` | Every governance document in the `AGENTS.md` index exists |
-| `gate-inventory.spec.ts` | Every job named in `CI_GATES.md` exists in a workflow and vice versa |
+| Test                                 | Asserts                                                                                 |
+| ------------------------------------ | --------------------------------------------------------------------------------------- |
+| `import-boundaries.spec.ts`          | The matrix in `ARCHITECTURE.md` §3, row by row                                          |
+| `no-cycles.spec.ts`                  | No import cycle within or across packages                                               |
+| `no-persistence-outside-api.spec.ts` | Prisma/Mongo imports only under `apps/api`                                              |
+| `no-public-secrets.spec.ts`          | No `NEXT_PUBLIC_*` name that looks like a secret                                        |
+| `package-manifests.spec.ts`          | Each workspace declares exactly the dependencies it imports; no missing or unused entry |
+| `no-barrel-cycles.spec.ts`           | No barrel file beyond a package's public entry point                                    |
+| `required-docs.spec.ts`              | Every governance document in the `AGENTS.md` index exists                               |
+| `gate-inventory.spec.ts`             | Every job named in `CI_GATES.md` exists in a workflow and vice versa                    |
 
 ## 7. Critical end-to-end paths
 
@@ -163,23 +163,23 @@ the dev server.
 Advisory in the first phase; promoted to required once two consecutive weeks of clean
 runs are evidenced.
 
-| Budget | Threshold |
-| --- | --- |
-| LCP (mobile, production build) | ≤ 2.5s |
-| CLS | ≤ 0.1 |
-| INP | ≤ 200ms |
-| Initial JS for a public route (gzip, excluding shared cache) | ≤ 180KB |
-| Largest contentful image | ≤ 200KB |
-| API p95 for a public list read | ≤ 300ms |
+| Budget                                                       | Threshold |
+| ------------------------------------------------------------ | --------- |
+| LCP (mobile, production build)                               | ≤ 2.5s    |
+| CLS                                                          | ≤ 0.1     |
+| INP                                                          | ≤ 200ms   |
+| Initial JS for a public route (gzip, excluding shared cache) | ≤ 180KB   |
+| Largest contentful image                                     | ≤ 200KB   |
+| API p95 for a public list read                               | ≤ 300ms   |
 
 ## 10. What must pass
 
-| Condition | Requirement |
-| --- | --- |
+| Condition              | Requirement                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------- |
 | Pull request to `main` | Gate 1, 2, 3, 4, 5, 6, 7, 9, 10, 11 and the contract-conformance suite are green |
-| Merge to `main` | The above, plus gate 12 verified for that head commit |
-| Release | Gates 1–13 green, evidence recorded in `RUNBOOK.md` |
-| Promotion | Advisory gates become required only by the rule in `CI_GATES.md` §4 |
+| Merge to `main`        | The above, plus gate 12 verified for that head commit                            |
+| Release                | Gates 1–13 green, evidence recorded in `RUNBOOK.md`                              |
+| Promotion              | Advisory gates become required only by the rule in `CI_GATES.md` §4              |
 
 No failure is acceptable because "it is only a test". A failing required gate blocks the
 merge; if the gate is wrong, that is an ADR plus a fix to the gate, never a suppression.

@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
-import { HealthModule } from './modules/health/health.module.js';
-import { ENV } from './common/tokens.js';
-import { parseEnv } from './config/env.js';
+import {Module} from '@nestjs/common';
+import {HealthModule} from './modules/health/health.module.js';
+import {ENV} from './common/tokens.js';
+import {parseEnv} from './config/env.js';
 
 /**
  * The root module.
@@ -12,6 +12,6 @@ import { parseEnv } from './config/env.js';
  */
 @Module({
   imports: [HealthModule],
-  providers: [{ provide: ENV, useValue: parseEnv(process.env) }],
+  providers: [{provide: ENV, useValue: parseEnv(process.env)}],
 })
 export class AppModule {}

@@ -13,8 +13,8 @@
  * Complements scripts/ci-integrity.mjs, which looks for false-green patterns
  * rather than for privilege problems.
  */
-import { readFile, readdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import {readFile, readdir} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
@@ -66,7 +66,10 @@ async function main() {
       fail(`${file}: permissions block does not start from contents: read`);
     }
 
-    if (/pull_request_target/.test(body) && /ref:\s*\$\{\{\s*github\.event\.pull_request\.head/m.test(body)) {
+    if (
+      /pull_request_target/.test(body) &&
+      /ref:\s*\$\{\{\s*github\.event\.pull_request\.head/m.test(body)
+    ) {
       fail(`${file}: pull_request_target checks out untrusted PR code`);
     }
 

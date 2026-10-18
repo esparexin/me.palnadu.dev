@@ -9,14 +9,14 @@ or an API response. See `GOVERNANCE.md` §6.
 
 ## 1. Assets
 
-| Asset | Why it matters |
-| --- | --- |
-| Published portfolio content | Professional reputation; falsification is a real harm |
-| Draft and unpublished content | Not yet public; leakage is a disclosure |
-| Administrator identity and sessions | Full content control, including deletion |
-| Contact submissions | Personal data of third parties |
-| OAuth, database, and provider credentials | Full compromise of the above |
-| Build and deployment pipelines | Supply-chain execution against all of the above |
+| Asset                                     | Why it matters                                        |
+| ----------------------------------------- | ----------------------------------------------------- |
+| Published portfolio content               | Professional reputation; falsification is a real harm |
+| Draft and unpublished content             | Not yet public; leakage is a disclosure               |
+| Administrator identity and sessions       | Full content control, including deletion              |
+| Contact submissions                       | Personal data of third parties                        |
+| OAuth, database, and provider credentials | Full compromise of the above                          |
+| Build and deployment pipelines            | Supply-chain execution against all of the above       |
 
 ## 2. Actors and trust boundaries
 
@@ -47,23 +47,23 @@ Trust assumptions, each falsifiable:
 
 ## 3. Threats and controls
 
-| Threat | Control | Verification |
-| --- | --- | --- |
-| Unauthorized content write | Bearer session verified by `AdminSessionGuard` + DB allowlist lookup per request | API test with no token, bad token, expired token, revoked allowlist |
-| Forged role claim | Role re-read from MongoDB per request; token `role` is advisory | Test with a token carrying an elevated role for a non-allowlisted user |
-| Stolen session token | 15-minute expiry, `httpOnly` cookie, server-side session record, `tokenVersion` revocation, `Escape`/timeout logout | Revocation test + expiry test |
-| XSS in article body | No `dangerouslySetInnerHTML`; Markdown sanitised server-side; React escaping; CSP without `unsafe-html` | Render test asserting no script executes; header check |
-| CSRF against a write | API accepts `Authorization: Bearer` only and never authenticates by cookie, so browser credentials are never ambient; a custom header forces preflight | Cross-origin request test returns 401/403 |
-| Cross-origin data theft | Explicit CORS allowlist, `credentials: false` | Preflight test from a disallowed origin |
-| Spam on the contact form | Per-IP rate limit, honeypot field, length caps, no HTML rendering of submissions | Rate-limit test; honeypot test |
-| Content scraping of drafts | Draft filter applied in the API query, not in the UI | Unauthenticated request for a draft returns 404 |
-| Secret committed to Git | `.gitignore` + gate 12 secret scan + `gh secret set` only, never a value in a file | Scan run + `git log -p` audit |
-| Dependency compromise | Lockfile with `--frozen-lockfile`, advisory audit gate, minimal dependency count | Gate 7 run |
-| Pipeline injection | `permissions: contents: read`, actions pinned to commit SHAs, no secret interpolation into `run:` blocks, no `pull_request_target` checkout of PR code | Workflow review + gate 6 |
-| Mass assignment | Write schemas are explicit `z.object` allowlists; `unknown` keys rejected | Test posting an unexpected field |
-| Prototype/JSON pollution | Nest body parser limits, schemas strip unknown keys | Test with `__proto__` payload |
-| Denial of service on the API | Rate limits, request body size limits, pagination caps | Load check in staging |
-| Audit trail tampering | Audit writes are append-only from the application; the API exposes no delete/update route for `AuditLog` | Route inventory test |
+| Threat                       | Control                                                                                                                                                | Verification                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Unauthorized content write   | Bearer session verified by `AdminSessionGuard` + DB allowlist lookup per request                                                                       | API test with no token, bad token, expired token, revoked allowlist    |
+| Forged role claim            | Role re-read from MongoDB per request; token `role` is advisory                                                                                        | Test with a token carrying an elevated role for a non-allowlisted user |
+| Stolen session token         | 15-minute expiry, `httpOnly` cookie, server-side session record, `tokenVersion` revocation, `Escape`/timeout logout                                    | Revocation test + expiry test                                          |
+| XSS in article body          | No `dangerouslySetInnerHTML`; Markdown sanitised server-side; React escaping; CSP without `unsafe-html`                                                | Render test asserting no script executes; header check                 |
+| CSRF against a write         | API accepts `Authorization: Bearer` only and never authenticates by cookie, so browser credentials are never ambient; a custom header forces preflight | Cross-origin request test returns 401/403                              |
+| Cross-origin data theft      | Explicit CORS allowlist, `credentials: false`                                                                                                          | Preflight test from a disallowed origin                                |
+| Spam on the contact form     | Per-IP rate limit, honeypot field, length caps, no HTML rendering of submissions                                                                       | Rate-limit test; honeypot test                                         |
+| Content scraping of drafts   | Draft filter applied in the API query, not in the UI                                                                                                   | Unauthenticated request for a draft returns 404                        |
+| Secret committed to Git      | `.gitignore` + gate 12 secret scan + `gh secret set` only, never a value in a file                                                                     | Scan run + `git log -p` audit                                          |
+| Dependency compromise        | Lockfile with `--frozen-lockfile`, advisory audit gate, minimal dependency count                                                                       | Gate 7 run                                                             |
+| Pipeline injection           | `permissions: contents: read`, actions pinned to commit SHAs, no secret interpolation into `run:` blocks, no `pull_request_target` checkout of PR code | Workflow review + gate 6                                               |
+| Mass assignment              | Write schemas are explicit `z.object` allowlists; `unknown` keys rejected                                                                              | Test posting an unexpected field                                       |
+| Prototype/JSON pollution     | Nest body parser limits, schemas strip unknown keys                                                                                                    | Test with `__proto__` payload                                          |
+| Denial of service on the API | Rate limits, request body size limits, pagination caps                                                                                                 | Load check in staging                                                  |
+| Audit trail tampering        | Audit writes are append-only from the application; the API exposes no delete/update route for `AuditLog`                                               | Route inventory test                                                   |
 
 ## 4. Administrator authentication
 
@@ -75,15 +75,13 @@ stored, transmitted, or hashed, because no local credential exists.
 Administration is granted **only** to explicitly enumerated GitHub accounts, matched on
 the immutable numeric GitHub user id — never on the login, which can be renamed.
 
-| GitHub id | Login | Name | Role |
-| --- | --- | --- | --- |
+| GitHub id   | Login       | Name               | Role    |
+| ----------- | ----------- | ------------------ | ------- |
 | `230946749` | `esparexin` | Kalyan V Medaboina | `owner` |
 
 ```ts
 // packages/contracts — the allowlist is a contract, so client and server agree.
-export const ADMIN_ALLOWLIST = [
-  { githubId: 230946749, login: 'esparexin', role: 'owner' },
-] as const;
+export const ADMIN_ALLOWLIST = [{githubId: 230946749, login: 'esparexin', role: 'owner'}] as const;
 ```
 
 Rules:
@@ -110,16 +108,16 @@ Rules:
 
 ### 4.3 Token and cookie properties
 
-| Property | Value | Reason |
-| --- | --- | --- |
-| Strategy | Auth.js JWT (no database session adapter needed) | One fewer component; sessions are still recorded in the API's own `AdminSession` collection for revocation and audit |
-| Signing | HS256, `AUTH_SECRET` ≥ 32 bytes, identical value in admin and API environments | Both components verify independently; rotation invalidates all sessions by design |
-| Access lifetime | 15 minutes | Limits the value of a stolen token |
-| Session lifetime | 8 hours absolute, refreshed at most every 15 minutes | Bounded administrator workday |
-| Algorithm pinning | `algorithms: ['HS256']` on verification | Blocks `alg: none` and algorithm-confusion attacks |
-| Claims | `sub` (internal user id), `gh_id`, `role`, `sid`, `tv` (token version), `iss`, `aud`, `iat`, `exp` | Identity, authority hint, session handle, revocation version |
-| Cookie flags | `httpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, host-only, `__Secure-` prefix | `Lax` is required for the OAuth redirect to return the session cookie; `__Host-` is impossible with `SameSite=Lax` plus an OAuth round trip, so `__Secure-` is the strongest workable prefix |
-| Rotation | Changing `AUTH_SECRET` invalidates every session immediately | Emergency revocation lever |
+| Property          | Value                                                                                              | Reason                                                                                                                                                                                       |
+| ----------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Strategy          | Auth.js JWT (no database session adapter needed)                                                   | One fewer component; sessions are still recorded in the API's own `AdminSession` collection for revocation and audit                                                                         |
+| Signing           | HS256, `AUTH_SECRET` ≥ 32 bytes, identical value in admin and API environments                     | Both components verify independently; rotation invalidates all sessions by design                                                                                                            |
+| Access lifetime   | 15 minutes                                                                                         | Limits the value of a stolen token                                                                                                                                                           |
+| Session lifetime  | 8 hours absolute, refreshed at most every 15 minutes                                               | Bounded administrator workday                                                                                                                                                                |
+| Algorithm pinning | `algorithms: ['HS256']` on verification                                                            | Blocks `alg: none` and algorithm-confusion attacks                                                                                                                                           |
+| Claims            | `sub` (internal user id), `gh_id`, `role`, `sid`, `tv` (token version), `iss`, `aud`, `iat`, `exp` | Identity, authority hint, session handle, revocation version                                                                                                                                 |
+| Cookie flags      | `httpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, host-only, `__Secure-` prefix                      | `Lax` is required for the OAuth redirect to return the session cookie; `__Host-` is impossible with `SameSite=Lax` plus an OAuth round trip, so `__Secure-` is the strongest workable prefix |
+| Rotation          | Changing `AUTH_SECRET` invalidates every session immediately                                       | Emergency revocation lever                                                                                                                                                                   |
 
 `AUTH_SECRET`, the GitHub client id, and the GitHub client secret exist only in the
 Vercel and Render environment stores. `.env.example` documents the key names with empty
@@ -175,18 +173,18 @@ once the GitHub OAuth app exists; until then this control remains `SPECIFIED`.
 
 ## 5. Public surface hardening
 
-| Control | Implementation |
-| --- | --- |
-| Security headers | CSP (`default-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'none'`, no `unsafe-eval` in production), `Strict-Transport-Security` (max-age ≥ 31536000, includeSubDomains), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` denying camera, microphone, geolocation |
-| CORS | Explicit origin allowlist per environment; `credentials: false`; `Access-Control-Max-Age: 600` |
-| Rate limiting | `@nestjs/throttler` — public reads 120/min per IP, contact submission 5/hour per IP, admin writes 300/min per user |
-| Rate-limit storage | In-memory per API instance. **Limitation:** limits are per instance, so horizontal scaling weakens them. The API is therefore pinned to a single instance with this documented rationale; moving to a shared store requires an ADR |
-| Body limits | JSON body capped at 256KB; Markdown fields capped by schema length |
-| Input | Every write validated by a contracts schema; unknown keys rejected; no dynamic `Object.assign` onto persisted documents |
-| Rendering | React escaping only; Markdown → sanitised HTML on the API; no raw HTML injection |
-| Files | No public upload path in the public app; admin media uploads are stored outside the document root, validated by MIME and size, and served with `Content-Disposition` and a fixed content type |
-| Draft isolation | Draft filtering in the API query builder; unauthenticated draft access returns 404, never 403 (403 would confirm existence) |
-| Error responses | Contract error envelope only; no stack traces, driver messages, or collection names |
+| Control            | Implementation                                                                                                                                                                                                                                                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Security headers   | CSP (`default-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'none'`, no `unsafe-eval` in production), `Strict-Transport-Security` (max-age ≥ 31536000, includeSubDomains), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` denying camera, microphone, geolocation |
+| CORS               | Explicit origin allowlist per environment; `credentials: false`; `Access-Control-Max-Age: 600`                                                                                                                                                                                                                                                         |
+| Rate limiting      | `@nestjs/throttler` — public reads 120/min per IP, contact submission 5/hour per IP, admin writes 300/min per user                                                                                                                                                                                                                                     |
+| Rate-limit storage | In-memory per API instance. **Limitation:** limits are per instance, so horizontal scaling weakens them. The API is therefore pinned to a single instance with this documented rationale; moving to a shared store requires an ADR                                                                                                                     |
+| Body limits        | JSON body capped at 256KB; Markdown fields capped by schema length                                                                                                                                                                                                                                                                                     |
+| Input              | Every write validated by a contracts schema; unknown keys rejected; no dynamic `Object.assign` onto persisted documents                                                                                                                                                                                                                                |
+| Rendering          | React escaping only; Markdown → sanitised HTML on the API; no raw HTML injection                                                                                                                                                                                                                                                                       |
+| Files              | No public upload path in the public app; admin media uploads are stored outside the document root, validated by MIME and size, and served with `Content-Disposition` and a fixed content type                                                                                                                                                          |
+| Draft isolation    | Draft filtering in the API query builder; unauthenticated draft access returns 404, never 403 (403 would confirm existence)                                                                                                                                                                                                                            |
+| Error responses    | Contract error envelope only; no stack traces, driver messages, or collection names                                                                                                                                                                                                                                                                    |
 
 ## 6. Frontend responsibilities
 
@@ -202,12 +200,12 @@ once the GitHub OAuth app exists; until then this control remains `SPECIFIED`.
 
 ## 7. Secrets
 
-| Class | Storage | Never |
-| --- | --- | --- |
+| Class                                                     | Storage                                                             | Never                                                            |
+| --------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `AUTH_SECRET` | Vercel and Render environment stores; GitHub Actions secrets for CI | In any file, including `.env.example` values, fixtures, and docs |
-| `DATABASE_URL` (Atlas URI) | Render and Vercel environment stores | Committed; the URI embeds credentials |
-| OAuth callback and CORS URLs | Environment values | Hardcoded in source |
-| Third-party tokens (analytics, email) | Provider stores | Committed |
+| `DATABASE_URL` (Atlas URI)                                | Render and Vercel environment stores                                | Committed; the URI embeds credentials                            |
+| OAuth callback and CORS URLs                              | Environment values                                                  | Hardcoded in source                                              |
+| Third-party tokens (analytics, email)                     | Provider stores                                                     | Committed                                                        |
 
 Procedure:
 

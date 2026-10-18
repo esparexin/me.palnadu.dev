@@ -1,6 +1,6 @@
-import { ButtonLink, Container, SectionHeading } from '@me-palnadu/ui';
-import { Navigation } from '../components/navigation';
-import { PhaseNotice } from '../components/phase-notice';
+import {ButtonLink, Container, SectionHeading} from '@me-palnadu/ui';
+import {Navigation} from '../components/navigation';
+import {PhaseNotice} from '../components/phase-notice';
 
 /**
  * Home.
@@ -22,8 +22,8 @@ export default function HomePage() {
             </p>
             <h1 className="text-display font-semibold">Endpoint management, done properly.</h1>
             <p className="mt-6 max-w-measure text-lead text-text-secondary">
-              Career timeline, projects, resume, and a technical Knowledge Hub covering
-              endpoint management, MDM, and security.
+              Career timeline, projects, resume, and a technical Knowledge Hub covering endpoint
+              management, MDM, and security.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <ButtonLink href="/resume" size="lg">

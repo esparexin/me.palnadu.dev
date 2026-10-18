@@ -83,18 +83,18 @@ package, no monorepo-wide `constants` dumping ground. `packages/shared` is not a
 
 Allowed import matrix. Anything not listed is forbidden.
 
-| Importer → Imported | contracts | design-tokens | shared | ui | web | admin | api |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| **contracts** | — | no | no | no | no | no | no |
-| **design-tokens** | no | — | no | no | no | no | no |
-| **shared** | yes | no | — | no | no | no | no |
-| **ui** | yes | yes | optional | — | no | no | no |
-| **api** | yes | no | yes | no | no | no | — |
-| **admin** | yes | yes | yes | yes | **no** | — | **no** |
-| **web** | yes | yes | yes | yes | — | **no** | **no** |
-| **scripts** | optional | no | optional | no | no | no | no |
-| **tests/architecture** | yes | no | yes | no | reads only | reads only | reads only |
-| **tests/e2e** | no | no | no | no | black-box | black-box | black-box |
+| Importer → Imported    | contracts | design-tokens | shared   | ui  | web        | admin      | api        |
+| ---------------------- | --------- | ------------- | -------- | --- | ---------- | ---------- | ---------- |
+| **contracts**          | —         | no            | no       | no  | no         | no         | no         |
+| **design-tokens**      | no        | —             | no       | no  | no         | no         | no         |
+| **shared**             | yes       | no            | —        | no  | no         | no         | no         |
+| **ui**                 | yes       | yes           | optional | —   | no         | no         | no         |
+| **api**                | yes       | no            | yes      | no  | no         | no         | —          |
+| **admin**              | yes       | yes           | yes      | yes | **no**     | —          | **no**     |
+| **web**                | yes       | yes           | yes      | yes | —          | **no**     | **no**     |
+| **scripts**            | optional  | no            | optional | no  | no         | no         | no         |
+| **tests/architecture** | yes       | no            | yes      | no  | reads only | reads only | reads only |
+| **tests/e2e**          | no        | no            | no       | no  | black-box  | black-box  | black-box  |
 
 Forbidden, without exception:
 
@@ -102,13 +102,14 @@ Forbidden, without exception:
 - `ui → apps/*`, `shared → apps/*`, `contracts → apps/*`, `tokens → apps/*`
 - any import from `packages/*` into `apps/api/prisma` or the Prisma client
 - any relative import that reaches above a workspace package boundary
-  (`../../apps/web/...`) — use the package name or the `@/` alias *within* a package
+  (`../../apps/web/...`) — use the package name or the `@/` alias _within_ a package
 
 Cross-app integration is HTTP only, through the typed client in `packages/contracts`.
 
 ## 4. Package contracts
 
 ### `packages/contracts`
+
 **Owns:** Zod schemas, domain types inferred from them, all enums and string unions
 (`ExperienceKind`, `ArticleKind`, `ArticleStatus`, `ProjectStatus`, `Role`), error codes
 and the API error envelope, pagination and sort shapes, API route path constants, and
@@ -120,6 +121,7 @@ Node-only built-ins beyond `zod`'s needs.
 **Public surface:** one entry point re-exporting everything.
 
 ### `packages/design-tokens`
+
 **Owns:** the token definitions — color, typography scale, spacing, radius, shadow,
 motion durations and easings, breakpoints, z-index — emitted as TypeScript constants
 for runtime consumers and CSS custom properties for the design system. Owns the
@@ -131,6 +133,7 @@ Tailwind preset consumed by both Next.js apps.
 theme primitives of their own.
 
 ### `packages/shared`
+
 **Owns:** framework-free functions with a single named purpose and a unit test —
 `slugify`, `computeTenure`, `computeReadingTime`, `compareExperience`, `comparePublishedDesc`,
 `formatDateRange`, `clampPage`, plus small result types.
@@ -140,6 +143,7 @@ theme primitives of their own.
 **Rule:** if a utility needs a framework, it does not belong here.
 
 ### `packages/ui`
+
 **Owns:** accessible primitives — `Button`, `IconButton`, `Input`, `Textarea`, `Select`,
 `Checkbox`, `Dialog`, `Popover`, `Tabs`, `Badge`, `Card`, `SectionHeading`, `Container`,
 `Prose`, `Skeleton`, `Toast` — plus the `cn` class-merge helper and shared
@@ -153,41 +157,44 @@ router-coupled behaviour. A primitive that needs the router belongs in the app.
 ## 5. Application boundaries
 
 ### `apps/web` — public portfolio
+
 Responsive, SEO-first, read-only against the API. Routes:
 
-| Route | Purpose |
-| --- | --- |
-| `/` | Hero with **View Resume** and **Explore Experience** CTAs, highlights |
-| `/experience` | Career timeline — desktop horizontal, mobile swipe slider |
-| `/projects` and `/projects/[slug]` | Project index and detail |
+| Route                                | Purpose                                                                           |
+| ------------------------------------ | --------------------------------------------------------------------------------- |
+| `/`                                  | Hero with **View Resume** and **Explore Experience** CTAs, highlights             |
+| `/experience`                        | Career timeline — desktop horizontal, mobile swipe slider                         |
+| `/projects` and `/projects/[slug]`   | Project index and detail                                                          |
 | `/knowledge` and `/knowledge/[slug]` | Knowledge Hub by kind: tutorials, KT guides, troubleshooting, interview questions |
-| `/resume` | Structured resume rendered from resume records |
-| `/contact` | Contact form posting to the API |
+| `/resume`                            | Structured resume rendered from resume records                                    |
+| `/contact`                           | Contact form posting to the API                                                   |
 
 Requirements: metadata API on every route, `sitemap.xml`, `robots.txt`, JSON-LD for
 `Person` and `CreativeWork`, no interactive element that blocks normal page scrolling.
 Only `draft`-free published content is requested; the API is the filter.
 
 ### `apps/admin` — administration UI
+
 Session-authenticated authoring for content, media, and settings. Routes:
 
-| Route | Purpose |
-| --- | --- |
-| `/login` | GitHub OAuth entry point |
-| `/(dashboard)` | Overview |
-| `/(dashboard)/experience` | Career timeline entries CRUD |
-| `/(dashboard)/projects` | Projects CRUD |
-| `/(dashboard)/skills` | Skills CRUD |
-| `/(dashboard)/resume` | Resume sections and document |
-| `/(dashboard)/knowledge` | Articles CRUD, filtered by kind and status |
-| `/(dashboard)/messages` | Contact submissions |
-| `/(dashboard)/audit` | Audit log |
+| Route                     | Purpose                                    |
+| ------------------------- | ------------------------------------------ |
+| `/login`                  | GitHub OAuth entry point                   |
+| `/(dashboard)`            | Overview                                   |
+| `/(dashboard)/experience` | Career timeline entries CRUD               |
+| `/(dashboard)/projects`   | Projects CRUD                              |
+| `/(dashboard)/skills`     | Skills CRUD                                |
+| `/(dashboard)/resume`     | Resume sections and document               |
+| `/(dashboard)/knowledge`  | Articles CRUD, filtered by kind and status |
+| `/(dashboard)/messages`   | Contact submissions                        |
+| `/(dashboard)/audit`      | Audit log                                  |
 
 Rules: no public registration, no user-management screens, every form validated with
 contracts schemas before submit **and** re-validated by the API, no raw HTML input
 elements, and no assumption that a hidden control equals an authorization decision.
 
 ### `apps/api` — the only authority
+
 Owns business logic, validation enforcement, persistence, authorization decisions,
 audit logging, and the media pipeline. Structure:
 
@@ -211,21 +218,21 @@ single contracts-backed pipe; every write emits an audit entry; Prisma is import
 
 ## 6. Folder ownership
 
-| Path | Owner | Rule |
-| --- | --- | --- |
-| `packages/contracts/src/**` | contracts owner | No edits without an ADR if the public surface changes shape |
-| `packages/design-tokens/**` | design owner | Token values change here and nowhere else |
-| `packages/ui/src/components/**` | design owner | One component per file, named after the file |
-| `packages/shared/src/**` | contracts owner | Each file has a test in `__tests__/` |
-| `apps/api/src/modules/**` | api owner | One module per domain collection |
-| `apps/api/prisma/**` | api owner | Schema changes require a migration note in the PR |
-| `apps/web/src/app/**` | web owner | Route segments only; logic in `lib/` or components |
-| `apps/admin/src/app/**` | admin owner | Server actions must re-check session |
-| `content/**` | owner | Seed/reference only; never imported by app code at runtime |
-| `scripts/**` | ci owner | Gate scripts must exit non-zero on failure |
-| `tests/architecture/**` | ci owner | Boundary tests live here |
-| `docs/adr/**` | owner | Append-only in meaning; supersede rather than rewrite |
-| `.github/workflows/**` | owner | No weakening edits without an ADR and an ADR-linked PR |
+| Path                            | Owner           | Rule                                                        |
+| ------------------------------- | --------------- | ----------------------------------------------------------- |
+| `packages/contracts/src/**`     | contracts owner | No edits without an ADR if the public surface changes shape |
+| `packages/design-tokens/**`     | design owner    | Token values change here and nowhere else                   |
+| `packages/ui/src/components/**` | design owner    | One component per file, named after the file                |
+| `packages/shared/src/**`        | contracts owner | Each file has a test in `__tests__/`                        |
+| `apps/api/src/modules/**`       | api owner       | One module per domain collection                            |
+| `apps/api/prisma/**`            | api owner       | Schema changes require a migration note in the PR           |
+| `apps/web/src/app/**`           | web owner       | Route segments only; logic in `lib/` or components          |
+| `apps/admin/src/app/**`         | admin owner     | Server actions must re-check session                        |
+| `content/**`                    | owner           | Seed/reference only; never imported by app code at runtime  |
+| `scripts/**`                    | ci owner        | Gate scripts must exit non-zero on failure                  |
+| `tests/architecture/**`         | ci owner        | Boundary tests live here                                    |
+| `docs/adr/**`                   | owner           | Append-only in meaning; supersede rather than rewrite       |
+| `.github/workflows/**`          | owner           | No weakening edits without an ADR and an ADR-linked PR      |
 
 An owner is the only party who may approve changes in their path. This is enforced by
 review discipline in Phase 2 and by branch protection once configured (gate 12).
@@ -236,18 +243,18 @@ MongoDB via Prisma, one collection per entity. MongoDB Atlas for all environment
 local development uses a container or a separate Atlas development cluster. The
 choice is recorded in `docs/adr/0002`.
 
-| Collection | Purpose | Key fields |
-| --- | --- | --- |
-| `AdminUser` | Allowlisted GitHub identities | `githubId` (unique), `login`, `role`, `tokenVersion`, `lastLoginAt` |
-| `AdminSession` | Server-side session records for revocation and audit | `sid` (unique), `userId`, `ip`, `userAgent`, `createdAt`, `lastSeenAt`, `revokedAt` |
-| `Experience` | Career timeline entries | `org`, `title`, `startDate`, `endDate`, `current`, `highlights[]`, `tech[]`, `sortIndex`, `published` |
-| `Project` | Portfolio projects | `slug` (unique), `title`, `summary`, `body`, `role`, `tech[]`, `links`, `status`, `featured`, `publishedAt` |
-| `Skill` | Skill taxonomy | `name`, `category`, `proficiency`, `sortIndex` |
-| `ResumeSection` | Ordered resume blocks | `kind`, `heading`, `body`, `sortIndex` |
-| `ResumeDocument` | Versioned resume | `version`, `headline`, `fileUrl`, `isCurrent` |
-| `Article` | Knowledge Hub content | `slug` (unique), `kind`, `title`, `excerpt`, `body`, `tags[]`, `status`, `publishedAt` |
-| `ContactMessage` | Public form submissions | `name`, `email`, `message`, `status`, `createdAt` |
-| `AuditLog` | Every administrative write | `actorId`, `action`, `entityType`, `entityId`, `at`, `meta` |
+| Collection       | Purpose                                              | Key fields                                                                                                  |
+| ---------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `AdminUser`      | Allowlisted GitHub identities                        | `githubId` (unique), `login`, `role`, `tokenVersion`, `lastLoginAt`                                         |
+| `AdminSession`   | Server-side session records for revocation and audit | `sid` (unique), `userId`, `ip`, `userAgent`, `createdAt`, `lastSeenAt`, `revokedAt`                         |
+| `Experience`     | Career timeline entries                              | `org`, `title`, `startDate`, `endDate`, `current`, `highlights[]`, `tech[]`, `sortIndex`, `published`       |
+| `Project`        | Portfolio projects                                   | `slug` (unique), `title`, `summary`, `body`, `role`, `tech[]`, `links`, `status`, `featured`, `publishedAt` |
+| `Skill`          | Skill taxonomy                                       | `name`, `category`, `proficiency`, `sortIndex`                                                              |
+| `ResumeSection`  | Ordered resume blocks                                | `kind`, `heading`, `body`, `sortIndex`                                                                      |
+| `ResumeDocument` | Versioned resume                                     | `version`, `headline`, `fileUrl`, `isCurrent`                                                               |
+| `Article`        | Knowledge Hub content                                | `slug` (unique), `kind`, `title`, `excerpt`, `body`, `tags[]`, `status`, `publishedAt`                      |
+| `ContactMessage` | Public form submissions                              | `name`, `email`, `message`, `status`, `createdAt`                                                           |
+| `AuditLog`       | Every administrative write                           | `actorId`, `action`, `entityType`, `entityId`, `at`, `meta`                                                 |
 
 Derived values are never stored as independent sources of truth. Tenure length,
 reading time, and ordering are **computed** by `packages/shared` from the fields
@@ -305,10 +312,10 @@ app or package cannot be added without a corresponding boundary decision.
 An exception is permitted only when recorded in `docs/exceptions.md` per
 `GOVERNANCE.md` §5. Known candidates at the time of writing, none approved:
 
-| Candidate | Why it might be needed | Compensating control |
-| --- | --- | --- |
+| Candidate                                  | Why it might be needed              | Compensating control                                                                                                                                       |
+| ------------------------------------------ | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `web → api` DTO reuse in server components | Avoiding a duplicated response type | Import the type from `contracts`, not the controller; the boundary test targets value imports of app code, not type-only imports of the published contract |
-| Prisma-generated types in `api` | Persistence fidelity | `api` only; the DTO layer converts Prisma rows to contract types before they leave the module |
+| Prisma-generated types in `api`            | Persistence fidelity                | `api` only; the DTO layer converts Prisma rows to contract types before they leave the module                                                              |
 
 Any exception must name the exact files it covers. Blanket exceptions are defects.
 

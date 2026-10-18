@@ -6,8 +6,8 @@
  * code or prose exist, no exception is past its review date, and the gate
  * inventory matches the workflows that actually exist.
  */
-import { readFile, readdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import {readFile, readdir} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
@@ -20,9 +20,20 @@ const note = (m) => notes.push(m);
 const todo = (m) => notImplemented.push(m);
 
 const REQUIRED_DOCS = [
-  'AGENTS.md', 'AI_WORKFLOW.md', 'GOVERNANCE.md', 'ARCHITECTURE.md', 'SSOT_POLICY.md',
-  'CODING_STANDARDS.md', 'UI_UX_STANDARDS.md', 'TESTING.md', 'SECURITY.md', 'CI_GATES.md',
-  'DEPLOYMENT_MAP.md', 'RUNBOOK.md', 'docs/exceptions.md', 'README.md',
+  'AGENTS.md',
+  'AI_WORKFLOW.md',
+  'GOVERNANCE.md',
+  'ARCHITECTURE.md',
+  'SSOT_POLICY.md',
+  'CODING_STANDARDS.md',
+  'UI_UX_STANDARDS.md',
+  'TESTING.md',
+  'SECURITY.md',
+  'CI_GATES.md',
+  'DEPLOYMENT_MAP.md',
+  'RUNBOOK.md',
+  'docs/exceptions.md',
+  'README.md',
 ];
 
 async function main() {
@@ -61,7 +72,9 @@ async function main() {
   if (existsSync(exceptionsPath)) {
     const body = await readFile(exceptionsPath, 'utf8');
     const today = new Date();
-    const reviewDates = [...body.matchAll(/\|\s*Review by\s*\|\s*([0-9]{4}-[0-9]{2}-[0-9]{2})\s*\|/g)];
+    const reviewDates = [
+      ...body.matchAll(/\|\s*Review by\s*\|\s*([0-9]{4}-[0-9]{2}-[0-9]{2})\s*\|/g),
+    ];
     for (const match of reviewDates) {
       const expiry = new Date(`${match[1]}T00:00:00Z`);
       if (expiry < today) {
@@ -86,7 +99,9 @@ async function main() {
     : [];
 
   if (workflowFiles.length === 0) {
-    todo('no workflows exist yet: the gate inventory cannot be compared (CI_GATES.md area 5 check 6 is NOT ENFORCED)');
+    todo(
+      'no workflows exist yet: the gate inventory cannot be compared (CI_GATES.md area 5 check 6 is NOT ENFORCED)',
+    );
   } else {
     const defined = new Set();
     for (const file of workflowFiles) {
@@ -120,7 +135,9 @@ async function main() {
     for (const [index, line] of body.split('\n').entries()) {
       if (!/\b(?:is|are) enforced\b/i.test(line)) continue;
       if (QUALIFIER.test(line)) continue;
-      fail(`${doc}:${index + 1} asserts enforcement with no status qualifier: ${line.trim().slice(0, 90)}`);
+      fail(
+        `${doc}:${index + 1} asserts enforcement with no status qualifier: ${line.trim().slice(0, 90)}`,
+      );
     }
   }
   note('enforcement claims: every unqualified enforcement assertion is rejected');
@@ -129,7 +146,8 @@ async function main() {
   for (const message of notImplemented) console.warn(`  n/i  ${message}`);
   for (const message of failures) console.error(`  FAIL ${message}`);
 
-  const suffix = notImplemented.length > 0 ? `, ${notImplemented.length} check(s) NOT ENFORCED` : '';
+  const suffix =
+    notImplemented.length > 0 ? `, ${notImplemented.length} check(s) NOT ENFORCED` : '';
   console.log(`\ndocs: ${failures.length} violation(s)${suffix}`);
   process.exit(failures.length === 0 ? 0 : 1);
 }

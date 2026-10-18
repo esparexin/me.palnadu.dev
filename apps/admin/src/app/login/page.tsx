@@ -1,7 +1,7 @@
-import { Container } from '@me-palnadu/ui';
-import { PhaseNotice } from '../../components/phase-notice';
+import {Container} from '@me-palnadu/ui';
+import {PhaseNotice} from '../../components/phase-notice';
 
-export const metadata = { title: 'Sign in' };
+export const metadata = {title: 'Sign in'};
 
 /**
  * Sign-in entry point.

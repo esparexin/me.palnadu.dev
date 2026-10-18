@@ -1,7 +1,7 @@
-import { Controller, Get, HttpStatus, Inject, Res } from '@nestjs/common';
-import { API_ROUTES } from '@me-palnadu/contracts';
-import { ENV } from '../../common/tokens.js';
-import type { Env } from '../../config/env.js';
+import {Controller, Get, HttpStatus, Inject, Res} from '@nestjs/common';
+import {API_ROUTES} from '@me-palnadu/contracts';
+import {ENV} from '../../common/tokens.js';
+import type {Env} from '../../config/env.js';
 
 /**
  * The minimum surface this controller needs from the response object.
@@ -28,11 +28,11 @@ export class HealthController {
 
   @Get(API_ROUTES.health.live)
   live() {
-    return { status: 'ok' as const, uptimeSeconds: Math.round(process.uptime()) };
+    return {status: 'ok' as const, uptimeSeconds: Math.round(process.uptime())};
   }
 
   @Get(API_ROUTES.health.ready)
-  ready(@Res({ passthrough: true }) response: StatusSetter) {
+  ready(@Res({passthrough: true}) response: StatusSetter) {
     const databaseConfigured = this.env.DATABASE_URL !== undefined;
     if (!databaseConfigured) {
       response.status(HttpStatus.SERVICE_UNAVAILABLE);

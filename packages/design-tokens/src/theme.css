@@ -37,8 +37,8 @@
 
   /* --- Typography (UI_UX_STANDARDS 2.2) ----------------------------------- */
   --font-sans:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue',
-    Arial, sans-serif;
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
 
   --text-eyebrow: 0.75rem;
   --text-eyebrow--line-height: 1rem;

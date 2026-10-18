@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import {defineConfig, devices} from '@playwright/test';
 
 /**
  * End-to-end and accessibility gates (CI_GATES.md area 4).
@@ -16,18 +16,18 @@ export default defineConfig({
   forbidOnly: true, // CI_GATES.md area 11: a stray .only must fail, not skip
   retries: 0, // TESTING.md section 3: a flaky test is a defect, not a retry problem
   workers: 2,
-  reporter: process.env['CI'] === 'true' ? [['list'], ['html', { open: 'never' }]] : [['list']],
+  reporter: process.env['CI'] === 'true' ? [['list'], ['html', {open: 'never'}]] : [['list']],
   use: {
     baseURL: BASE_URL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
+    {name: 'desktop', use: {...devices['Desktop Chrome'], viewport: {width: 1280, height: 800}}},
     // Pixel rather than iPhone: the iPhone descriptor selects WebKit, which would
     // add a second browser download to CI for no extra coverage. The mobile
     // viewport and touch behaviour under test are the same.
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    {name: 'mobile', use: {...devices['Pixel 7']}},
   ],
   webServer: {
     command: `pnpm --filter @me-palnadu/web build && pnpm --filter @me-palnadu/web exec next start --port ${PORT}`,

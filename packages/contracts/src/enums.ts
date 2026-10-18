@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import {z} from 'zod';
 
 /**
  * Every domain enum in the system. Defined exactly once (SSOT_POLICY.md 2).

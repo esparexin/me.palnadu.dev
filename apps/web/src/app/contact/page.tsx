@@ -1,8 +1,8 @@
-import { SectionHeading } from '@me-palnadu/ui';
-import { Navigation } from '../../components/navigation';
-import { PhaseNotice } from '../../components/phase-notice';
+import {SectionHeading} from '@me-palnadu/ui';
+import {Navigation} from '../../components/navigation';
+import {PhaseNotice} from '../../components/phase-notice';
 
-export const metadata = { title: 'Contact' };
+export const metadata = {title: 'Contact'};
 
 const CONTENTS = [
   'Form posting to the API with server-side validation',

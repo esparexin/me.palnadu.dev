@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { RoleSchema, type Role } from './enums.js';
-import { NonEmptyTextSchema } from './common.js';
+import {z} from 'zod';
+import {RoleSchema, type Role} from './enums.js';
+import {NonEmptyTextSchema} from './common.js';
 
 /**
  * Administrator allowlist seed (SECURITY.md 4.1).
@@ -10,9 +10,7 @@ import { NonEmptyTextSchema } from './common.js';
  * is the authority, and a GitHub identity absent from the database cannot write
  * anything regardless of what any token claims.
  */
-export const ADMIN_ALLOWLIST = [
-  { githubId: 230946749, login: 'esparexin', role: 'owner' },
-] as const;
+export const ADMIN_ALLOWLIST = [{githubId: 230946749, login: 'esparexin', role: 'owner'}] as const;
 
 export const AdminAllowlistEntrySchema = z.object({
   githubId: z.number().int().positive(),
@@ -41,8 +39,7 @@ export const SESSION_COOKIE_NAME = '__Secure-me-palnadu-admin.session';
 export const JWT_ALGORITHM = 'HS256' as const;
 
 /** True when the GitHub identity is seeded as an administrator. */
-export const isAllowlistedGithubId = (
-  githubId: number,
-): boolean => ADMIN_ALLOWLIST.some((entry) => entry.githubId === githubId);
+export const isAllowlistedGithubId = (githubId: number): boolean =>
+  ADMIN_ALLOWLIST.some((entry) => entry.githubId === githubId);
 
-export type { Role };
+export type {Role};

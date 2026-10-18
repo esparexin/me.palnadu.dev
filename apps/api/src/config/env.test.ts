@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { allowedOrigins, parseEnv } from './env.js';
+import {describe, expect, it} from 'vitest';
+import {allowedOrigins, parseEnv} from './env.js';
 
 const base = {
   NODE_ENV: 'test',
@@ -18,21 +18,19 @@ describe('env validation', () => {
   });
 
   it('coerces a numeric port', () => {
-    expect(parseEnv({ ...base, PORT: '8080' }).PORT).toBe(8080);
+    expect(parseEnv({...base, PORT: '8080'}).PORT).toBe(8080);
   });
 
   it('rejects an out-of-range port rather than silently defaulting', () => {
-    expect(() => parseEnv({ ...base, PORT: '70000' })).toThrow(/invalid environment/);
+    expect(() => parseEnv({...base, PORT: '70000'})).toThrow(/invalid environment/);
   });
 
   it('refuses to boot with a short AUTH_SECRET', () => {
-    expect(() => parseEnv({ ...base, AUTH_SECRET: 'too-short' })).toThrow(
-      /invalid environment/,
-    );
+    expect(() => parseEnv({...base, AUTH_SECRET: 'too-short'})).toThrow(/invalid environment/);
   });
 
   it('rejects a wildcard CORS allowlist', () => {
-    expect(() => parseEnv({ ...base, ALLOWED_ORIGINS: '*' })).toThrow(/wildcard is forbidden/);
+    expect(() => parseEnv({...base, ALLOWED_ORIGINS: '*'})).toThrow(/wildcard is forbidden/);
   });
 
   it('splits and trims the origin allowlist', () => {
@@ -40,9 +38,6 @@ describe('env validation', () => {
       ...base,
       ALLOWED_ORIGINS: 'https://me.palnadu.dev, https://admin.me.palnadu.dev',
     });
-    expect(allowedOrigins(env)).toEqual([
-      'https://me.palnadu.dev',
-      'https://admin.me.palnadu.dev',
-    ]);
+    expect(allowedOrigins(env)).toEqual(['https://me.palnadu.dev', 'https://admin.me.palnadu.dev']);
   });
 });

@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import {expect, test} from '@playwright/test';
 
 /**
  * Automated accessibility gate (CI_GATES.md area 4, TESTING.md section 7).
@@ -12,16 +12,15 @@ import { expect, test } from '@playwright/test';
 const ROUTES = ['/', '/experience', '/projects', '/knowledge', '/resume', '/contact'];
 
 for (const route of ROUTES) {
-  test(`${route} has no serious or critical accessibility violations`, async ({ page }) => {
+  test(`${route} has no serious or critical accessibility violations`, async ({page}) => {
     await page.goto(route);
 
-    const results = await new AxeBuilder({ page })
+    const results = await new AxeBuilder({page})
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       .analyze();
 
     const blocking = results.violations.filter(
-      (violation) =>
-        violation.impact === 'serious' || violation.impact === 'critical',
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
     );
 
     expect(
@@ -36,7 +35,7 @@ for (const route of ROUTES) {
   });
 }
 
-test('every route exposes exactly one h1 and a main landmark', async ({ page }) => {
+test('every route exposes exactly one h1 and a main landmark', async ({page}) => {
   for (const route of ROUTES) {
     await page.goto(route);
     await expect(page.locator('h1'), `${route} must have one h1`).toHaveCount(1);

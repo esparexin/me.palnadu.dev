@@ -65,11 +65,11 @@ MongoDB is the single source of truth for publishable content, accessed through 
 
 ## Alternatives considered
 
-| Alternative | Why not |
-| --- | --- |
-| Markdown/MDX files edited by the admin through git commits | Every publish becomes a deployment; per-field authorization is impossible; PR history conflates editorial and engineering change |
-| File content with a headless CMS service | Adds a vendor, an API key, and a second authority for content shape; the contracts package already provides the schema source |
-| PostgreSQL with Prisma | Mature connector and better transaction semantics. Rejected because no relational querying requirement exists and the operational footprint is larger than the deployment list permits |
+| Alternative                                                | Why not                                                                                                                                                                                |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Markdown/MDX files edited by the admin through git commits | Every publish becomes a deployment; per-field authorization is impossible; PR history conflates editorial and engineering change                                                       |
+| File content with a headless CMS service                   | Adds a vendor, an API key, and a second authority for content shape; the contracts package already provides the schema source                                                          |
+| PostgreSQL with Prisma                                     | Mature connector and better transaction semantics. Rejected because no relational querying requirement exists and the operational footprint is larger than the deployment list permits |
 
 ## References
 

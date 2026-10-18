@@ -1,5 +1,5 @@
-import { Module } from '@nestjs/common';
-import { HealthController } from './health.controller.js';
+import {Module} from '@nestjs/common';
+import {HealthController} from './health.controller.js';
 
 /**
  * One module per domain. This is the only module in the Phase 3 scaffold; the

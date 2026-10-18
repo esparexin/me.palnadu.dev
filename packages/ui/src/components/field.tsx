@@ -1,5 +1,5 @@
-import type { InputHTMLAttributes, ReactNode } from 'react';
-import { cn } from '../lib/cn.js';
+import type {InputHTMLAttributes, ReactNode} from 'react';
+import {cn} from '../lib/cn.js';
 
 const FIELD_CLASS =
   'w-full min-h-10 rounded-md border border-border-default bg-surface px-3 py-2 ' +
@@ -20,7 +20,7 @@ export interface FieldProps {
   children: ReactNode;
 }
 
-export const Field = ({ id, label, hint, error, children }: FieldProps) => (
+export const Field = ({id, label, hint, error, children}: FieldProps) => (
   <div className="flex flex-col gap-2">
     <label htmlFor={id} className="text-body-sm font-medium text-text-primary">
       {label}
@@ -43,7 +43,7 @@ export interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean;
 }
 
-export const TextInput = ({ className, invalid = false, ...rest }: TextInputProps) => (
+export const TextInput = ({className, invalid = false, ...rest}: TextInputProps) => (
   <input
     className={cn(FIELD_CLASS, invalid && FIELD_INVALID_CLASS, className)}
     aria-invalid={invalid || undefined}

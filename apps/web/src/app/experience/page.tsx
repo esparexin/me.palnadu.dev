@@ -1,8 +1,8 @@
-import { SectionHeading } from '@me-palnadu/ui';
-import { Navigation } from '../../components/navigation';
-import { PhaseNotice } from '../../components/phase-notice';
+import {SectionHeading} from '@me-palnadu/ui';
+import {Navigation} from '../../components/navigation';
+import {PhaseNotice} from '../../components/phase-notice';
 
-export const metadata = { title: 'Career timeline' };
+export const metadata = {title: 'Career timeline'};
 
 const CONTENTS = [
   'Horizontal desktop timeline with hover previews and an independently scrollable popup',

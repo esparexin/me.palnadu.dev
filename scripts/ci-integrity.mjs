@@ -6,8 +6,8 @@
  * thing it claims to check. Every pattern here corresponds to a bullet in
  * CI_GATES.md area 11.
  */
-import { readFile, readdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import {readFile, readdir} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();

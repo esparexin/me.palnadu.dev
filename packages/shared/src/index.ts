@@ -5,8 +5,18 @@
  */
 
 const MONTH_LABELS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ] as const;
 
 /** `2024-03` -> `Mar 2024`. Returns the input unchanged when it is malformed. */
@@ -30,7 +40,7 @@ export const formatMonth = (month: string): string => {
 export const computeTenure = (
   startMonth: string,
   endMonth: string,
-): { years: number; months: number } => {
+): {years: number; months: number} => {
   const parse = (value: string): [number, number] | null => {
     const match = /^([0-9]{4})-(0[1-9]|1[0-2])$/.exec(value);
     if (!match) return null;
@@ -39,20 +49,16 @@ export const computeTenure = (
 
   const start = parse(startMonth);
   const end = parse(endMonth);
-  if (!start || !end) return { years: 0, months: 0 };
+  if (!start || !end) return {years: 0, months: 0};
 
   const months = (end[0] - start[0]) * 12 + (end[1] - start[1]);
-  if (months < 0) return { years: 0, months: 0 };
+  if (months < 0) return {years: 0, months: 0};
 
-  return { years: Math.floor(months / 12), months: months % 12 };
+  return {years: Math.floor(months / 12), months: months % 12};
 };
 
 /** `Apr 2023 - Present`, `Jan 2024 - Mar 2025`, `Jan 2024` for an open range. */
-export const formatDateRange = (
-  startMonth: string,
-  endMonth?: string,
-  current = false,
-): string => {
+export const formatDateRange = (startMonth: string, endMonth?: string, current = false): string => {
   const start = formatMonth(startMonth);
   if (current || endMonth === undefined) return `${start} - Present`;
   return `${start} - ${formatMonth(endMonth)}`;
@@ -61,7 +67,7 @@ export const formatDateRange = (
 /** Human tenure summary: `2 yrs 10 mos`, `7 mos`, `1 yr`. */
 export const formatTenure = (startMonth: string, endMonth?: string): string => {
   const end = endMonth ?? startMonth;
-  const { years, months } = computeTenure(startMonth, end);
+  const {years, months} = computeTenure(startMonth, end);
   const parts: string[] = [];
   if (years > 0) parts.push(`${years} yr${years === 1 ? '' : 's'}`);
   if (months > 0) parts.push(`${months} mo${months === 1 ? '' : 's'}`);
@@ -87,10 +93,7 @@ export interface OrderableExperience {
   sortIndex: number;
 }
 
-export const compareExperience = (
-  a: OrderableExperience,
-  b: OrderableExperience,
-): number => {
+export const compareExperience = (a: OrderableExperience, b: OrderableExperience): number => {
   if (a.startDate !== b.startDate) return a.startDate < b.startDate ? 1 : -1;
   if (a.current !== b.current) return a.current ? -1 : 1;
   if (a.sortIndex !== b.sortIndex) return a.sortIndex - b.sortIndex;

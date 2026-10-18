@@ -1,8 +1,8 @@
 import 'reflect-metadata';
-import { Logger, ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module.js';
-import { allowedOrigins, parseEnv } from './config/env.js';
+import {Logger, ValidationPipe} from '@nestjs/common';
+import {NestFactory} from '@nestjs/core';
+import {AppModule} from './app.module.js';
+import {allowedOrigins, parseEnv} from './config/env.js';
 
 /**
  * Bootstrap.
@@ -13,7 +13,7 @@ import { allowedOrigins, parseEnv } from './config/env.js';
  */
 async function bootstrap(): Promise<void> {
   const env = parseEnv(process.env);
-  const app = await NestFactory.create(AppModule, { bufferLogs: false });
+  const app = await NestFactory.create(AppModule, {bufferLogs: false});
 
   app.enableCors({
     origin: allowedOrigins(env),

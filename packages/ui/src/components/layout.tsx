@@ -1,5 +1,5 @@
-import type { ElementType, ReactNode } from 'react';
-import { cn } from '../lib/cn.js';
+import type {ElementType, ReactNode} from 'react';
+import {cn} from '../lib/cn.js';
 
 /** Layout primitive: the only place the page gutter and measure are applied. */
 export const Container = ({

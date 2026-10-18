@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {
   ADMIN_ALLOWLIST,
   API_ROUTES,
@@ -102,7 +102,7 @@ describe('ExperienceCreateSchema cross-field rules', () => {
 
   it('rejects an unknown kind instead of coercing it', () => {
     expect(
-      ExperienceCreateSchema.safeParse({ ...validExperience(), kind: 'consulting' }).success,
+      ExperienceCreateSchema.safeParse({...validExperience(), kind: 'consulting'}).success,
     ).toBe(false);
   });
 
@@ -119,7 +119,7 @@ describe('ExperienceCreateSchema cross-field rules', () => {
   it('keeps a partial update partial and free of create-time defaults', () => {
     // A patch must never apply the create defaults: doing so would overwrite
     // stored values the caller never mentioned (toPatchShape in common.ts).
-    const parsed = ExperienceUpdateSchema.parse({ published: true });
+    const parsed = ExperienceUpdateSchema.parse({published: true});
     expect(Object.keys(parsed)).toEqual(['published']);
     expect(parsed).not.toHaveProperty('highlights');
     expect(parsed).not.toHaveProperty('tech');
@@ -129,19 +129,19 @@ describe('ExperienceCreateSchema cross-field rules', () => {
 
 describe('ProjectCreateSchema', () => {
   it('requires publishedAt for a published project', () => {
-    const result = ProjectCreateSchema.safeParse({ ...validProject(), publishedAt: undefined });
+    const result = ProjectCreateSchema.safeParse({...validProject(), publishedAt: undefined});
     expect(result.success).toBe(false);
   });
 
   it('allows a draft without publishedAt', () => {
     expect(
-      ProjectCreateSchema.safeParse({ ...validProject(), status: 'draft', publishedAt: undefined })
+      ProjectCreateSchema.safeParse({...validProject(), status: 'draft', publishedAt: undefined})
         .success,
     ).toBe(true);
   });
 
   it('rejects a non-kebab slug', () => {
-    expect(ProjectCreateSchema.safeParse({ ...validProject(), slug: 'Not A Slug' }).success).toBe(
+    expect(ProjectCreateSchema.safeParse({...validProject(), slug: 'Not A Slug'}).success).toBe(
       false,
     );
   });
@@ -160,15 +160,14 @@ describe('ContactMessageCreateSchema', () => {
 
   it('rejects a filled honeypot', () => {
     expect(
-      ContactMessageCreateSchema.safeParse({ ...validMessage, website: 'http://spam.test' })
-        .success,
+      ContactMessageCreateSchema.safeParse({...validMessage, website: 'http://spam.test'}).success,
     ).toBe(false);
   });
 
   it('rejects unknown keys rather than storing them', () => {
-    expect(
-      ContactMessageCreateSchema.safeParse({ ...validMessage, isAdmin: true }).success,
-    ).toBe(false);
+    expect(ContactMessageCreateSchema.safeParse({...validMessage, isAdmin: true}).success).toBe(
+      false,
+    );
   });
 });
 
@@ -209,22 +208,22 @@ describe('session claims', () => {
   });
 
   it('requires a token version so revocation can be compared', () => {
-    expect(SessionClaimsSchema.safeParse({ ...claims, tv: undefined }).success).toBe(false);
+    expect(SessionClaimsSchema.safeParse({...claims, tv: undefined}).success).toBe(false);
   });
 
   it('rejects an unknown role', () => {
-    expect(SessionClaimsSchema.safeParse({ ...claims, role: 'superuser' }).success).toBe(false);
+    expect(SessionClaimsSchema.safeParse({...claims, role: 'superuser'}).success).toBe(false);
   });
 });
 
 describe('shared primitives', () => {
   it('coerces pagination and applies its defaults', () => {
-    expect(PaginationQuerySchema.parse({})).toEqual({ page: 1, limit: 20 });
-    expect(PaginationQuerySchema.parse({ page: '3', limit: '50' })).toEqual({ page: 3, limit: 50 });
+    expect(PaginationQuerySchema.parse({})).toEqual({page: 1, limit: 20});
+    expect(PaginationQuerySchema.parse({page: '3', limit: '50'})).toEqual({page: 3, limit: 50});
   });
 
   it('caps the page size', () => {
-    expect(PaginationQuerySchema.safeParse({ limit: 500 }).success).toBe(false);
+    expect(PaginationQuerySchema.safeParse({limit: 500}).success).toBe(false);
   });
 
   it('exposes every documented API route', () => {

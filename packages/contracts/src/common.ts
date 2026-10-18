@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import {z} from 'zod';
 
 /** Lowercase kebab slug. The public URL identity of projects and articles. */
 export const SlugSchema = z
@@ -8,9 +8,7 @@ export const SlugSchema = z
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'must be lowercase kebab-case');
 
 /** ISO calendar month, `YYYY-MM`. Precision finer than a month is a career claim we cannot verify. */
-export const MonthSchema = z
-  .string()
-  .regex(/^[0-9]{4}-(0[1-9]|1[0-2])$/, 'must be YYYY-MM');
+export const MonthSchema = z.string().regex(/^[0-9]{4}-(0[1-9]|1[0-2])$/, 'must be YYYY-MM');
 
 export const IsoDateSchema = z.iso.date();
 
@@ -48,21 +46,25 @@ const isDefaultWrapper = (value: z.ZodType): value is z.ZodType & DefaultWrapper
 
 export const toPatchShape = <Shape extends z.ZodRawShape>(
   shape: Shape,
-): { [Key in keyof Shape]: z.ZodOptional<UnwrapDefault<Shape[Key]>> } =>
+): {[Key in keyof Shape]: z.ZodOptional<UnwrapDefault<Shape[Key]>>} =>
   Object.fromEntries(
     Object.entries(shape).map(([key, value]) => {
       const field = value as z.ZodType;
       const stripped = isDefaultWrapper(field) ? field.unwrap() : field;
       return [key, stripped.optional()];
     }),
-  ) as unknown as { [Key in keyof Shape]: z.ZodOptional<UnwrapDefault<Shape[Key]>> };
+  ) as unknown as {[Key in keyof Shape]: z.ZodOptional<UnwrapDefault<Shape[Key]>>};
 
 /** RFC 2606 reserved domain, so fixtures and examples can never be real addresses. */
 export const EmailAddressSchema = z.email().max(254);
 
 export const UrlSchema = z.url().max(2048);
 
-export const IdSchema = z.string().min(1).max(64).regex(/^[a-zA-Z0-9_-]+$/);
+export const IdSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .regex(/^[a-zA-Z0-9_-]+$/);
 
 export const PaginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -99,7 +101,7 @@ export const ApiErrorEnvelopeSchema = z.object({
     code: ErrorCodeSchema,
     message: z.string(),
     requestId: z.string(),
-    details: z.array(z.object({ path: z.string(), message: z.string() })).optional(),
+    details: z.array(z.object({path: z.string(), message: z.string()})).optional(),
   }),
 });
 export type ApiErrorEnvelope = z.infer<typeof ApiErrorEnvelopeSchema>;

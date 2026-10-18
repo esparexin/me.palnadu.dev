@@ -1,5 +1,5 @@
-import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
+import type {Metadata} from 'next';
+import type {ReactNode} from 'react';
 import './globals.css';
 
 /**
@@ -22,10 +22,10 @@ export const metadata: Metadata = {
     siteName: 'me.palnadu.dev',
     url: siteUrl,
   },
-  robots: { index: true, follow: true },
+  robots: {index: true, follow: true},
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({children}: {children: ReactNode}) {
   return (
     <html lang="en">
       <body className="min-h-screen bg-surface text-text-primary antialiased">

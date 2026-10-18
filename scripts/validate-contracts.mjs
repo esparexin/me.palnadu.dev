@@ -9,13 +9,19 @@
  *   4. no workspace outside packages/contracts defines a Zod schema for an
  *      entity name owned by contracts.
  */
-import { readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import {readFile} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
 const CONTRACTS = path.join(ROOT, 'packages/contracts/src');
-const OTHER_WORKSPACES = ['packages/shared/src', 'packages/ui/src', 'apps/api/src', 'apps/admin/src', 'apps/web/src'];
+const OTHER_WORKSPACES = [
+  'packages/shared/src',
+  'packages/ui/src',
+  'apps/api/src',
+  'apps/admin/src',
+  'apps/web/src',
+];
 
 const failures = [];
 const notes = [];
@@ -25,9 +31,9 @@ const note = (m) => notes.push(m);
 
 async function walk(dir) {
   if (!existsSync(dir)) return [];
-  const { readdir } = await import('node:fs/promises');
+  const {readdir} = await import('node:fs/promises');
   const out = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
+  for (const entry of await readdir(dir, {withFileTypes: true})) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) out.push(...(await walk(full)));
     else if (/\.(ts|tsx)$/.test(entry.name)) out.push(full);
@@ -42,7 +48,9 @@ async function main() {
   }
 
   const contractFiles = await walk(CONTRACTS);
-  const contractBody = (await Promise.all(contractFiles.map((f) => readFile(f, 'utf8')))).join('\n');
+  const contractBody = (await Promise.all(contractFiles.map((f) => readFile(f, 'utf8')))).join(
+    '\n',
+  );
 
   // 1. Enum hygiene.
   const enums = [...contractBody.matchAll(/export const ([A-Z0-9_]+) = \[([^\]]*)\]\s+as const/g)]
@@ -79,21 +87,23 @@ async function main() {
         const union = new RegExp(`(?:'${values[0]}'[^\\n]*\\|)|(?:\\|[^\\n]*'${values[0]}')`);
         const list = new RegExp(`\\[\\s*(?:'${values[0]}'\\s*,?)+\\s*\\]`, 's');
         if (values.length > 1 && (union.test(body) || list.test(body))) {
-          fail(`${rel}: re-declares the ${name} enum defined in packages/contracts (SSOT_POLICY.md section 2)`);
+          fail(
+            `${rel}: re-declares the ${name} enum defined in packages/contracts (SSOT_POLICY.md section 2)`,
+          );
         }
       }
 
       if (/z\.object\(\s*\{[^}]*\btitle\b/.test(body) && !rel.startsWith('packages/contracts')) {
         // Legitimate for UI props; a heuristic that reports for review rather than blocking alone.
-        notes.push(`${rel}: defines a z.object containing "title" - confirm it is a props schema, not a domain entity`);
+        notes.push(
+          `${rel}: defines a z.object containing "title" - confirm it is a props schema, not a domain entity`,
+        );
       }
     }
   }
 
   // 3. Dependency declarations match imports.
-  const workspaces = [
-    'packages/shared', 'packages/ui', 'apps/api', 'apps/admin', 'apps/web',
-  ];
+  const workspaces = ['packages/shared', 'packages/ui', 'apps/api', 'apps/admin', 'apps/web'];
   for (const workspace of workspaces) {
     const manifestPath = path.join(ROOT, workspace, 'package.json');
     if (!existsSync(manifestPath)) continue;
@@ -108,7 +118,9 @@ async function main() {
       for (const match of body.matchAll(/from\s+['"](@me-palnadu\/[^'"]+)['"]/g)) {
         const pkg = `${match[1].split('/')[0]}/${match[1].split('/')[1]}`;
         if (!declared.has(pkg)) {
-          fail(`${path.relative(ROOT, file)}: imports ${pkg} which ${workspace}/package.json does not declare`);
+          fail(
+            `${path.relative(ROOT, file)}: imports ${pkg} which ${workspace}/package.json does not declare`,
+          );
         }
       }
     }

@@ -5,8 +5,8 @@
  * Verifies the tree matches ARCHITECTURE.md section 2 and that every workspace
  * carries the files its ownership requires. Exits non-zero on any violation.
  */
-import { readFile, readdir, stat } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import {readFile, readdir, stat} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
@@ -55,7 +55,15 @@ const REQUIRED_TOP_LEVEL = [
 /** Directories that must not exist: rejected speculative infrastructure. */
 const FORBIDDEN_TOP_LEVEL = ['queue', 'worker', 'packages/legacy', 'vendor'];
 
-const WORKSPACES = ['apps/web', 'apps/admin', 'apps/api', 'packages/contracts', 'packages/design-tokens', 'packages/shared', 'packages/ui'];
+const WORKSPACES = [
+  'apps/web',
+  'apps/admin',
+  'apps/api',
+  'packages/contracts',
+  'packages/design-tokens',
+  'packages/shared',
+  'packages/ui',
+];
 
 const WORKSPACE_REQUIRED = {
   'apps/web': ['package.json', 'tsconfig.json'],
@@ -81,13 +89,27 @@ async function main() {
   // by tooling and are already git-ignored; they are permitted to exist on a
   // developer machine and are never committed.
   const ARTIFACT_DIRS = new Set([
-    'test-results', 'playwright-report', 'blob-report', '.lighthouseci',
+    'test-results',
+    'playwright-report',
+    'blob-report',
+    '.lighthouseci',
   ]);
   const allowed = new Set([
-    '.git', '.github', '.vscode', 'node_modules', 'apps', 'packages', 'content', 'scripts',
-    'tests', 'docs', 'turbo', '.turbo', 'coverage',
+    '.git',
+    '.github',
+    '.vscode',
+    'node_modules',
+    'apps',
+    'packages',
+    'content',
+    'scripts',
+    'tests',
+    'docs',
+    'turbo',
+    '.turbo',
+    'coverage',
   ]);
-  for (const entry of await readdir(ROOT, { withFileTypes: true })) {
+  for (const entry of await readdir(ROOT, {withFileTypes: true})) {
     if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
     if (ARTIFACT_DIRS.has(entry.name)) {
       note(`${entry.name}/ is a tool artefact directory (git-ignored)`);

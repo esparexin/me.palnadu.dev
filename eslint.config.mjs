@@ -20,7 +20,8 @@ const BANNED_CLASS_PATTERNS = [
   },
   {
     name: 'arbitrary colour values (AGENTS.md 3)',
-    pattern: /['"`][^'"`]*\b(?:bg|text|border|ring|from|via|to|fill|stroke|outline|decoration|divide)-(?:\[)(?:#[0-9a-fA-F]{3,8}|(?:rgb|rgba|hsl|hsla)\()[^\]]*\][^'"`]*['"`]/,
+    pattern:
+      /['"`][^'"`]*\b(?:bg|text|border|ring|from|via|to|fill|stroke|outline|decoration|divide)-(?:\[)(?:#[0-9a-fA-F]{3,8}|(?:rgb|rgba|hsl|hsla)\()[^\]]*\][^'"`]*['"`]/,
   },
   {
     name: 'arbitrary spacing, radius, or shadow escapes (UI_UX_STANDARDS 2.3)',
@@ -57,9 +58,9 @@ export default tseslint.config(
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
-      parserOptions: { ecmaFeatures: { jsx: true } },
+      parserOptions: {ecmaFeatures: {jsx: true}},
     },
-    plugins: { 'react-hooks': reactHooks },
+    plugins: {'react-hooks': reactHooks},
     rules: {
       // Type safety (CODING_STANDARDS.md 1)
       '@typescript-eslint/no-explicit-any': 'error',
@@ -75,7 +76,7 @@ export default tseslint.config(
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/consistent-type-imports': [
         'error',
-        { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
+        {prefer: 'type-imports', fixStyle: 'inline-type-imports'},
       ],
       '@typescript-eslint/no-floating-promises': 'off',
       // Imports and modules (CODING_STANDARDS.md 3)
@@ -91,7 +92,7 @@ export default tseslint.config(
         })),
       ],
       // Logging (CODING_STANDARDS.md 5)
-      'no-console': ['error', { allow: ['warn', 'error'] }],
+      'no-console': ['error', {allow: ['warn', 'error']}],
       // React
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
@@ -101,7 +102,7 @@ export default tseslint.config(
   {
     files: ['**/*.{js,mjs,cjs}'],
     languageOptions: {
-      globals: { ...globals.node },
+      globals: {...globals.node},
       sourceType: 'module',
     },
     rules: {

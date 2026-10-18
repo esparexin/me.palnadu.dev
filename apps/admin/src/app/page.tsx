@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import {redirect} from 'next/navigation';
 
 /**
  * Every dashboard route requires a session, so the root redirects to the sign-in

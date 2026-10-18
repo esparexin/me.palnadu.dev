@@ -38,21 +38,35 @@ export type ColorToken = keyof typeof COLOR_TOKENS;
  * as the rendered size (UI_UX_STANDARDS 3).
  */
 export const TYPOGRAPHY_TOKENS = {
-  eyebrow: { size: '0.75rem', lineHeight: '1rem', letterSpacing: '0.08em' },
-  meta: { size: '0.8125rem', lineHeight: '1.125rem', letterSpacing: '0.01em' },
-  'body-sm': { size: '0.9375rem', lineHeight: '1.4375rem' },
-  body: { size: '1.0625rem', lineHeight: '1.6875rem' },
-  lead: { size: '1.3125rem', lineHeight: '1.875rem', letterSpacing: '-0.01em' },
-  h3: { size: '1.3125rem', lineHeight: '1.75rem', letterSpacing: '-0.01em' },
-  h2: { size: '1.75rem', lineHeight: '2.125rem', letterSpacing: '-0.015em' },
-  h1: { size: '2.5rem', lineHeight: '2.875rem', letterSpacing: '-0.02em' },
-  display: { size: '3.5rem', lineHeight: '3.75rem', letterSpacing: '-0.02em' },
+  eyebrow: {size: '0.75rem', lineHeight: '1rem', letterSpacing: '0.08em'},
+  meta: {size: '0.8125rem', lineHeight: '1.125rem', letterSpacing: '0.01em'},
+  'body-sm': {size: '0.9375rem', lineHeight: '1.4375rem'},
+  body: {size: '1.0625rem', lineHeight: '1.6875rem'},
+  lead: {size: '1.3125rem', lineHeight: '1.875rem', letterSpacing: '-0.01em'},
+  h3: {size: '1.3125rem', lineHeight: '1.75rem', letterSpacing: '-0.01em'},
+  h2: {size: '1.75rem', lineHeight: '2.125rem', letterSpacing: '-0.015em'},
+  h1: {size: '2.5rem', lineHeight: '2.875rem', letterSpacing: '-0.02em'},
+  display: {size: '3.5rem', lineHeight: '3.75rem', letterSpacing: '-0.02em'},
 } as const;
 
 export type TypographyToken = keyof typeof TYPOGRAPHY_TOKENS;
 
 export const SPACING_SCALE = [
-  'px', '0', '1', '2', '3', '4', '5', '6', '8', '10', '12', '16', '20', '24', '32',
+  'px',
+  '0',
+  '1',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '8',
+  '10',
+  '12',
+  '16',
+  '20',
+  '24',
+  '32',
 ] as const;
 
 export const RADIUS_TOKENS = {

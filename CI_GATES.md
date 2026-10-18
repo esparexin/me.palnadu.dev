@@ -4,16 +4,19 @@ The 13 verification areas, each with a purpose, a trigger, a classification, the
 mechanism that will implement it, the evidence it produces, and what to do when it
 fails.
 
-**Enforcement status as of Phase 2: every area is `SPECIFIED`.** No workflow exists in
-this repository yet, and `main` has no branch protection or ruleset. Nothing here may be
-reported as passing until a run URL or an API response proves it.
+**Enforcement status: Phase 3 complete.** Every gate below is implemented in a
+workflow and passes locally, but **none is `ENFORCED` yet.** `ENFORCED` requires a run
+URL from GitHub Actions and, for the areas marked External, a GitHub or provider API
+response. `main` still has no branch protection and no ruleset, and the local passes
+recorded in the Phase 3 pull request are evidence of a working gate, not evidence of
+enforcement.
 
 ## 1. Classification vocabulary
 
-| Class | Meaning |
-| --- | --- |
-| **Required** | Blocks merge. A failure must be fixed or removed by ADR, never suppressed |
-| **Advisory** | Reported, does not block. Promoted to required only per §4 |
+| Class        | Meaning                                                                                         |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| **Required** | Blocks merge. A failure must be fixed or removed by ADR, never suppressed                       |
+| **Advisory** | Reported, does not block. Promoted to required only per §4                                      |
 | **External** | Cannot be a workflow gate — a repository or provider setting. Verified by API and recorded here |
 
 Classification is evidence-based, not optimistic. A check is required only if it is
@@ -125,6 +128,10 @@ advisory.
 
 - **Class:** Advisory
 - **Job:** `deadcode`
+- **Status:** Knip and jscpd are installed at the workspace root and are run by hand
+  during Phase 5. The job is deliberately **not** in the workflow yet: area 5's
+  inventory check compares `CI_GATES.md` against the workflows, so adding a job here
+  without a workflow would fail the governance gate. Promotion follows §4.
 - **Mechanism:** Knip for unused files, exports, dependencies, and dynamic-import
   entries; `jscpd` for copy-paste duplication with a configured threshold; an orphan
   check for assets, routes, and documents not referenced anywhere.
@@ -192,8 +199,9 @@ advisory.
 - **Verification:** the scheduled job compares the live ruleset against the expected
   policy and fails on drift, and a mismatch is opened as an issue.
 - **Evidence:** the API response for the ruleset, cited in the run.
-- **Current status:** `SPECIFIED`. `main` is unprotected and no ruleset exists; the check
-  for that condition is what will make the drift visible.
+- **Current status:** `IMPLEMENTED` as a specification, **not `ENFORCED`**. `main` is
+  unprotected and no ruleset exists. The ruleset is created only after every check in
+  §3 has passed on a pull request, which is why this area is listed last in the rollout.
 
 ### Area 13 — Deployment security, environment separation, release integrity, rollback readiness, post-deployment verification
 
@@ -231,22 +239,22 @@ advisory.
 The exact job names to require on `main`. Area 12 verifies this list against the live
 ruleset.
 
-| Check name | Area |
-| --- | --- |
-| `lint` | 1 |
-| `typecheck` | 2 |
-| `build` | 3 |
-| `test` | 4 |
-| `e2e` | 4 |
-| `a11y` | 4 |
-| `governance` | 5 |
-| `secrets` | 6 |
-| `workflow-security` | 6 |
-| `codeql` | 6 |
-| `dependency-audit` | 7 |
-| `workspace` | 9 |
-| `boundaries` | 10 |
-| `ci-integrity` | 11 |
+| Check name          | Area |
+| ------------------- | ---- |
+| `lint`              | 1    |
+| `typecheck`         | 2    |
+| `build`             | 3    |
+| `test`              | 4    |
+| `e2e`               | 4    |
+| `a11y`              | 4    |
+| `governance`        | 5    |
+| `secrets`           | 6    |
+| `workflow-security` | 6    |
+| `codeql`            | 6    |
+| `dependency-audit`  | 7    |
+| `workspace`         | 9    |
+| `boundaries`        | 10   |
+| `ci-integrity`      | 11   |
 
 Advisory, therefore **not** required status checks: `deadcode` (8),
 `performance` (advisory portion of 4), license policy portion of 7.
@@ -254,7 +262,7 @@ Advisory, therefore **not** required status checks: `deadcode` (8),
 Areas 12 and 13 are deliberately **not** pull-request status checks, and this is a
 decision rather than an omission:
 
-- Area 12 verifies the ruleset that *contains* the required checks, so it cannot itself
+- Area 12 verifies the ruleset that _contains_ the required checks, so it cannot itself
   be one of them. It runs on a schedule and on `main` pushes, and it fails when the live
   ruleset drifts from the table above.
 - Area 13 describes what happens after merge. Requiring a deployment check to pass before
