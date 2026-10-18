@@ -20,6 +20,7 @@ import {
 
 /** Factories consume the schemas, so a schema change breaks fixtures loudly. */
 const validExperience = () => ({
+  slug: 'example-organisation-endpoint-engineer',
   org: 'Example Organisation',
   title: 'Endpoint Engineer',
   startDate: '2023-04',
@@ -98,6 +99,16 @@ describe('ExperienceCreateSchema cross-field rules', () => {
       endDate: '2023-01',
     });
     expect(result.success).toBe(false);
+  });
+
+  it('requires a unique public identity in kebab-case', () => {
+    expect(ExperienceCreateSchema.safeParse({...validExperience(), slug: undefined}).success).toBe(
+      false,
+    );
+    expect(
+      ExperienceCreateSchema.safeParse({...validExperience(), slug: 'Not A Slug'}).success,
+    ).toBe(false);
+    expect(ExperienceCreateSchema.safeParse(validExperience()).success).toBe(true);
   });
 
   it('rejects an unknown kind instead of coercing it', () => {

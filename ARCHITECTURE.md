@@ -218,21 +218,21 @@ single contracts-backed pipe; every write emits an audit entry; Prisma is import
 
 ## 6. Folder ownership
 
-| Path                            | Owner           | Rule                                                        |
-| ------------------------------- | --------------- | ----------------------------------------------------------- |
-| `packages/contracts/src/**`     | contracts owner | No edits without an ADR if the public surface changes shape |
-| `packages/design-tokens/**`     | design owner    | Token values change here and nowhere else                   |
-| `packages/ui/src/components/**` | design owner    | One component per file, named after the file                |
-| `packages/shared/src/**`        | contracts owner | Each file has a test in `__tests__/`                        |
-| `apps/api/src/modules/**`       | api owner       | One module per domain collection                            |
-| `apps/api/prisma/**`            | api owner       | Schema changes require a migration note in the PR           |
-| `apps/web/src/app/**`           | web owner       | Route segments only; logic in `lib/` or components          |
-| `apps/admin/src/app/**`         | admin owner     | Server actions must re-check session                        |
-| `content/**`                    | owner           | Seed/reference only; never imported by app code at runtime  |
-| `scripts/**`                    | ci owner        | Gate scripts must exit non-zero on failure                  |
-| `tests/architecture/**`         | ci owner        | Boundary tests live here                                    |
-| `docs/adr/**`                   | owner           | Append-only in meaning; supersede rather than rewrite       |
-| `.github/workflows/**`          | owner           | No weakening edits without an ADR and an ADR-linked PR      |
+| Path                            | Owner           | Rule                                                                                                            |
+| ------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------- |
+| `packages/contracts/src/**`     | contracts owner | No edits without an ADR if the public surface changes shape                                                     |
+| `packages/design-tokens/**`     | design owner    | Token values change here and nowhere else                                                                       |
+| `packages/ui/src/components/**` | design owner    | One component per file, named after the file                                                                    |
+| `packages/shared/src/**`        | contracts owner | Each file has a test in `__tests__/`                                                                            |
+| `apps/api/src/modules/**`       | api owner       | One module per domain collection                                                                                |
+| `apps/api/prisma/**`            | api owner       | Schema changes update `baseline.prisma` in the same reviewed PR, and a destructive change needs a recovery plan |
+| `apps/web/src/app/**`           | web owner       | Route segments only; logic in `lib/` or components                                                              |
+| `apps/admin/src/app/**`         | admin owner     | Server actions must re-check session                                                                            |
+| `content/**`                    | owner           | Seed/reference only; never imported by app code at runtime                                                      |
+| `scripts/**`                    | ci owner        | Gate scripts must exit non-zero on failure                                                                      |
+| `tests/architecture/**`         | ci owner        | Boundary tests live here                                                                                        |
+| `docs/adr/**`                   | owner           | Append-only in meaning; supersede rather than rewrite                                                           |
+| `.github/workflows/**`          | owner           | No weakening edits without an ADR and an ADR-linked PR                                                          |
 
 An owner is the only party who may approve changes in their path. This is enforced by
 review discipline in Phase 2 and by branch protection once configured (gate 12).
@@ -255,6 +255,19 @@ choice is recorded in `docs/adr/0002`.
 | `Article`        | Knowledge Hub content                                | `slug` (unique), `kind`, `title`, `excerpt`, `body`, `tags[]`, `status`, `publishedAt`                      |
 | `ContactMessage` | Public form submissions                              | `name`, `email`, `message`, `status`, `createdAt`                                                           |
 | `AuditLog`       | Every administrative write                           | `actorId`, `action`, `entityType`, `entityId`, `at`, `meta`                                                 |
+
+### Persistence schema and the missing migration history
+
+The MongoDB connector has no `prisma migrate` (`ADR-0006`). Three consequences are
+load-bearing and are not negotiable implementation details:
+
+- `apps/api/prisma/baseline.prisma` is the durable record of the reviewed schema. It
+  is updated in the same pull request as the schema itself, so the diff is the record
+  of what was accepted.
+- `scripts/check-schema.mjs` compares the baseline with the intended schema and blocks
+  destructive changes. It is a guardrail, not a guarantee.
+- **Application rollback is not database rollback.** A rollback restores code only.
+  Data recovery is forward repair, or a restore from a point-in-time backup.
 
 Derived values are never stored as independent sources of truth. Tenure length,
 reading time, and ordering are **computed** by `packages/shared` from the fields

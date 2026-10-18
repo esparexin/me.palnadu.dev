@@ -17,7 +17,7 @@ tested.
 | 4   | Verify staging manually: home, experience timeline, one knowledge article, admin login redirect | Notes in the pull request or the release issue                  |
 | 5   | Approve the `production` GitHub environment                                                     | Approval recorded with the approver's identity                  |
 | 6   | Promote the artefact to production: `apps/api`, then `apps/admin`, then `apps/web`              | Deployment URLs per component                                   |
-| 7   | Apply Prisma migrations as an explicit, backwards-compatible step                               | Migration log; `GET /health/ready` returns 200                  |
+| 7   | Apply the schema with `prisma db push` after staging and a verified snapshot                    | `db push` output; `GET /health/ready` returns 200               |
 | 8   | Run the post-deployment verification in §2                                                      | Full report                                                     |
 | 9   | Record the deployment in the release log: SHA, previous good SHA, duration, operator, outcome   | Release log entry                                               |
 
@@ -67,20 +67,22 @@ Decision: roll back if any verification in §2 fails, if the API error rate rise
 content is wrong or unpublished. Rolling back is the default; debugging in production
 is not.
 
-| Component    | Mechanism                                             | Time   | Data implication                                                                                                         |
-| ------------ | ----------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `apps/web`   | Redeploy the previous known-good Vercel deployment    | ~1 min | None                                                                                                                     |
-| `apps/admin` | Redeploy the previous known-good Vercel deployment    | ~1 min | None                                                                                                                     |
-| `apps/api`   | Roll back the Render deploy to the previous image tag | ~3 min | Requires the previous code to tolerate the current schema                                                                |
-| Database     | No automatic rollback                                 | Manual | Prisma migrations must be backwards-compatible; destructive migrations are forbidden in the same release that needs them |
+| Component    | Mechanism                                             | Time   | Data implication                                                                                  |
+| ------------ | ----------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------- |
+| `apps/web`   | Redeploy the previous known-good Vercel deployment    | ~1 min | None                                                                                              |
+| `apps/admin` | Redeploy the previous known-good Vercel deployment    | ~1 min | None                                                                                              |
+| `apps/api`   | Roll back the Render deploy to the previous image tag | ~3 min | Requires the previous code to tolerate the current schema                                         |
+| Database     | No rollback of any kind                               | Manual | There is no migration history. Recovery is forward repair or a point-in-time restore (`ADR-0006`) |
 
 Procedure:
 
 1. Announce in the incident channel with the reason and the target SHA.
 2. Redeploy the previous known-good artefact for each affected component, web last.
 3. Re-run §2 in full.
-4. If the API must be rolled back but a newer migration is incompatible, restore from
-   the Atlas point-in-time backup and verify content integrity before reopening.
+4. If the API must be rolled back but a newer schema change is incompatible with the
+   rolled-back code, restore from the Atlas point-in-time snapshot and verify content
+   integrity before reopening. Prefer a forward-compatible schema change over this
+   path: it is slower and loses writes made since the snapshot.
 5. Record what rolled back, why, and the follow-up task. A rollback is not a resolution.
 
 ## 4. Gate failure triage

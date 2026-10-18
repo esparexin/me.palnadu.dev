@@ -1,6 +1,13 @@
 import {z} from 'zod';
 import {ExperienceKindSchema, type ExperienceKind} from './enums.js';
-import {IdSchema, MonthSchema, NonEmptyTextSchema, TechTagSchema, toPatchShape} from './common.js';
+import {
+  IdSchema,
+  MonthSchema,
+  NonEmptyTextSchema,
+  SlugSchema,
+  TechTagSchema,
+  toPatchShape,
+} from './common.js';
 
 /**
  * Career timeline entry. Employment dates are professional claims (AGENTS.md 4),
@@ -8,6 +15,13 @@ import {IdSchema, MonthSchema, NonEmptyTextSchema, TechTagSchema, toPatchShape} 
  * rather than trusting the client to get it right.
  */
 const ExperienceShape = {
+  /**
+   * Stable public identity of the entry, unique at the database level.
+   *
+   * Added in Phase 6A: persistence needs a unique key to make writes idempotent
+   * and to surface a conflict instead of silently duplicating a career entry.
+   */
+  slug: SlugSchema,
   org: NonEmptyTextSchema.max(120),
   title: NonEmptyTextSchema.max(120),
   location: NonEmptyTextSchema.max(120).optional(),

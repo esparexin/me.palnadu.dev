@@ -266,3 +266,34 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - name: Zero serious or critical axe violations
         run: pnpm test:a11y
+
+  integration:
+    name: Database integration tests
+    runs-on: ubuntu-latest
+    needs: [workspace]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 11.2.2
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Prisma's MongoDB connector requires a replica set for transactions, and a
+      # standalone server is not sufficient. The job fails rather than skips when the
+      # database is unavailable (TESTING.md section 4a).
+      - name: Install MongoDB
+        run: |
+          set -euo pipefail
+          codename=$(lsb_release -cs)
+          curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc \
+            | gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
+          echo "deb [ arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu ${codename}/mongodb-org/7.0 multiverse" \
+            | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mongodb-org-server
+          mongod --version
+      - name: Run integration tests against an ephemeral replica set
+        run: pnpm db:integration

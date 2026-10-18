@@ -58,6 +58,22 @@ and the lockfile hash.
 | Single Next.js app with route handlers instead of a separate API | Fewer deployables, but it would collapse the authorization boundary and mix public rendering with administration logic; the task also mandates a separate backend |
 | Separate repositories per app                                    | Breaks the SSOT: contracts, tokens, and UI could not be versioned together                                                                                        |
 
+## Amendment — 2026-10-19
+
+The decision above stands. Two details were refined by later verification and are
+recorded by `ADR-0006`, which supersedes this ADR for those details only:
+
+1. **Prisma version.** This ADR recorded "MongoDB via Prisma" without a version.
+   `ADR-0006` pins `prisma` and `@prisma/client` to exactly `6.19.3`, because
+   Prisma's MongoDB support is not available on the v7/v8 lines and `prisma@latest`
+   currently resolves to a release candidate.
+2. **Schema management.** This ADR's table implies migrations. `ADR-0006` records
+   that `prisma migrate` does not exist for the MongoDB connector, so schema changes
+   use `prisma db push` with a destructive-change gate, and that application rollback
+   is not database rollback.
+
+The original text is preserved above rather than rewritten, per `GOVERNANCE.md` §4.
+
 ## References
 
-`ARCHITECTURE.md`, `CI_GATES.md` areas 9 and 10, `TESTING.md` §1.
+`ARCHITECTURE.md`, `CI_GATES.md` areas 9 and 10, `TESTING.md` §1, `ADR-0006`.

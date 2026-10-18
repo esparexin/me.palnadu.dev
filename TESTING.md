@@ -65,6 +65,63 @@ recovery date (`GOVERNANCE.md` §5).
 - Content fixtures never assert professional claims (employers, dates, metrics).
   Article bodies in tests use placeholder text.
 
+## 4a. Database integration tests
+
+Integration tests are not unit tests and are never merged into them. They require a
+real MongoDB deployment because that is the only way to prove the behaviour that
+matters: transactions, unique-constraint enforcement, and query ordering as MongoDB
+implements them.
+
+**Prerequisite:** a local `mongod` binary. Prisma's MongoDB connector uses transactions
+internally, and MongoDB permits transactions only on a replica set, so a standalone
+server is not sufficient and is never used.
+
+```
+pnpm db:integration          # start the replica set, apply the schema, run, tear down
+pnpm db:replica:up|down|status
+```
+
+The harness (`scripts/db/replica-set.mjs`) starts a single-node replica set on port
+27118, bound to loopback, with a temporary data directory and the test-only database
+`me_palnadu_integration_test`. It never uses port 27017, so a developer's own MongoDB is
+never contacted, started, or stopped.
+
+Failure policy, which is the point of the harness:
+
+| Condition                              | Behaviour                                                             |
+| -------------------------------------- | --------------------------------------------------------------------- |
+| `mongod` missing                       | the run **fails** with an install hint                                |
+| Port already in use                    | the run **fails**; the harness never kills a process it did not start |
+| Replica set not elected within 60s     | the run **fails**                                                     |
+| Transactions unavailable               | the run **fails** before any test executes                            |
+| `prisma db push` fails                 | the run **fails**; tests do not execute against an unapplied schema   |
+| Declared collections or indexes absent | the run **fails**                                                     |
+| A test fails                           | the replica set is torn down in a `finally` block                     |
+| SIGINT / SIGTERM                       | teardown runs before exit                                             |
+
+There is no skip path and no fallback to a standalone server. A database test that did
+not run is a failed run.
+
+The harness also applies the schema to the disposable database before testing. This is
+not optional: without it the unique index on `slug` does not exist, and the
+duplicate-constraint test would pass for the wrong reason — an earlier version of this
+suite did exactly that, and the test caught it.
+
+## 4b. Schema-change gate
+
+`pnpm run check:schema` compares `apps/api/prisma/baseline.prisma` with
+`apps/api/prisma/schema.prisma` and blocks destructive changes. Its rules are unit
+tested in `tests/gates/schema-diff.test.mjs`; it fails closed when either schema is
+missing, empty, or unparseable, and when a required field has no default.
+
+What it detects: removed model, removed field, changed field type, newly required field
+without a default, field made required, unique constraint added or removed, removed
+unique index.
+
+What it cannot detect, so that it is never over-claimed: value semantics, application
+compatibility, cardinality changes that preserve the Prisma type, or data loss caused
+by data rather than schema.
+
 ## 5. Contract conformance
 
 The single most valuable suite, because it is what makes `packages/contracts` a real

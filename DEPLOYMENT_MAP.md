@@ -126,10 +126,22 @@ administration — the OAuth app alone grants nothing.
 | Post-deploy smoke | `GET /` and `GET /health/ready` on the production API and web origin | Content present, no draft leakage                                        |
 
 Data safety: Atlas continuous backup with a 30-day retention on production, point-in-time
-restore enabled, and a quarterly restore drill recorded in `RUNBOOK.md` §7. Schema
-changes are Prisma migrations applied as an explicit release step, never automatically
-on application start; every migration must be backwards-compatible with the previous
-application version so that a rollback does not require a data rollback.
+restore enabled, and a quarterly restore drill recorded in `RUNBOOK.md` §7.
+
+Schema changes use `prisma db push` as an explicit, owner-approved release step. This
+is **not** a migration workflow:
+
+- `prisma migrate` does not exist for the MongoDB connector (`ADR-0006`), so there is
+  no migration history and no per-change rollback.
+- `db push` is never run against production from an ordinary CI workflow or a
+  developer machine. It runs only from an owner-approved release, against staging
+  first.
+- A verified backup or point-in-time snapshot, plus a written recovery procedure, is a
+  precondition for a production schema change.
+- Where practical, changes follow expand-and-contract so that the previous and the new
+  application version can both run against the intermediate schema.
+- **Rolling back the application does not roll back the database.** Data recovery is
+  forward repair or a restore from a snapshot.
 
 ## 7. Decision log
 

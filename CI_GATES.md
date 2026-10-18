@@ -70,9 +70,14 @@ advisory.
 ### Area 4 — Unit, integration, and critical end-to-end tests
 
 - **Class:** Required
-- **Jobs:** `test`, `e2e`, `a11y`
-- **Mechanism:** `test` runs unit, contract, and integration suites with coverage
-  against the floors in `TESTING.md` §2 and fails if a floor is missed. `e2e` runs the
+- **Jobs:** `test`, `e2e`, `a11y`, `integration`
+- **Mechanism:** `test` runs unit and contract suites with coverage against the floors
+  in `TESTING.md` §2 and fails if a floor is missed. `integration` runs the database
+  suite against an ephemeral single-node MongoDB replica set (`TESTING.md` §4a): it
+  starts the set, applies the schema, verifies the declared collections and indexes
+  exist, runs the tests, and tears the set down. It fails rather than skips when the
+  database is unavailable, when the replica set is not elected, when transactions are
+  unsupported, or when the schema cannot be applied. `e2e` runs the
   Playwright journeys in `TESTING.md` §7 against a production build with seeded data.
   `a11y` runs axe-core over the routes listed in `TESTING.md` §7 and fails on any
   serious or critical violation.
@@ -248,8 +253,8 @@ advisory.
     and Atlas development data are never used in production.
   - **Release integrity:** the release is built once in CI, tagged with the commit SHA,
     and the same artefact is promoted to staging and production. No rebuild at deploy
-    time. The release records the SHA, the previous known-good SHA, and the migration
-    step.
+    time. The release records the SHA, the previous known-good SHA, and the schema
+    step (`prisma db push`; there is no migration history - see `ADR-0006`).
   - **Deployment security:** deployment uses short-lived, least-privilege credentials
     (OIDC where the provider supports it); long-lived provider tokens are not committed;
     environment protection requires approval.
@@ -293,6 +298,12 @@ field, not the job identifier.
 `CodeQL analysis` is produced by a separate workflow, so it lands on the commit as its
 own check run rather than inside the `ci.yml` run. That is expected: a required status
 check is matched per commit, not per workflow run.
+
+`Database integration tests` is added in Phase 6A and is **not yet in the ruleset**:
+the ruleset was created with 14 checks, and area 12 verification would fail if the
+documented table and the live ruleset diverged. The check runs on every pull request and
+is documented here; promoting it to a required status check is a deliberate follow-up
+that updates both the ruleset and this table in one reviewed change.
 
 Advisory, therefore **not** required status checks: `deadcode` (area 8), the performance
 budgets and the licence-policy portion of area 7.
