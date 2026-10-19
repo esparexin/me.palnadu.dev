@@ -26,12 +26,16 @@ test('home renders the identity and exactly the two required CTAs', async ({page
 
   const portrait = page.getByRole('img', {name: 'Portrait of Kalyan V Medaboina'});
   await expect(portrait).toBeVisible();
+  // The reference composition places the circular portrait across both name
+  // lines, so a non-overlapping layout is a regression.
   expect(
     await page.evaluate(() => {
       const title = document.querySelector('#hero-title');
       const image = document.querySelector('main img[alt="Portrait of Kalyan V Medaboina"]');
       if (!title || !image) return false;
-      return image.getBoundingClientRect().top >= title.getBoundingClientRect().bottom;
+      const titleBox = title.getBoundingClientRect();
+      const imageBox = image.getBoundingClientRect();
+      return imageBox.top < titleBox.bottom && imageBox.bottom > titleBox.top;
     }),
   ).toBe(true);
 
@@ -62,7 +66,9 @@ test('hero typography and layout at tablet breakpoint (768px)', async ({page}) =
       const title = document.querySelector('#hero-title');
       const image = document.querySelector('main img[alt="Portrait of Kalyan V Medaboina"]');
       if (!title || !image) return false;
-      return image.getBoundingClientRect().top >= title.getBoundingClientRect().bottom;
+      const titleBox = title.getBoundingClientRect();
+      const imageBox = image.getBoundingClientRect();
+      return imageBox.top < titleBox.bottom && imageBox.bottom > titleBox.top;
     }),
   ).toBe(true);
 });

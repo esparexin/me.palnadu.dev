@@ -59,9 +59,7 @@ export const BlurText: FC<BlurTextProps> = ({
         {words.map((word, wordIndex) => (
           <span
             key={`${word}-${wordIndex}`}
-            className={`inline-block transition-all duration-base ease-out ${
-              wordIndex > 0 ? 'ml-3 sm:ml-4 md:ml-6' : ''
-            } ${
+            className={`inline-block whitespace-pre transition-all duration-base ease-out ${
               inView
                 ? 'translate-y-0 opacity-100 blur-none'
                 : direction === 'top'
@@ -71,6 +69,7 @@ export const BlurText: FC<BlurTextProps> = ({
             style={{transitionDelay: `${wordIndex * delay}ms`}}
           >
             {word}
+            {wordIndex < words.length - 1 ? ' ' : null}
           </span>
         ))}
       </span>
@@ -149,42 +148,44 @@ export const PortfolioHero = ({
   };
 
   return (
-    <section aria-labelledby="hero-title" className="py-12 md:py-20">
-      <Container className="flex flex-col items-center gap-8 text-center md:gap-10">
-        {/* Eyebrow */}
-        <p className="text-eyebrow font-semibold uppercase tracking-widest text-accent-text">
+    <section aria-labelledby="hero-title" className="bg-surface-inverse py-14 md:py-20 lg:py-24">
+      <Container className="flex flex-col items-center gap-10 text-center md:gap-12">
+        <p className="text-eyebrow font-semibold uppercase tracking-widest text-surface-muted">
           {eyebrow}
         </p>
 
-        {/* Centerpiece: full name in prominent oversized typography with blue & black colors */}
-        <h1
-          id="hero-title"
-          aria-label="Kalyan V Medaboina"
-          className="flex flex-col items-center gap-1 sm:gap-2 md:gap-3 text-display sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold tracking-tight leading-none"
-        >
-          <span className="block text-accent">
-            <BlurText text={firstName} delay={70} animateBy="letters" direction="top" />
-          </span>
-          <span className="block text-text-primary">
-            <BlurText text={lastName} delay={70} animateBy="letters" direction="top" />
-          </span>
-        </h1>
+        {/* The wordmark and portrait share one stage: the circular crop straddles
+            both name lines, matching the reference composition. */}
+        <div className="relative flex w-full flex-col items-center">
+          <h1
+            id="hero-title"
+            aria-label="Kalyan V Medaboina"
+            className="relative flex flex-col items-center text-hero font-black uppercase text-highlight"
+          >
+            <span className="block">
+              <BlurText text={firstName} delay={60} animateBy="letters" direction="top" />
+            </span>
+            <span className="block">
+              <BlurText text={lastName} delay={60} animateBy="letters" direction="top" />
+            </span>
+          </h1>
 
-        {/* Portrait container with rounded-pill framing */}
-        <div className="relative h-40 w-32 shrink-0 overflow-hidden rounded-pill border border-border-default bg-surface-subtle shadow-md sm:h-48 sm:w-40 md:h-56 md:w-40 lg:h-64 lg:w-48">
-          <Image
-            src={profileImageSrc}
-            alt={profileImageAlt}
-            width={480}
-            height={720}
-            priority
-            className="h-full w-full object-cover"
-          />
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="h-32 w-20 shrink-0 overflow-hidden rounded-pill bg-surface-inverse ring-1 ring-surface-muted/20 sm:h-36 sm:w-24 md:h-48 md:w-32 lg:h-56 lg:w-40 xl:h-64 xl:w-48">
+              <Image
+                src={profileImageSrc}
+                alt={profileImageAlt}
+                width={480}
+                height={720}
+                priority
+                className="h-full w-full object-cover object-top"
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Professional Title with clean, responsive typography and balanced line wrapping */}
-        <p className="max-w-measure text-balance text-body sm:text-lead text-text-secondary leading-relaxed">
-          {tagline}
+        <p className="max-w-measure text-balance text-lead text-surface-muted sm:text-h3">
+          <BlurText text={tagline} delay={35} animateBy="words" direction="bottom" />
         </p>
 
         {/* Required Hero CTAs (UI_UX_STANDARDS 7.1) */}
@@ -192,8 +193,17 @@ export const PortfolioHero = ({
           <ButtonLink href="/resume" size="lg" className="w-full sm:w-auto">
             View Resume
           </ButtonLink>
-          <ButtonLink href="/experience" size="lg" variant="secondary" className="w-full sm:w-auto">
-            Explore Experience
+          <ButtonLink
+            href="/experience"
+            size="lg"
+            variant="secondary"
+            className="group w-full border-surface-muted hover:bg-surface-muted sm:w-auto"
+          >
+            {/* The label owns its colour so the secondary variant's
+                text-text-primary cannot win the cascade on the dark surface. */}
+            <span className="text-text-inverse group-hover:text-text-primary">
+              Explore Experience
+            </span>
           </ButtonLink>
         </div>
 
@@ -201,7 +211,7 @@ export const PortfolioHero = ({
         <button
           type="button"
           onClick={handleScroll}
-          className="group flex h-10 w-10 items-center justify-center rounded-pill text-text-tertiary transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          className="group flex h-10 w-10 items-center justify-center rounded-pill text-surface-muted transition-colors hover:text-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           aria-label="Scroll to content"
         >
           <ChevronDown className="h-6 w-6 transition-transform group-hover:translate-y-0.5" />

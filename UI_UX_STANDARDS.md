@@ -33,6 +33,7 @@ app defines, overrides, or hardcodes a visual value.
 | `surface`                                 | `#ffffff`                                     | Page and card background                     |
 | `surface-subtle`                          | `#f5f5f7`                                     | Section alternation, hover fill, code blocks |
 | `surface-muted`                           | `#e8e8ed`                                     | Dividers, track rails                        |
+| `surface-inverse`                         | `#1d1d1f`                                     | Full-bleed editorial sections (hero)         |
 | `text-primary`                            | `#1d1d1f`                                     | Headings and body                            |
 | `text-secondary`                          | `#424245`                                     | Supporting copy                              |
 | `text-tertiary`                           | `#6e6e73`                                     | Meta, captions, timestamps                   |
@@ -40,6 +41,7 @@ app defines, overrides, or hardcodes a visual value.
 | `accent`                                  | `#0071e3`                                     | Primary CTA, active state, links             |
 | `accent-hover`                            | `#0077ed`                                     | Hover/active of accent                       |
 | `accent-subtle`                           | `#e8f2fe`                                     | Selected row, chip background                |
+| `highlight`                               | `#c9f24e`                                     | Hero wordmark text only                      |
 | `border`                                  | `#d2d2d7`                                     | Input and card borders                       |
 | `border-subtle`                           | `#e8e8ed`                                     | Hairline dividers                            |
 | `focus`                                   | `#0071e3`                                     | Focus ring                                   |
@@ -61,17 +63,18 @@ Font stack:
 "Helvetica Neue", Arial, sans-serif
 ```
 
-| Token     | Size / line-height | Weight | Tracking          | Use                     |
-| --------- | ------------------ | ------ | ----------------- | ----------------------- |
-| `display` | 56 / 60            | 600    | -0.02em           | Hero only, one per page |
-| `h1`      | 40 / 46            | 600    | -0.02em           | Page title              |
-| `h2`      | 28 / 34            | 600    | -0.015em          | Section title           |
-| `h3`      | 21 / 28            | 600    | -0.01em           | Card title              |
-| `lead`    | 21 / 30            | 400    | -0.01em           | Intro paragraph         |
-| `body`    | 17 / 27            | 400    | 0                 | Body copy               |
-| `body-sm` | 15 / 23            | 400    | 0                 | Dense body, list items  |
-| `meta`    | 13 / 18            | 500    | 0.01em            | Dates, tags, captions   |
-| `eyebrow` | 12 / 16            | 600    | 0.08em, uppercase | Section eyebrow         |
+| Token     | Size / line-height | Weight | Tracking          | Use                         |
+| --------- | ------------------ | ------ | ----------------- | --------------------------- |
+| `hero`    | 48–192 / 0.95      | 900    | -0.05em           | Hero wordmark, one per page |
+| `display` | 56 / 60            | 600    | -0.02em           | Hero only, one per page     |
+| `h1`      | 40 / 46            | 600    | -0.02em           | Page title                  |
+| `h2`      | 28 / 34            | 600    | -0.015em          | Section title               |
+| `h3`      | 21 / 28            | 600    | -0.01em           | Card title                  |
+| `lead`    | 21 / 30            | 400    | -0.01em           | Intro paragraph             |
+| `body`    | 17 / 27            | 400    | 0                 | Body copy                   |
+| `body-sm` | 15 / 23            | 400    | 0                 | Dense body, list items      |
+| `meta`    | 13 / 18            | 500    | 0.01em            | Dates, tags, captions       |
+| `eyebrow` | 12 / 16            | 600    | 0.08em, uppercase | Section eyebrow             |
 
 Rules:
 
