@@ -1,7 +1,7 @@
 [
   {
     "file": "scripts/db/replica-set.mjs",
-    "maxLines": 385,
+    "maxLines": 381,
     "reason": "Developer and CI MongoDB single-node replica set lifecycle management CLI. Co-locates subcommands (up, down, status), signal handlers, socket checks, and WiredTiger disk safeguards. Operational tooling exception.",
     "allowedBy": "repository owner",
     "category": "tooling-exception",
@@ -10,7 +10,7 @@
   },
   {
     "file": "scripts/lib/schema-diff.mjs",
-    "maxLines": 305,
+    "maxLines": 298,
     "reason": "Prisma schema AST tokenizer and diff classification engine. Co-locates field parsing, index parsing, and breaking-change taxonomy. Operational tooling exception.",
     "allowedBy": "repository owner",
     "category": "tooling-exception",
@@ -19,7 +19,7 @@
   },
   {
     "file": "apps/api/test/integration/authorization.int-spec.ts",
-    "maxLines": 610,
+    "maxLines": 606,
     "reason": "Monolithic integration authorization suite testing JWT verification, RBAC, and audit log generation across all protected endpoints. Scheduled for domain-split in Refactoring Phase 5.",
     "allowedBy": "repository owner",
     "category": "legacy-debt",
@@ -28,7 +28,7 @@
   },
   {
     "file": "apps/api/src/modules/auth/admin.service.ts",
-    "maxLines": 440,
+    "maxLines": 435,
     "reason": "Monolithic admin service combining credential authentication, session persistence, and audit logging. Scheduled for service decomposition in Refactoring Phase 3.",
     "allowedBy": "repository owner",
     "category": "legacy-debt",
@@ -37,7 +37,7 @@
   },
   {
     "file": "packages/contracts/src/contracts.test.ts",
-    "maxLines": 410,
+    "maxLines": 404,
     "reason": "All-in-one unit test suite covering all contract domain schemas (experience, articles, media, pagination). Scheduled for domain test split in Refactoring Phase 4.",
     "allowedBy": "repository owner",
     "category": "legacy-debt",
@@ -46,7 +46,7 @@
   },
   {
     "file": "apps/api/src/modules/media/media.service.ts",
-    "maxLines": 380,
+    "maxLines": 375,
     "reason": "Combines Cloudinary HMAC SHA-1 upload signing and provider deletion with database asset tracking. Scheduled for provider abstraction in Refactoring Phase 3.",
     "allowedBy": "repository owner",
     "category": "legacy-debt",
@@ -55,7 +55,7 @@
   },
   {
     "file": "apps/api/test/integration/content.int-spec.ts",
-    "maxLines": 375,
+    "maxLines": 369,
     "reason": "Combined integration test covering article lifecycle, publishing workflow, and media asset endpoints. Scheduled for domain-split in Refactoring Phase 5.",
     "allowedBy": "repository owner",
     "category": "legacy-debt",
@@ -64,7 +64,7 @@
   },
   {
     "file": "apps/api/test/integration/auth.int-spec.ts",
-    "maxLines": 360,
+    "maxLines": 356,
     "reason": "Integration test covering login, logout, password rotation, and active session listing. Scheduled for domain-split in Refactoring Phase 5.",
     "allowedBy": "repository owner",
     "category": "legacy-debt",
@@ -73,7 +73,7 @@
   },
   {
     "file": "apps/api/src/modules/knowledge/knowledge.service.ts",
-    "maxLines": 355,
+    "maxLines": 352,
     "reason": "Combines article persistence queries with DTO mapping and revalidation hooks. Scheduled for mapper extraction in Refactoring Phase 3.",
     "allowedBy": "repository owner",
     "category": "legacy-debt",
@@ -82,7 +82,7 @@
   },
   {
     "file": "apps/api/test/integration/experience.int-spec.ts",
-    "maxLines": 345,
+    "maxLines": 339,
     "reason": "Integration test covering experience ordering, date comparisons, and draft segregation. Scheduled for domain-split in Refactoring Phase 5.",
     "allowedBy": "repository owner",
     "category": "legacy-debt",
@@ -91,7 +91,7 @@
   },
   {
     "file": "apps/api/src/modules/experience/experience.service.ts",
-    "maxLines": 275,
+    "maxLines": 269,
     "reason": "Contains update-builder and row-to-contract DTO mapping inline with query methods. Scheduled for mapper extraction in Refactoring Phase 3.",
     "allowedBy": "repository owner",
     "category": "legacy-debt",
@@ -100,7 +100,7 @@
   },
   {
     "file": "packages/shared/src/markdown.ts",
-    "maxLines": 270,
+    "maxLines": 264,
     "reason": "Inline markdown subset parser combining AST tokenizers with document text extraction utilities. Scheduled for AST extraction in Refactoring Phase 4.",
     "allowedBy": "repository owner",
     "category": "legacy-debt",

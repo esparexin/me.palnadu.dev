@@ -3,6 +3,28 @@ import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
+import {readFileSync, existsSync} from 'node:fs';
+
+// Line-limit allowlist entries (CODING_STANDARDS.md 6 / CI_GATES.md area 1).
+// Grandfathered files with active exceptions are exempt until refactored.
+const allowlistPath = new URL('./scripts/line-limit-allowlist.json', import.meta.url);
+const allowlistPatterns = [];
+if (existsSync(allowlistPath)) {
+  try {
+    const raw = JSON.parse(readFileSync(allowlistPath, 'utf8'));
+    for (const entry of raw) {
+      if (typeof entry.file === 'string') {
+        allowlistPatterns.push(
+          entry.file,
+          `**/${entry.file}`,
+          `**/${entry.file.replace(/^(?:apps|packages|scripts|tests)\/[^/]+\//, '')}`,
+        );
+      }
+    }
+  } catch {
+    // Fail-open for tooling if JSON is temporarily unparseable during edits
+  }
+}
 
 /**
  * The mechanical form of the bans in AGENTS.md section 3 and
@@ -118,5 +140,29 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
+  {
+    files: ['**/*.{ts,tsx,js,mjs}'],
+    rules: {
+      // Strict 250-line file limit (CODING_STANDARDS.md 6 / CI_GATES.md area 1)
+      'max-lines': [
+        'error',
+        {
+          max: 250,
+          skipBlankLines: false,
+          skipComments: false,
+        },
+      ],
+    },
+  },
+  ...(allowlistPatterns.length > 0
+    ? [
+        {
+          files: allowlistPatterns,
+          rules: {
+            'max-lines': 'off',
+          },
+        },
+      ]
+    : []),
   prettier,
 );

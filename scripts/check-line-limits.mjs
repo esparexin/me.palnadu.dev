@@ -12,7 +12,7 @@
  * - Any new file exceeding 250 lines fails immediately.
  * - Passing --strict audits every file against the 250-line limit ignoring allowlists.
  */
-import {readdir, readFile} from 'node:fs/promises';
+import {readdir, readFile, writeFile} from 'node:fs/promises';
 import {existsSync, readFileSync} from 'node:fs';
 import path from 'node:path';
 
@@ -39,6 +39,7 @@ const SOURCE_FILE_PATTERN = /\.(ts|tsx|mjs|js)$/;
 const EXCLUDE_FILE_PATTERN = /\.d\.ts$/;
 
 const isStrict = process.argv.includes('--strict');
+const isShrink = process.argv.includes('--shrink');
 
 async function findSourceFiles(relativeDir) {
   const results = [];
@@ -85,6 +86,7 @@ async function main() {
   const today = new Date().toISOString().slice(0, 10);
 
   let totalFilesScanned = 0;
+  let shrunkCount = 0;
   const violatingFiles = [];
 
   for (const root of SCAN_ROOTS) {
@@ -121,17 +123,26 @@ async function main() {
               `${relPath}: exception expired on ${allowEntry.reviewBy}. Refactor or re-approve via ADR/review.`,
             );
           } else {
-            notes.push(
-              `${relPath}: ${lineCount} lines (allowed up to ${allowEntry.maxLines}; ${allowEntry.category}): ${allowEntry.reason}`,
-            );
+            if (lineCount < allowEntry.maxLines && isShrink) {
+              const oldCap = allowEntry.maxLines;
+              allowEntry.maxLines = lineCount;
+              shrunkCount++;
+              notes.push(
+                `${relPath}: ratcheted ceiling shrunk from ${oldCap} to ${lineCount} (-${oldCap - lineCount})`,
+              );
+            } else {
+              notes.push(
+                `${relPath}: ${lineCount} lines (allowed up to ${allowEntry.maxLines}; ${allowEntry.category}): ${allowEntry.reason}`,
+              );
+            }
           }
         }
       } else {
         // File is within limits; verify it is not redundantly allowlisted
         const allowEntry = allowlistMap.get(relPath);
         if (allowEntry && !isStrict) {
-          notes.push(
-            `${relPath}: now compliant (${lineCount} lines <= ${MAX_LINES}). Ready to remove from ${ALLOWLIST_FILE}.`,
+          failures.push(
+            `${relPath}: now compliant (${lineCount} lines <= ${MAX_LINES}). Remove redundant entry from ${ALLOWLIST_FILE}.`,
           );
         }
       }
@@ -152,6 +163,13 @@ async function main() {
         }
       }
     }
+  }
+
+  if (shrunkCount > 0) {
+    await writeFile(allowlistPath, JSON.stringify(allowlist, null, 2) + '\n', 'utf8');
+    console.log(
+      `check-line-limits: ratcheted ${shrunkCount} ceiling(s) downward in ${ALLOWLIST_FILE}`,
+    );
   }
 
   for (const message of notes) {
