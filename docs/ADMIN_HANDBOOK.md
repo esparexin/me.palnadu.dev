@@ -39,29 +39,27 @@ browser tests.
 
 ### 1.2 Checks run for this handbook
 
-| Check                                        | Result                    |
-| -------------------------------------------- | ------------------------- |
-| `pnpm --filter @me-palnadu/contracts test`   | 46 tests passed           |
-| `pnpm --filter @me-palnadu/ui test`          | 23 tests passed           |
-| `pnpm --filter @me-palnadu/admin test`       | 2 files, 20 tests passed  |
-| `pnpm --filter @me-palnadu/api test`         | 4 files, 38 tests passed  |
-| `pnpm --filter @me-palnadu/admin typecheck`  | passed                    |
-| `pnpm --filter @me-palnadu/api typecheck`    | passed                    |
-| `pnpm build`                                 | 7 packages successful     |
-| `pnpm db:integration`                        | 7 files, 106 tests passed |
-| Repository doc/schema/secret/boundary checks | 0 violations              |
-| Public E2E (`pnpm test:e2e`)                 | 46/48; 2 need an API      |
-| Admin browser/E2E suite                      | does not exist            |
+| Check                                        | Result                     |
+| -------------------------------------------- | -------------------------- |
+| `pnpm --filter @me-palnadu/contracts test`   | 46 tests passed            |
+| `pnpm --filter @me-palnadu/ui test`          | 23 tests passed            |
+| `pnpm --filter @me-palnadu/admin test`       | 2 files, 20 tests passed   |
+| `pnpm --filter @me-palnadu/api test`         | 4 files, 38 tests passed   |
+| `pnpm --filter @me-palnadu/admin typecheck`  | passed                     |
+| `pnpm --filter @me-palnadu/api typecheck`    | passed                     |
+| `pnpm build`                                 | 7 packages successful      |
+| `pnpm db:integration`                        | 7 files, 106 tests passed  |
+| Repository doc/schema/secret/boundary checks | 0 violations               |
+| Public E2E (`pnpm test:e2e`)                 | 48/48; 2 need API on :4000 |
+| Admin browser/E2E suite                      | does not exist             |
 
 Local test counts are not CI evidence. A gate is enforced only when a workflow run is
 cited (`GOVERNANCE.md` section 6).
 
 ### 1.3 Current working tree
 
-The tree contains the completed FAQ removal across the public site, admin, API,
-contracts, Prisma schema, tests, and documentation. It also contains unrelated
-uncommitted changes that predate the remediation: `apps/web/package.json` and
-`pnpm-lock.yaml` add `lucide-react`, and `apps/web/public/profile.png` is untracked.
+The remediation is committed on `70f2c04` (`feat(full-stack): audit stack, enforce
+line limits, and modularize molten ring carousel`); no audit change remains uncommitted.
 
 - The public `/faq` route, admin FAQ screen, API module, contracts, cache tag, overview
   counter, and FAQ tests are removed.
