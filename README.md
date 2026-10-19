@@ -3,12 +3,15 @@
 Personal professional portfolio: public site, administration interface, and API, with
 shared contracts and a design-token source of truth.
 
-> **Status: Phase 6G — Knowledge Hub, FAQ, media library, and administrator
-> sessions/audit implemented in the working tree; not committed and not deployed.**
-> Local gates pass (`pnpm verify`, `pnpm db:integration` 106 tests, `pnpm test:e2e`
-> 32 tests), but enforcement claims still require a CI run: areas 8, 12, and 13 and
-> every deployment control remain `SPECIFIED` (`GOVERNANCE.md` §6). The owner
-> credential is provisioned only by `owner:provision`; no content is seeded.
+> **Status: audit remediation on `feat/admin-full-stack-audit-21st-mcp` — Knowledge
+> Hub, FAQ, media library, administrator sessions/audit, and the fixes from the
+> 2026 audit are committed on that branch; nothing is merged to `main` and nothing
+> is deployed.** Local gates pass (`pnpm verify`, `pnpm db:integration` 107 tests,
+> `pnpm test:e2e` 50 tests), but enforcement claims still require a CI run: areas 8,
+> 12, and 13 and every deployment control remain `SPECIFIED` (`GOVERNANCE.md` §6).
+> The owner credential is provisioned only by `owner:provision`. No content is
+> seeded, so the content-driven public pages still render their scaffold notices;
+> they are not a substitute for approved content.
 
 ## Read first
 
@@ -77,15 +80,15 @@ Run everything with `pnpm verify`, which exits non-zero on the first failing gat
 
 ## Current phase
 
-| Phase                         | State                                                                                           |
-| ----------------------------- | ----------------------------------------------------------------------------------------------- |
-| 1. Repository discovery       | Complete — empty repository confirmed, nothing to reuse                                         |
-| 2. Governance and SSOT        | Complete and merged                                                                             |
-| 3. Architecture and structure | Complete — workspace, packages, apps, and toolchain exist                                       |
-| 4. CI/CD and security         | Workflows written; awaiting first run and ruleset creation                                      |
-| 5. Quality baseline           | Partly done — Knip and jscpd run by hand during Phase 5                                         |
-| 6. Implementation             | Partly done — Knowledge Hub, FAQ, media, audit, and sessions                                    |
-| 7. Verification               | Partly done — e2e, a11y, integration, and `pnpm verify` pass locally; manual gate still pending |
+| Phase                         | State                                                                                                                      |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 1. Repository discovery       | Complete — empty repository confirmed, nothing to reuse                                                                    |
+| 2. Governance and SSOT        | Complete and merged                                                                                                        |
+| 3. Architecture and structure | Complete — workspace, packages, apps, and toolchain exist                                                                  |
+| 4. CI/CD and security         | Workflows written; awaiting first run and ruleset creation                                                                 |
+| 5. Quality baseline           | Partly done — Knip and jscpd run by hand during Phase 5                                                                    |
+| 6. Implementation             | Partly done — Knowledge Hub, FAQ, media, audit, sessions, and the audit fixes                                              |
+| 7. Verification               | Partly done — e2e (50), a11y, integration (107), and `pnpm verify` pass locally; PR, CI run, and manual gate still pending |
 
 ## Local setup
 

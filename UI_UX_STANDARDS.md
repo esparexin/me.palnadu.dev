@@ -305,7 +305,8 @@ returns it; the UI never re-sorts.
 ### 7.4 Knowledge Hub and other lists
 
 - Cards are links; the whole card is the target; no nested interactive elements.
-- Filters are real buttons with `aria-pressed`, not styled links.
+- Filters submit as a GET form (shareable URLs, functional without JavaScript); the
+  active filters are visible in the form controls, never by colour alone.
 - An article body is rendered by `Prose`; headings inside an article start at `h2`
   because the page title is `h1`.
 
