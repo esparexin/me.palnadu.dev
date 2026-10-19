@@ -62,6 +62,26 @@ export const BODY_LIMIT_BYTES = 256 * 1024;
  * Registered as ordinary middleware so the headers are present on error responses
  * too. A 401 or 404 that arrives without `nosniff` would still be a response a browser
  * sniffs, which is the whole purpose of the header.
+ *
+ * Why not `app.useSecurityHeaders()`, which Nest 12 provides? Measured against this
+ * application, its defaults emit:
+ *
+ *   cross-origin-resource-policy: same-origin   <- would break the public site
+ *   content-security-policy: default-src 'self'; ... upgrade-insecure-requests
+ *   strict-transport-security: max-age=31536000; includeSubDomains  <- unconditionally
+ *   referrer-policy: no-referrer                <- SECURITY.md 5 asks for
+ *                                                 strict-origin-when-cross-origin
+ *   x-frame-options: SAMEORIGIN                 <- this policy uses DENY
+ *
+ * The resource policy is decisive on its own: this API is fetched cross-origin by the
+ * public site, so `same-origin` would break the site the API exists to serve. The CSP
+ * is helmet's document policy - correct for an HTML page, wrong for JSON, and
+ * `upgrade-insecure-requests` would rewrite http to https.
+ *
+ * Nor is `Permissions-Policy` expressible there: it is absent from Nest's option
+ * table entirely, and SECURITY.md 5 requires it. Using the built-in would mean
+ * disabling six defaults, restating the rest, and still keeping a middleware for the
+ * one header it cannot set.
  */
 export const securityHeaders =
   (env: Env) =>

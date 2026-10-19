@@ -375,3 +375,27 @@ silent gap.
 **Still outstanding:** rate limiting; OAuth sign-in and session issuance; CSRF
 reassessment once cookie authentication arrives; and the owner-only role-denial gap from
 Phase 6B.
+
+### 9.4 Why the API does not use `app.useSecurityHeaders()`
+
+Nest 12 ships `useSecurityHeaders()`. It was evaluated against this application rather
+than adopted, because its defaults do not fit a JSON API consumed cross-origin. Measured
+by running it and reading the emitted headers:
+
+| Header                         | Nest's default                                     | What this API needs               | Consequence                                                                             |
+| ------------------------------ | -------------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------- |
+| `Cross-Origin-Resource-Policy` | `same-origin`                                      | **absent**                        | Would break the public site, which fetches this API cross-origin                        |
+| `Content-Security-Policy`      | `default-src 'self'` … `upgrade-insecure-requests` | `default-src 'none'`              | A document policy, not a JSON policy; the upgrade directive would rewrite http to https |
+| `Strict-Transport-Security`    | always sent                                        | production only                   | Would apply in development and test                                                     |
+| `Referrer-Policy`              | `no-referrer`                                      | `strict-origin-when-cross-origin` | §5 specifies the latter                                                                 |
+| `X-Frame-Options`              | `SAMEORIGIN`                                       | `DENY`                            | Weaker than §5's `frame-ancestors 'none'`                                               |
+| `Permissions-Policy`           | **not supported**                                  | required by §5                    | No option exists for it                                                                 |
+
+The resource policy alone is decisive. Using the built-in would mean disabling six
+defaults, restating the rest, and keeping a middleware anyway for the one header it
+cannot express. `http-hardening.int-spec.ts` asserts `Cross-Origin-Resource-Policy`
+stays absent so this decision cannot be undone by a well-meaning "use the framework
+built-in".
+
+This entry exists because Phase 6C hand-wrote the middleware without first checking
+what the framework offered. It should have checked.
