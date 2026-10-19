@@ -1,5 +1,4 @@
 import type {INestApplication} from '@nestjs/common';
-import {Test} from '@nestjs/testing';
 import {SignJWT} from 'jose';
 import request from 'supertest';
 import {afterAll, beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
