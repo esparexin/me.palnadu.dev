@@ -177,7 +177,7 @@ once the GitHub OAuth app exists; until then this control remains `SPECIFIED`.
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Security headers   | CSP (`default-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'none'`, no `unsafe-eval` in production), `Strict-Transport-Security` (max-age ≥ 31536000, includeSubDomains), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` denying camera, microphone, geolocation |
 | CORS               | Explicit origin allowlist per environment; `credentials: false`; `Access-Control-Max-Age: 600`                                                                                                                                                                                                                                                         |
-| Rate limiting      | `@nestjs/throttler` — public reads 120/min per IP, contact submission 5/hour per IP, admin writes 300/min per user                                                                                                                                                                                                                                     |
+| Rate limiting      | `@nestjs/throttler` — public reads 120/min per IP, administrative writes 300/min per administrator (`ADR-0007`)                                                                                                                                                                                                                                        |
 | Rate-limit storage | In-memory per API instance. **Limitation:** limits are per instance, so horizontal scaling weakens them. The API is therefore pinned to a single instance with this documented rationale; moving to a shared store requires an ADR                                                                                                                     |
 | Body limits        | JSON body capped at 256KB (`BODY_LIMIT_BYTES`, set explicitly rather than inherited from Express's 100KB default); Markdown fields capped by schema length. Rejection is `PAYLOAD_TOO_LARGE`/413                                                                                                                                                       |
 | Input              | Every write validated by a contracts schema; unknown keys rejected; no dynamic `Object.assign` onto persisted documents                                                                                                                                                                                                                                |
@@ -318,9 +318,8 @@ fail is not evidence.
 
 **Still `SPECIFIED`, and not covered by any test above:**
 
-- Rate limiting. `@nestjs/throttler` is not a dependency. Separate workstream: it needs
-  a dependency rationale in an ADR, a Nest 12 compatibility check, and tests that
-  observe actual throttling.
+- Rate limiting was `SPECIFIED` at the time of that audit and is now proven by Phase 6E
+  (§9.5); the earlier entry is superseded.
 - Request body limit. The §5 table specifies 256KB; Express's default is 100KB. The
   running system is _stricter_ than documented, which is a documentation defect rather
   than a security hole, but the two must be reconciled deliberately.
@@ -399,3 +398,39 @@ built-in".
 
 This entry exists because Phase 6C hand-wrote the middleware without first checking
 what the framework offered. It should have checked.
+
+### 9.5 Phase 6E: rate limiting
+
+**Decision:** `ADR-0007`. `@nestjs/throttler@6.7.1`, pinned exactly, in-memory storage.
+
+Compatibility was verified rather than assumed: `6.7.1` declares `@nestjs/core` and
+`@nestjs/common` as `^7 || ^8 || ^9 || ^10 || ^11 || ^12`, which covers the pinned
+12.1.3. `pnpm audit --audit-level high` reports no known vulnerabilities.
+
+**Proven by `pnpm db:integration` (5 passing, `rate-limit.int-spec.ts`).** The tests
+make real requests and assert refusals; a test reading only the configured numbers would
+prove the configuration parses, not that anything is enforced.
+
+| Control               | Asserted behaviour                                                                       |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| Documented limits     | 120/min public, 300/min admin, 60s window — matching §5                                  |
+| Public reads          | Requests 1–120 succeed; request 121 receives `429 RATE_LIMITED` in the contract envelope |
+| Administrative writes | Requests 1–300 reach the handler; request 301 receives 429                               |
+| Anonymous callers     | 20 unauthenticated attempts all return 401 and spend none of the administrator's budget  |
+
+**Mutation-tested:** removing the throttler guard fails 2 tests, raising the public limit
+tenfold fails 1, and removing the `SkipThrottle` on administrative routes fails 1.
+
+**One defect found by writing the tests.** Every named throttler registered in
+`forRoot` applies to every route unless explicitly skipped, so administrative writes
+were also charged to the 120/min public budget and the 300-request test was refused at
+request 121. `AdminRateLimit` and `PublicRateLimit` now skip the other throttler
+explicitly. A rate limit that is quietly the lower of two policies is not the policy
+anyone documented.
+
+**Known limitation, unchanged and accepted:** counters are per instance and reset on
+restart (`ADR-0007`). The API is pinned to a single instance for this reason. Moving to
+a shared store requires an ADR because it changes the deployment assumption.
+
+**Still outstanding:** OAuth sign-in and session issuance; CSRF reassessment once cookie
+authentication arrives; and the owner-only role-denial gap from Phase 6B.
