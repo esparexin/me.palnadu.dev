@@ -16,41 +16,5 @@
     "category": "tooling-exception",
     "added": "2026-10-19",
     "reviewBy": "2027-01-19"
-  },
-  {
-    "file": "apps/api/test/integration/authorization.int-spec.ts",
-    "maxLines": 606,
-    "reason": "Monolithic integration authorization suite testing JWT verification, RBAC, and audit log generation across all protected endpoints. Scheduled for domain-split in Refactoring Phase 4.",
-    "allowedBy": "repository owner",
-    "category": "legacy-debt",
-    "added": "2026-10-19",
-    "reviewBy": "2026-11-15"
-  },
-  {
-    "file": "apps/api/test/integration/content.int-spec.ts",
-    "maxLines": 369,
-    "reason": "Combined integration test covering article lifecycle, publishing workflow, and media asset endpoints. Scheduled for domain-split in Refactoring Phase 4.",
-    "allowedBy": "repository owner",
-    "category": "legacy-debt",
-    "added": "2026-10-19",
-    "reviewBy": "2026-11-15"
-  },
-  {
-    "file": "apps/api/test/integration/auth.int-spec.ts",
-    "maxLines": 356,
-    "reason": "Integration test covering login, logout, password rotation, and active session listing. Scheduled for domain-split in Refactoring Phase 4.",
-    "allowedBy": "repository owner",
-    "category": "legacy-debt",
-    "added": "2026-10-19",
-    "reviewBy": "2026-11-15"
-  },
-  {
-    "file": "apps/api/test/integration/experience.int-spec.ts",
-    "maxLines": 339,
-    "reason": "Integration test covering experience ordering, date comparisons, and draft segregation. Scheduled for domain-split in Refactoring Phase 4.",
-    "allowedBy": "repository owner",
-    "category": "legacy-debt",
-    "added": "2026-10-19",
-    "reviewBy": "2026-11-15"
   }
 ]

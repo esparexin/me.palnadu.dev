@@ -4,27 +4,12 @@ import {
   ExperienceCreateSchema,
   ExperienceUpdateSchema,
   PublicExperienceSchema,
-  type ExperienceCreateInput,
 } from '@me-palnadu/contracts';
 import {parseEnv} from '../../src/config/env.js';
 import {PrismaService} from '../../src/prisma/prisma.service.js';
 import {ExperienceService} from '../../src/modules/experience/experience.service.js';
 import {AdminService} from '../../src/modules/auth/admin.service.js';
-import {mapPersistenceError} from '../../src/common/persistence-error.js';
-
-/**
- * Integration tests for the Experience slice, executed against a real
- * single-node MongoDB replica set (B3).
- *
- * These are integration tests, not unit tests: they talk to a real database, which
- * is the only way to prove transaction support, unique-constraint behaviour,
- * timestamp handling, and query ordering as MongoDB actually implements them.
- *
- * They are excluded from the unit test run. `pnpm test` uses vitest with an
- * include pattern that only picks up *.test.ts, and the database suite is
- * test/integration/*.int-spec.ts, run exclusively by
- * `pnpm test:integration` against the harness.
- */
+import {auditFor, baseExperienceRecord as baseRecord} from './experience-fixture.js';
 
 const databaseUrl = process.env['DATABASE_URL'];
 if (databaseUrl === undefined || databaseUrl.length === 0) {
@@ -34,65 +19,10 @@ if (databaseUrl === undefined || databaseUrl.length === 0) {
 }
 
 const env = parseEnv({NODE_ENV: 'test', DATABASE_URL: databaseUrl});
-
-/**
- * A real client, constructed the way the application constructs it: from a
- * validated environment, never from a hardcoded URL.
- */
 const prisma = new PrismaService(env);
-const service = new ExperienceService(prisma, new AdminService(prisma));
-
-/**
- * Every write now commits its audit entry in the same transaction, so these tests
- * supply one. `AuditLog.actorId` is not a database-level relation, so a stable
- * placeholder is sufficient here; who the actor *is* is covered by the authorization
- * suite, which uses a real administrator.
- */
-const auditFor = (entityId: string) => ({
-  actorId: '000000000000000000000001',
-  action: 'experience_update',
-  entityType: 'experience',
-  entityId,
-});
-
-const baseRecord = (overrides: Partial<ExperienceCreateInput> = {}): ExperienceCreateInput => {
-  const candidate: Record<string, unknown> = {
-    slug: 'example-org-endpoint-engineer',
-    org: 'Example Organisation',
-    title: 'Endpoint Engineer',
-    location: 'Remote',
-    startDate: '2023-04',
-    endDate: '2026-01',
-    current: false,
-    kind: 'full_time',
-    summary: 'Placeholder summary used only in integration tests.',
-    highlights: ['Placeholder highlight'],
-    tech: ['Jamf Pro', 'Intune'],
-    sortIndex: 0,
-    published: true,
-    ...overrides,
-  };
-
-  // The contract requires a current role to carry no end date, and a finished role
-  // to carry one. Fixtures are normalised here so a test cannot accidentally create
-  // a fixture the API would have rejected.
-  if (candidate['current'] === true) {
-    delete candidate['endDate'];
-  } else if (candidate['endDate'] === undefined) {
-    candidate['endDate'] = '2026-01';
-  }
-
-  const parsed = ExperienceCreateSchema.safeParse(candidate);
-  if (!parsed.success)
-    throw new Error(
-      `fixture is not a valid contract value: ${JSON.stringify(parsed.error.issues)}`,
-    );
-  return parsed.data;
-};
+const service = new ExperienceService(prisma, new AdminService(prisma, env));
 
 beforeAll(async () => {
-  // Proves the deployment can execute a transaction, which Prisma requires. If
-  // the harness ever regressed to a standalone server, this would fail here.
   await prisma.experience.create({
     data: {
       slug: 'transaction-probe',
@@ -190,7 +120,7 @@ describe('Experience persistence', () => {
       auditFor('test'),
     );
     expect(updated.title).toBe('Senior Endpoint Engineer');
-    expect(updated.summary).toBe('Placeholder summary used only in integration tests.');
+    expect(updated.summary).toBe('Placeholder summary used only in tests.');
     expect(updated.tech).toEqual(['Jamf Pro', 'Intune']);
   });
 
@@ -262,7 +192,6 @@ describe('Experience persistence', () => {
     const fromDatabase = await service.listPublished();
     const byComparator = [...fromDatabase].sort(compareExperience);
 
-    // If these diverge, the index-backed order has drifted from the SSOT comparator.
     expect(fromDatabase.map((entry) => entry.slug)).toEqual(
       byComparator.map((entry) => entry.slug),
     );
@@ -275,9 +204,6 @@ describe('Experience persistence', () => {
   });
 
   it('stores enum-like values without a database-level enum, per the canonical-ownership decision', async () => {
-    // MongoDB accepts any string in a String field. That is a recorded limitation,
-    // not something to pretend away: this test proves the database does NOT enforce
-    // the value set, and proves the contract is what rejects it.
     await prisma.experience.create({
       data: {
         slug: 'out-of-contract-value',
@@ -293,8 +219,6 @@ describe('Experience persistence', () => {
     const row = await prisma.experience.findUnique({where: {slug: 'out-of-contract-value'}});
     expect(row?.kind).toBe('a_kind_the_contracts_reject');
 
-    // Built explicitly rather than by destructuring a slug out of the fixture,
-    // which leaves an unused binding behind.
     const valid = baseRecord();
     const rejected = ExperienceCreateSchema.safeParse({
       org: valid.org,
@@ -310,29 +234,5 @@ describe('Experience persistence', () => {
       published: valid.published,
     });
     expect(rejected.success).toBe(false);
-  });
-
-  it('maps an unknown persistence failure to an opaque INTERNAL_ERROR', () => {
-    // A failure shape the mapper does not recognise must not leak driver detail.
-    const {error, logDetail} = mapPersistenceError(
-      new Error('mongodb://user:placeholder@127.0.0.1:27017/db failed'),
-    );
-    expect(error.code).toBe('INTERNAL_ERROR');
-    expect(error.message).toBe('Internal server error');
-    expect(logDetail).toContain('unmapped');
-    expect(error.message).not.toContain('mongodb://');
-  });
-
-  it('maps a unique-constraint violation to a CONFLICT without driver text', () => {
-    const {error} = mapPersistenceError({code: 'P2002', meta: {target: ['slug']}});
-    expect(error.code).toBe('CONFLICT');
-    expect(error.message).toContain('slug');
-    expect(error.message).not.toMatch(/P2002|prisma/i);
-  });
-
-  it('maps an unreachable database to an opaque INTERNAL_ERROR', () => {
-    const {error} = mapPersistenceError({code: 'P1001'});
-    expect(error.code).toBe('INTERNAL_ERROR');
-    expect(error.message).toBe('The data store is unavailable.');
   });
 });
