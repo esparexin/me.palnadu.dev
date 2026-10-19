@@ -239,3 +239,42 @@ Before production, the following must be evidenced: an authorization matrix test
 (unauthenticated, wrong user, revoked, expired, elevated-claim token) for every protected
 route; a CSP report confirming no violations; a clean secret scan over full history; an
 advisory audit; and an explicit check that drafts are unreachable without a session.
+
+### 9.1 What Phase 6B proved, and what it did not
+
+**Proven by `pnpm db:integration` (47 passing: 33 authorization, 14 persistence).** The
+§4.4 API authorization boundary runs on every protected request, against a real Nest
+application and a real MongoDB replica set:
+
+| Control                                                                       | Exercised by                                                                                                                                                        |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Absent or malformed `Authorization` header is `UNAUTHENTICATED`/401           | `authorization.int-spec.ts` — "refuses a request with no Authorization header"                                                                                      |
+| Bad signature, wrong secret, `alg:none`, expired, wrong issuer/audience → 401 | "refuses a token signed with a different secret", "refuses an unsigned token", "refuses an expired token", "refuses a wrong issuer and a wrong audience"            |
+| Signed token for a non-administrator → 403                                    | "refuses a signed token for a non-administrator with 403"                                                                                                           |
+| Deactivated administrator → 403                                               | "refuses a deactivated administrator"                                                                                                                               |
+| Revoked, expired, or foreign session → 401                                    | "refuses a revoked session", "refuses an expired session record even when the token has not expired", "refuses a session that belongs to a different administrator" |
+| Token-version increment invalidates every session                             | "invalidates every session when the token version is incremented"                                                                                                   |
+| A forged role claim does not widen authority                                  | "ignores a forged role claim in favour of the database"                                                                                                             |
+| A stored role outside the canonical enum fails closed                         | "fails closed when the stored role is outside the canonical enum"                                                                                                   |
+| Public reads expose published records only, and no `slug`                     | "never serves a draft on the public list or by slug", "withholds the slug from the public projection"                                                               |
+| Health probes stay reachable                                                  | "keeps health endpoints reachable without a session"                                                                                                                |
+| Every write commits its audit entry in one transaction                        | "creates an experience entry and records an audit entry", "records no audit entry when the write itself fails"                                                      |
+| Validation uses the contracts at the boundary                                 | "rejects an invalid body with the contract error envelope"                                                                                                          |
+
+**Still `SPECIFIED`, and not covered by any test above:**
+
+- GitHub OAuth sign-in, callback handling, and session issuance (§4.1–4.3). The tests
+  mint tokens directly with `jose`; nothing here proves a real sign-in flow works.
+- CSRF protection on the session cookie, and cookie issuance itself.
+- Security headers, CORS, and rate limiting (§5).
+- Role-based _denial_. Every Experience write route admits both `owner` and `editor`,
+  so no route exists on which the two roles differ. The forged-claim test proves the
+  role is read from the database; it cannot yet prove that a lower role is refused an
+  owner-only operation. This closes as soon as an owner-only operation is defined.
+
+**Open domain decision — `archive`.** Archiving was implemented as `published = false`,
+which is byte-for-byte what `unpublish` already did: two names for one behaviour, where
+an operator would reasonably assume they differ. The route has been removed rather than
+left misleading. Real archiving needs an archived state in `packages/contracts` and
+`apps/api/prisma/schema.prisma` — a contract and schema decision, not a routing one, so
+it is not taken unilaterally here.

@@ -1,15 +1,18 @@
-// Baseline for scripts/check-schema.mjs.
+// Prisma schema for the portfolio API.
 //
-// The last schema shape reviewed and deliberately applied. It is the comparison
-// point for the next change, so a destructive edit cannot merge without either
-// updating this file in the same reviewed pull request, or recording an exception
-// with a recovery plan in schema-exceptions.json.
+// SCOPE (Phase 6A): the Experience slice only. Other collections in
+// ARCHITECTURE.md section 7 arrive with their own vertical slice, never as an
+// up-front guess at future models.
 //
-// Prisma's MongoDB connector has no migration history, so this file is the only
-// durable record of what the schema was. The diff between the previous and the new
-// baseline IS the record of what was accepted.
+// SCHEMA MANAGEMENT: Prisma's MongoDB connector does not support `prisma migrate`
+// (verified against Prisma 6.19.3). Schema changes are applied with `prisma db push`
+// as an explicit, reviewed step. That is NOT equivalent to a migration and does NOT
+// give a rollback path for data. See docs/adr/0006 and scripts/check-schema.mjs.
 //
-// Content below mirrors prisma/schema.prisma and is updated in the same commit.
+// CANONICAL VALUES: enum-like fields are `String`, not Prisma `enum` blocks, because
+// the allowed values live once in @me-palnadu/contracts (SSOT_POLICY.md section 1).
+// MongoDB therefore does not enforce these value sets on its own; the API boundary
+// does, using the contract schemas.
 
 // Prisma schema for the portfolio API.
 //
@@ -67,4 +70,68 @@ model Experience {
   // Public reads filter on `published` and order by the comparator's key order.
   // The unique index on `slug` is created by the field-level `@unique`.
   @@index([published, startDate, current, sortIndex])
+}
+
+/// An administrator, keyed on the immutable numeric GitHub id.
+///
+/// The database is the authority on who may write. A JWT claim is advisory: the
+/// guard re-reads this record on every protected request, so revoking an
+/// administrator takes effect immediately rather than at token expiry
+/// (SECURITY.md section 4).
+model AdminUser {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  githubId    Int      @unique
+  login       String
+  /// Canonical values in @me-palnadu/contracts (ROLES).
+  role        String   @default("owner")
+  displayName String?
+  /// Incremented to revoke every session an administrator holds.
+  tokenVersion Int     @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastLoginAt DateTime?
+
+  sessions    AdminSession[]
+}
+
+/// One administrator session.
+///
+/// The session id in the token (`sid`) must resolve to a live row, which is what
+/// makes per-session revocation and sign-out-everywhere possible without waiting
+/// for a token to expire.
+model AdminSession {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  /// Matches the `sid` claim; stored so a token's session can be found directly.
+  sessionId  String    @unique
+  userId     String    @db.ObjectId
+  /// The token version this session was issued under. A user-level increment
+  /// invalidates every session without touching the rows.
+  tokenVersion Int
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  user       AdminUser @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Append-only record of every administrative write (SECURITY.md section 4).
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  /// The `sub` of the administrator who performed the action.
+  actorId    String   @db.ObjectId
+  action     String
+  entityType String
+  entityId   String
+  detail     Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
 }

@@ -1,6 +1,7 @@
 import {Controller, Get, HttpStatus, Inject, Res} from '@nestjs/common';
 import {API_ROUTES} from '@me-palnadu/contracts';
 import {ENV} from '../../common/tokens.js';
+import {Public} from '../../auth/public.decorator.js';
 import type {Env} from '../../config/env.js';
 
 /**
@@ -21,7 +22,12 @@ interface StatusSetter {
  * database cannot cause the platform to kill a healthy process. Readiness answers
  * "should traffic be routed here" and fails closed: with no database configured it
  * returns 503 rather than claiming a readiness it cannot prove.
+ *
+ * `@Public()` is required, not decorative. Authorization is fail-closed, so without it
+ * a load balancer or orchestrator probe would receive 401 and restart a healthy
+ * process - the outage the probe exists to detect.
  */
+@Public()
 @Controller()
 export class HealthController {
   constructor(@Inject(ENV) private readonly env: Env) {}

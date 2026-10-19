@@ -55,3 +55,67 @@ model Experience {
   // The unique index on `slug` is created by the field-level `@unique`.
   @@index([published, startDate, current, sortIndex])
 }
+
+/// An administrator, keyed on the immutable numeric GitHub id.
+///
+/// The database is the authority on who may write. A JWT claim is advisory: the
+/// guard re-reads this record on every protected request, so revoking an
+/// administrator takes effect immediately rather than at token expiry
+/// (SECURITY.md section 4).
+model AdminUser {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  githubId    Int      @unique
+  login       String
+  /// Canonical values in @me-palnadu/contracts (ROLES).
+  role        String   @default("owner")
+  displayName String?
+  /// Incremented to revoke every session an administrator holds.
+  tokenVersion Int     @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastLoginAt DateTime?
+
+  sessions    AdminSession[]
+}
+
+/// One administrator session.
+///
+/// The session id in the token (`sid`) must resolve to a live row, which is what
+/// makes per-session revocation and sign-out-everywhere possible without waiting
+/// for a token to expire.
+model AdminSession {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  /// Matches the `sid` claim; stored so a token's session can be found directly.
+  sessionId  String    @unique
+  userId     String    @db.ObjectId
+  /// The token version this session was issued under. A user-level increment
+  /// invalidates every session without touching the rows.
+  tokenVersion Int
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  user       AdminUser @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Append-only record of every administrative write (SECURITY.md section 4).
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  /// The `sub` of the administrator who performed the action.
+  actorId    String   @db.ObjectId
+  action     String
+  entityType String
+  entityId   String
+  detail     Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+}
