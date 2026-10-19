@@ -108,6 +108,44 @@ test('navigation order is identical on every page', async ({page}) => {
   expect((await navItems(page)).map((label) => label.trim())).toEqual(expected);
 });
 
+test('desktop navigation exposes every destination and its active state', async ({page}) => {
+  await page.setViewportSize({width: 1280, height: 800});
+  await page.goto('/projects');
+
+  const nav = page.locator('nav[aria-label="Primary"]');
+  const beam = page.getByTestId('limelight-beam');
+  const destinations = [
+    ['Experience', '/experience'],
+    ['Projects', '/projects'],
+    ['Knowledge Hub', '/knowledge-hub'],
+    ['Resume', '/resume'],
+    ['Contact', '/contact'],
+  ];
+
+  for (const [label, href] of destinations) {
+    await expect(nav.getByRole('link', {name: label, exact: true})).toHaveAttribute('href', href);
+  }
+
+  const projects = nav.getByRole('link', {name: 'Projects', exact: true});
+  const experience = nav.getByRole('link', {name: 'Experience', exact: true});
+
+  await expect(projects).toHaveAttribute('aria-current', 'page');
+  await expect(experience).not.toHaveAttribute('aria-current', 'page');
+  await expect(beam).toHaveAttribute('data-spotlight-index', '1');
+
+  await experience.focus();
+  await expect(beam).toHaveAttribute('data-spotlight-index', '0');
+
+  await projects.hover();
+  await expect(beam).toHaveAttribute('data-spotlight-index', '1');
+
+  await experience.hover();
+  await expect(beam).toHaveAttribute('data-spotlight-index', '0');
+
+  await page.mouse.move(10, 300);
+  await expect(beam).toHaveAttribute('data-spotlight-index', '1');
+});
+
 test('the legacy Knowledge route redirects permanently to the canonical route', async ({page}) => {
   const response = await page.request.get('/knowledge', {maxRedirects: 0});
   expect(response.status()).toBe(308);

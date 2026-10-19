@@ -1,4 +1,5 @@
 import {WEB_ROUTES} from '@me-palnadu/contracts';
+import {BookOpen, BriefcaseBusiness, FileText, FolderKanban, Mail} from 'lucide-react';
 
 /**
  * Navigation items for both the header navigation and the floating menu.
@@ -9,9 +10,9 @@ import {WEB_ROUTES} from '@me-palnadu/contracts';
  * between them finds the same items in the same places (UI_UX_STANDARDS 7.2).
  */
 export const NAV_ITEMS = [
-  {href: WEB_ROUTES.experience, label: 'Experience'},
-  {href: WEB_ROUTES.projects, label: 'Projects'},
-  {href: WEB_ROUTES.knowledgeHub, label: 'Knowledge Hub'},
-  {href: WEB_ROUTES.resume, label: 'Resume'},
-  {href: WEB_ROUTES.contact, label: 'Contact'},
+  {href: WEB_ROUTES.experience, label: 'Experience', icon: BriefcaseBusiness},
+  {href: WEB_ROUTES.projects, label: 'Projects', icon: FolderKanban},
+  {href: WEB_ROUTES.knowledgeHub, label: 'Knowledge Hub', icon: BookOpen},
+  {href: WEB_ROUTES.resume, label: 'Resume', icon: FileText},
+  {href: WEB_ROUTES.contact, label: 'Contact', icon: Mail},
 ] as const;

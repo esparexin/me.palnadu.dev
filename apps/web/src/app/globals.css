@@ -27,6 +27,12 @@
   }
 }
 
+/* Tapered light cone for the desktop limelight navigation. The beam is
+   positioned and sized in JS; this only shapes it (UI_UX_STANDARDS 2.1). */
+@utility limelight-cone {
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;

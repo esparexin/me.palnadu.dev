@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import {FloatingMenu} from './floating-menu';
-import {NAV_ITEMS} from '../lib/navigation';
+import {LimelightNav} from './ui/limelight-nav';
 
 /**
  * Header navigation.
  *
- * The list is hidden below lg, where the floating menu takes over; both menus
- * render the same items in the same order (UI_UX_STANDARDS 7.2).
+ * The desktop limelight nav is hidden below lg, where the floating menu takes
+ * over; both menus render the same items in the same order
+ * (UI_UX_STANDARDS 7.2).
  */
 export const Navigation = () => (
   <>
@@ -18,18 +19,7 @@ export const Navigation = () => (
         <Link href="/" className="text-body font-semibold">
           Kalyan V Medaboina
         </Link>
-        <ul className="hidden items-center gap-6 lg:flex">
-          {NAV_ITEMS.map((item) => (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className="inline-flex min-h-6 items-center text-body-sm text-text-secondary hover:text-text-primary"
-              >
-                {item.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <LimelightNav />
       </nav>
     </header>
     <FloatingMenu />
