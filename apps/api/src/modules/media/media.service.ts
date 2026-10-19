@@ -1,4 +1,4 @@
-import {Inject, Injectable} from '@nestjs/common';
+import {Inject, Injectable, Logger} from '@nestjs/common';
 import {createHash} from 'node:crypto';
 import type {Prisma} from '@prisma/client';
 import {
@@ -7,8 +7,10 @@ import {
   MediaFormatSchema,
   MediaResourceTypeSchema,
   type MediaAsset,
+  type MediaFormat,
   type MediaListQuery,
   type MediaRegisterInput,
+  type MediaResourceType,
   type MediaSignRequest,
   type MediaSignResponse,
   type MediaStatus,
@@ -34,9 +36,10 @@ import {mapPersistenceError} from '../../common/persistence-error.js';
  *    and the public id sits under this deployment's folder. Without that check, an
  *    admin session could register any URL as a site asset (SSRF-adjacent misuse and
  *    a broken image crop in one).
- * 3. Deleting a row first destroys the provider asset. If the provider refuses, the
- *    row survives: a dangling database row is recoverable, a deleted file behind a
- *    live page is not.
+ * 3. Deleting commits the metadata removal first and then asks the provider to
+ *    destroy the file. A provider failure leaves an orphaned file, which is
+ *    recoverable from the provider console; the reverse order leaves published
+ *    content pointing at a file that no longer exists.
  */
 
 interface MediaRow {
@@ -55,8 +58,68 @@ interface MediaRow {
 
 const DEFAULT_FOLDER = 'me-palnadu/media';
 
+interface DeploymentAsset {
+  cloudName: string;
+  folder: string;
+  publicId: string;
+  secureUrl: string;
+  format: MediaFormat;
+  resourceType: MediaResourceType;
+}
+
+/**
+ * Proves that a registration names an asset this deployment could have uploaded.
+ *
+ * The URL is not merely checked for the Cloudinary hostname: its path must resolve
+ * to the submitted public id, format, resource type and cloud. Otherwise a caller
+ * could register an unrelated (or altered) URL under a trusted-looking public id,
+ * and a later delete would destroy the named asset while the page rendered another.
+ */
+export const isDeploymentAsset = ({
+  cloudName,
+  folder,
+  publicId,
+  secureUrl,
+  format,
+  resourceType,
+}: DeploymentAsset): boolean => {
+  if (!publicId.startsWith(`${folder}/`)) return false;
+  const segments = publicId.split('/');
+  if (segments.some((segment) => segment.length === 0 || segment === '.' || segment === '..')) {
+    return false;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(secureUrl);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== 'https:' || url.hostname !== 'res.cloudinary.com') return false;
+  if (url.port !== '' || url.username !== '' || url.password !== '') return false;
+  if (url.search !== '' || url.hash !== '') return false;
+
+  let pathname: string;
+  try {
+    pathname = decodeURIComponent(url.pathname);
+  } catch {
+    return false;
+  }
+
+  const prefix = `/${cloudName}/${resourceType}/upload/`;
+  if (!pathname.startsWith(prefix)) return false;
+  const expected = `${publicId}.${format}`;
+  const remainder = pathname.slice(prefix.length);
+  if (remainder === expected) return true;
+
+  const versioned = /^v\d+\/(.+)$/u.exec(remainder);
+  return versioned?.[1] === expected;
+};
+
 @Injectable()
 export class MediaService {
+  private readonly logger = new Logger(MediaService.name);
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AdminService) private readonly admin: AdminService,
@@ -125,9 +188,18 @@ export class MediaService {
     }
 
     const folder = this.env.CLOUDINARY_UPLOAD_FOLDER ?? DEFAULT_FOLDER;
-    if (!this.isThisDeployment(cloudName, folder, input)) {
+    if (
+      !isDeploymentAsset({
+        cloudName,
+        folder,
+        publicId: input.publicId,
+        secureUrl: input.secureUrl,
+        format: input.format,
+        resourceType: input.resourceType,
+      })
+    ) {
       throw ApiError.validationFailed('The asset does not belong to this media library.', [
-        {path: 'secureUrl', message: 'must point at this Cloudinary cloud and folder'},
+        {path: 'secureUrl', message: 'must resolve to the submitted public id in this cloud'},
       ]);
     }
 
@@ -189,20 +261,34 @@ export class MediaService {
   }
 
   async delete(id: string, audit: AuditEntry): Promise<void> {
+    let existing: {publicId: string; resourceType: string} | null;
     try {
-      const existing = await this.prisma.mediaAsset.findUnique({where: {id}});
-      if (existing === null) throw ApiError.notFound('No media asset with that identifier exists.');
+      existing = await this.prisma.mediaAsset.findUnique({where: {id}});
+    } catch (error) {
+      throw mapPersistenceError(error).error;
+    }
+    if (existing === null) throw ApiError.notFound('No media asset with that identifier exists.');
 
-      // Destroy first. A failed provider call leaves the row in place, so the
-      // library still lists an asset that exists rather than hiding one that does.
-      await this.destroyAtProvider(existing.publicId, existing.resourceType);
-
+    // Commit the authoritative removal before touching the provider. If the
+    // provider call then fails, the only residue is an orphaned file, which an
+    // operator can remove; the library never references a destroyed file.
+    try {
       await this.prisma.$transaction(async (tx) => {
         await tx.mediaAsset.delete({where: {id}});
         await this.admin.writeAudit(tx, {...audit, entityId: id});
       });
     } catch (error) {
       throw mapPersistenceError(error).error;
+    }
+
+    try {
+      await this.destroyAtProvider(existing.publicId, existing.resourceType);
+    } catch (error) {
+      this.logger.warn(
+        `media ${id} was removed from the library but provider cleanup failed: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`,
+      );
     }
   }
 
@@ -255,19 +341,6 @@ export class MediaService {
         'The media provider refused the deletion; the asset was not deleted.',
       );
     }
-  }
-
-  private isThisDeployment(cloudName: string, folder: string, input: MediaRegisterInput): boolean {
-    let url: URL;
-    try {
-      url = new URL(input.secureUrl);
-    } catch {
-      return false;
-    }
-    if (url.protocol !== 'https:' || url.hostname !== 'res.cloudinary.com') return false;
-    if (!url.pathname.startsWith(`/${cloudName}/`)) return false;
-    if (!input.publicId.startsWith(`${folder}/`)) return false;
-    return (MEDIA_ALLOWED_FORMATS as readonly string[]).includes(input.format);
   }
 }
 

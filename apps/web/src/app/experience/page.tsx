@@ -16,7 +16,7 @@ export default function Page() {
       <Navigation />
       <main id="main-content">
         <section className="mx-auto max-w-page px-5 py-24 md:px-8">
-          <SectionHeading as="h1" eyebrow="me.palnadu.dev" title="Career timeline" />
+          <SectionHeading as="h1" eyebrow="Kalyan V Medaboina" title="Career timeline" />
           <PhaseNotice phase="Phase 6" contents={CONTENTS} />
         </section>
       </main>

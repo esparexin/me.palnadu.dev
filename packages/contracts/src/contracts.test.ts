@@ -12,8 +12,6 @@ import {
   ExperienceCreateSchema,
   ExperienceUpdateSchema,
   EXPERIENCE_KINDS,
-  FaqCreateSchema,
-  FAQ_CATEGORIES,
   MediaRegisterSchema,
   MediaSignResponseSchema,
   MessageStatusSchema,
@@ -62,7 +60,6 @@ describe('enum hygiene (SSOT_POLICY 3.4)', () => {
     EXPERIENCE_KINDS,
     ARTICLE_KINDS,
     CONTENT_STATUSES,
-    FAQ_CATEGORIES,
     AUDIT_ACTIONS,
     ROLES,
     ERROR_CODES,
@@ -322,22 +319,6 @@ describe('Knowledge Hub article contract', () => {
   });
 });
 
-describe('FAQ contract', () => {
-  it('applies category and sort defaults', () => {
-    const parsed = FaqCreateSchema.parse({
-      question: 'What is endpoint management?',
-      answer: 'A placeholder answer used only in tests.',
-    });
-    expect(parsed.category).toBe('general');
-    expect(parsed.sortIndex).toBe(0);
-    expect(parsed.status).toBe('draft');
-  });
-
-  it('rejects an empty answer', () => {
-    expect(FaqCreateSchema.safeParse({question: 'Q?', answer: ''}).success).toBe(false);
-  });
-});
-
 describe('media contract', () => {
   const asset = {
     publicId: 'me-palnadu/knowledge/example',
@@ -412,7 +393,6 @@ describe('shared primitives', () => {
     expect(API_ROUTES.knowledge).toBe('/api/knowledge');
     expect(API_ROUTES.knowledgeAdmin).toBe('/api/admin/knowledge');
     expect(WEB_ROUTES.knowledgeHub).toBe('/knowledge-hub');
-    expect(WEB_ROUTES.faq).toBe('/faq');
   });
 
   it('keeps message status and skill category single-sourced', () => {

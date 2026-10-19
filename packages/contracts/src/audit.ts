@@ -40,11 +40,6 @@ export const DashboardOverviewSchema = z.object({
     published: z.number().int().min(0),
     archived: z.number().int().min(0),
   }),
-  faq: z.object({
-    draft: z.number().int().min(0),
-    published: z.number().int().min(0),
-    archived: z.number().int().min(0),
-  }),
   media: z.object({
     assets: z.number().int().min(0),
     totalBytes: z.number().int().min(0),

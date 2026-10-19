@@ -6,21 +6,19 @@ import {afterAll, beforeAll, beforeEach, describe, expect, it} from 'vitest';
 import {
   ApiErrorEnvelopeSchema,
   ArticleSchema,
-  FaqSchema,
   MediaAssetSchema,
   MediaSignResponseSchema,
   MediaStatusSchema,
   OWNER_EMAIL,
   PaginatedResponseSchema,
   PublicArticleSummarySchema,
-  PublicFaqSchema,
   SESSION_LIFETIME_SECONDS,
 } from '@me-palnadu/contracts';
 import {createTestApp, testEnv} from './test-app.js';
 import {PrismaService} from '../../src/prisma/prisma.service.js';
 
 /**
- * HTTP-level coverage for the Knowledge Hub, FAQ, media, audit, overview and
+ * HTTP-level coverage for the Knowledge Hub, media, audit, overview and
  * session surfaces.
  *
  * The assertions deliberately go through the same guards, pipes and response
@@ -38,14 +36,6 @@ const ARTICLE = {
   excerpt: 'How a claim is verified before it is published.',
   body: '# Verify first\n\nA claim is evidence, not enthusiasm.\n\n## Checklist\n\n- cite the source\n- date the evidence',
   tags: ['testing'],
-  status: 'draft',
-};
-
-const FAQ = {
-  question: 'Do you take contract work?',
-  answer: 'Usually **yes**, subject to availability.',
-  category: 'general',
-  sortIndex: 1,
   status: 'draft',
 };
 
@@ -118,7 +108,6 @@ beforeEach(async () => {
   await prisma.adminSession.deleteMany({});
   await prisma.adminUser.deleteMany({});
   await prisma.article.deleteMany({});
-  await prisma.faq.deleteMany({});
   await prisma.mediaAsset.deleteMany({});
 });
 
@@ -233,34 +222,6 @@ describe('Knowledge Hub authoring and publication', () => {
 
     const audit = await prisma.auditLog.findFirst({where: {action: 'article_create'}});
     expect(audit?.entityId).toBe(created.body.id);
-  });
-});
-
-describe('FAQ authoring and publication', () => {
-  it('publishes a FAQ entry and hides it again on unpublish', async () => {
-    const {token} = await seedAdmin();
-    const created = await request(app.getHttpServer())
-      .post('/api/admin/faq')
-      .set('Authorization', `Bearer ${token}`)
-      .send(FAQ)
-      .expect(201);
-    expect(FaqSchema.safeParse(created.body).success).toBe(true);
-
-    await request(app.getHttpServer())
-      .post(`/api/admin/faq/${created.body.id}/publish`)
-      .set('Authorization', `Bearer ${token}`)
-      .expect(200);
-
-    const publicList = await request(app.getHttpServer()).get('/api/faq').expect(200);
-    expect(publicList.body.items).toHaveLength(1);
-    expect(PublicFaqSchema.safeParse(publicList.body.items[0]).success).toBe(true);
-
-    await request(app.getHttpServer())
-      .post(`/api/admin/faq/${created.body.id}/unpublish`)
-      .set('Authorization', `Bearer ${token}`)
-      .expect(200);
-    const after = await request(app.getHttpServer()).get('/api/faq').expect(200);
-    expect(after.body.items).toEqual([]);
   });
 });
 

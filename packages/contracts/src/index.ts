@@ -13,7 +13,6 @@ export * from './common.js';
 export * from './experience.js';
 export * from './project.js';
 export * from './knowledge.js';
-export * from './faq.js';
 export * from './media.js';
 export * from './audit.js';
 export * from './revalidation.js';

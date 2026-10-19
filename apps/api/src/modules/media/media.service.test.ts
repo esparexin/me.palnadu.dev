@@ -1,5 +1,75 @@
 import {describe, expect, it} from 'vitest';
-import {signParams} from './media.service.js';
+import {isDeploymentAsset, signParams} from './media.service.js';
+
+const asset = {
+  cloudName: 'test-cloud',
+  folder: 'me-palnadu/media',
+  publicId: 'me-palnadu/media/verified-claim',
+  secureUrl:
+    'https://res.cloudinary.com/test-cloud/image/upload/v1/me-palnadu/media/verified-claim.png',
+  format: 'png' as const,
+  resourceType: 'image' as const,
+};
+
+describe('media registration ownership', () => {
+  it('accepts a URL that resolves to the submitted public id', () => {
+    expect(isDeploymentAsset(asset)).toBe(true);
+    expect(isDeploymentAsset({...asset, secureUrl: `${asset.secureUrl}?v=2`})).toBe(false);
+  });
+
+  it('refuses a URL whose public id differs from the submitted id', () => {
+    expect(
+      isDeploymentAsset({
+        ...asset,
+        secureUrl:
+          'https://res.cloudinary.com/test-cloud/image/upload/v1/me-palnadu/media/different.png',
+      }),
+    ).toBe(false);
+  });
+
+  it('refuses another cloud, resource type, or format', () => {
+    expect(
+      isDeploymentAsset({
+        ...asset,
+        secureUrl:
+          'https://res.cloudinary.com/other-cloud/image/upload/v1/me-palnadu/media/verified-claim.png',
+      }),
+    ).toBe(false);
+    expect(
+      isDeploymentAsset({
+        ...asset,
+        secureUrl:
+          'https://res.cloudinary.com/test-cloud/raw/upload/v1/me-palnadu/media/verified-claim.png',
+      }),
+    ).toBe(false);
+    expect(
+      isDeploymentAsset({
+        ...asset,
+        secureUrl:
+          'https://res.cloudinary.com/test-cloud/image/upload/v1/me-palnadu/media/verified-claim.jpg',
+      }),
+    ).toBe(false);
+  });
+
+  it('refuses path traversal and public ids outside the upload folder', () => {
+    expect(
+      isDeploymentAsset({
+        ...asset,
+        publicId: 'me-palnadu/media/../verified-claim',
+        secureUrl:
+          'https://res.cloudinary.com/test-cloud/image/upload/v1/me-palnadu/media/../verified-claim.png',
+      }),
+    ).toBe(false);
+    expect(
+      isDeploymentAsset({
+        ...asset,
+        publicId: 'someone-else/verified-claim',
+        secureUrl:
+          'https://res.cloudinary.com/test-cloud/image/upload/v1/someone-else/verified-claim.png',
+      }),
+    ).toBe(false);
+  });
+});
 
 /**
  * The Cloudinary signature is a security boundary: it is the only thing that

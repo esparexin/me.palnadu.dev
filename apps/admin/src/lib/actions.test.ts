@@ -71,7 +71,7 @@ describe('admin server actions', () => {
             role: 'owner',
             sessionId: 'sess_1',
           },
-          expiresInSeconds: 900,
+          expiresInSeconds: 28_800,
         }),
       });
       vi.stubGlobal('fetch', fetchMock);

@@ -5,6 +5,7 @@
 - **Decision owner:** Repository owner
 - **Related:** `ADR-0002` (MongoDB as content store), `ADR-0006` (Prisma pin and schema management), `ADR-0007` (rate limiting), `ADR-0009` (owner authentication)
 - **Phase:** 6G, Knowledge Hub vertical slice
+- **Note:** The FAQ portion of this decision is superseded by `ADR-0011`.
 
 ## Context
 

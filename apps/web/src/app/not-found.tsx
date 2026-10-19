@@ -18,7 +18,7 @@ export default function WebNotFound() {
         <section className="mx-auto max-w-page px-5 py-16 md:px-8 md:py-24">
           <SectionHeading
             as="h1"
-            eyebrow="me.palnadu.dev"
+            eyebrow="Kalyan V Medaboina"
             title="Page not found"
             description="The page you asked for does not exist, or the article has not been published."
           />

@@ -21,7 +21,7 @@ export default function WebError({error, retry}: {error: unknown; retry: () => v
         <section className="mx-auto max-w-page px-5 py-16 md:px-8 md:py-24">
           <SectionHeading
             as="h1"
-            eyebrow="me.palnadu.dev"
+            eyebrow="Kalyan V Medaboina"
             title="Something went wrong"
             description="This page could not be loaded. The rest of the site is unaffected; try again in a moment."
           />

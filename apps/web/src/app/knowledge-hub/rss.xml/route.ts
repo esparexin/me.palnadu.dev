@@ -36,7 +36,7 @@ export const GET = async (): Promise<Response> => {
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
     '  <channel>',
-    '    <title>me.palnadu.dev — Knowledge Hub</title>',
+    '    <title>Kalyan V Medaboina — Knowledge Hub</title>',
     `    <link>${escapeXml(`${siteUrl}${WEB_ROUTES.knowledgeHub}`)}</link>`,
     '    <description>Tutorials, knowledge-transfer guides, troubleshooting notes, and interview preparation on endpoint management, MDM, and security.</description>',
     '    <language>en</language>',

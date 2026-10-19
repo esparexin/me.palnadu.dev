@@ -9,7 +9,6 @@ import {z} from 'zod';
  */
 export const CACHE_TAGS = {
   articles: 'articles',
-  faq: 'faq',
   sitemap: 'sitemap',
 } as const;
 
@@ -27,7 +26,7 @@ export const CACHE_TAG_VALUES = Object.values(CACHE_TAGS) as readonly CacheTag[]
 export const RevalidateRequestSchema = z
   .object({
     tags: z
-      .array(z.enum([CACHE_TAGS.articles, CACHE_TAGS.faq, CACHE_TAGS.sitemap]))
+      .array(z.enum([CACHE_TAGS.articles, CACHE_TAGS.sitemap]))
       .max(12)
       .default([]),
     paths: z

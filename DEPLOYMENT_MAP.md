@@ -56,13 +56,10 @@ No values. `description` only.
 
 ### `apps/admin`
 
-| Key                          | Public | Purpose                                                        |
-| ---------------------------- | ------ | -------------------------------------------------------------- |
-| `AUTH_SECRET`                | No     | Session signing key, ≥ 32 bytes; identical to the API's value  |
-| `AUTH_TRUST_HOST`            | No     | `true` only behind a trusted proxy                             |
-| `ADMIN_API_URL`              | No     | Server-side API base URL for route handlers and server actions |
-| `ADMIN_ALLOWED_ORIGINS`      | No     | Comma-separated CORS allowlist for the admin origin            |
-| `NEXT_PUBLIC_ADMIN_SITE_URL` | Yes    | Canonical admin origin                                         |
+| Key                     | Public | Purpose                                                        |
+| ----------------------- | ------ | -------------------------------------------------------------- |
+| `ADMIN_API_URL`         | No     | Server-side API base URL for route handlers and server actions |
+| `ADMIN_PUBLIC_SITE_URL` | No     | Canonical public site origin used by "View live" links         |
 
 ### `apps/api`
 
@@ -71,7 +68,7 @@ No values. `description` only.
 | `NODE_ENV`                 | No     | `production` in production; gates error detail                           |
 | `PORT`                     | No     | Bind port                                                                |
 | `DATABASE_URL`             | No     | Atlas connection string with credentials                                 |
-| `AUTH_SECRET`              | No     | Same value as the admin's; used to sign and verify bearer tokens         |
+| `AUTH_SECRET`              | No     | API-only key used to sign and verify bearer tokens                       |
 | `AUTH_ISSUER`              | No     | Expected JWT issuer                                                      |
 | `AUTH_AUDIENCE`            | No     | Expected JWT audience                                                    |
 | `ALLOWED_ORIGINS`          | No     | Comma-separated exact origins permitted by CORS                          |

@@ -16,7 +16,7 @@ export const Navigation = () => (
         className="mx-auto flex max-w-page items-center justify-between px-5 py-4 md:px-8"
       >
         <Link href="/" className="text-body font-semibold">
-          me.palnadu.dev
+          Kalyan V Medaboina
         </Link>
         <ul className="hidden items-center gap-6 lg:flex">
           {NAV_ITEMS.map((item) => (

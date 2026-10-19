@@ -1,6 +1,6 @@
 // Prisma schema for the portfolio API.
 //
-// SCOPE (Phase 6G): the Experience, Knowledge Hub, FAQ, and media slices.
+// SCOPE (Phase 6G): the Experience, Knowledge Hub, and media slices.
 // Other collections in ARCHITECTURE.md section 7 arrive with their own vertical
 // slice, never as an up-front guess at future models.
 //
@@ -159,24 +159,6 @@ model Article {
 
   @@index([status, publishedAt])
   @@index([kind, status])
-}
-
-/// A frequently asked question (ADR-0010).
-model Faq {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  question    String
-  /// Markdown source, rendered by the same restricted parser as an article body.
-  answer      String
-  /// Canonical values in @me-palnadu/contracts (FAQ_CATEGORIES).
-  category    String    @default("general")
-  sortIndex   Int       @default(0)
-  /// Canonical values in @me-palnadu/contracts (CONTENT_STATUSES).
-  status      String    @default("draft")
-  publishedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@index([status, category, sortIndex])
 }
 
 /// Metadata for an asset uploaded directly to Cloudinary (ADR-0010 §4).

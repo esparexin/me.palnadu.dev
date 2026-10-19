@@ -46,12 +46,12 @@ describe('RevalidationService', () => {
   it('does not throw when the web app refuses or is unreachable', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', {status: 500})));
     await expect(
-      new RevalidationService(configured()).revalidate({tags: [CACHE_TAGS.faq], paths: []}),
+      new RevalidationService(configured()).revalidate({tags: [CACHE_TAGS.articles], paths: []}),
     ).resolves.toBeUndefined();
 
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('connection refused')));
     await expect(
-      new RevalidationService(configured()).revalidate({tags: [CACHE_TAGS.faq], paths: []}),
+      new RevalidationService(configured()).revalidate({tags: [CACHE_TAGS.articles], paths: []}),
     ).resolves.toBeUndefined();
   });
 

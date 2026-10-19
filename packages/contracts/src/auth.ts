@@ -43,8 +43,15 @@ export const SessionClaimsSchema = z.object({
 });
 export type SessionClaims = z.infer<typeof SessionClaimsSchema>;
 
-export const SESSION_LIFETIME_SECONDS = 15 * 60;
-export const SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
+/**
+ * Access token lifetime.
+ *
+ * This equals the server-side session ceiling because there is no refresh route:
+ * a shorter token would simply sign the administrator out mid-session while the
+ * cookie and session row still claimed validity. `ADR-0012` records that choice.
+ */
+export const SESSION_LIFETIME_SECONDS = 8 * 60 * 60;
+export const SESSION_MAX_AGE_SECONDS = SESSION_LIFETIME_SECONDS;
 export const JWT_ALGORITHM = 'HS256' as const;
 
 /**

@@ -151,12 +151,9 @@ export const API_ROUTES = {
   resume: '/api/resume',
   knowledge: '/api/knowledge',
   knowledgeAdmin: '/api/admin/knowledge',
-  faq: '/api/faq',
-  faqAdmin: '/api/admin/faq',
   media: '/api/admin/media',
   audit: '/api/admin/audit',
   overview: '/api/admin/overview',
-  sessions: '/api/auth/sessions',
   messages: '/api/messages',
 } as const;
 
@@ -166,7 +163,6 @@ export const WEB_ROUTES = {
   experience: '/experience',
   projects: '/projects',
   knowledgeHub: '/knowledge-hub',
-  faq: '/faq',
   resume: '/resume',
   contact: '/contact',
   revalidate: '/api/revalidate',

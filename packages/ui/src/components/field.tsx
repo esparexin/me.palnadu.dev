@@ -1,8 +1,11 @@
-import type {
-  InputHTMLAttributes,
-  ReactNode,
-  SelectHTMLAttributes,
-  TextareaHTMLAttributes,
+import {
+  cloneElement,
+  isValidElement,
+  type AriaAttributes,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from 'react';
 import {cn} from '../lib/cn.js';
 
@@ -13,9 +16,16 @@ const FIELD_CLASS =
 
 const FIELD_INVALID_CLASS = 'border-danger focus-visible:outline-danger';
 
+interface FieldControlProps {
+  'aria-describedby'?: string;
+  'aria-invalid'?: AriaAttributes['aria-invalid'];
+}
+
 /**
- * A field with a real label. The label is always rendered and bound by id, and
- * any error is linked with aria-describedby (UI_UX_STANDARDS 4).
+ * A field with a real label. The label is always rendered and bound by id; the
+ * control is wired to its hint or error with aria-describedby, and an error marks
+ * it invalid (UI_UX_STANDARDS 4). This happens here rather than in every form so a
+ * new field cannot silently omit the relationships.
  */
 export interface FieldProps {
   id: string;
@@ -25,24 +35,41 @@ export interface FieldProps {
   children: ReactNode;
 }
 
-export const Field = ({id, label, hint, error, children}: FieldProps) => (
-  <div className="flex flex-col gap-2">
-    <label htmlFor={id} className="text-body-sm font-medium text-text-primary">
-      {label}
-    </label>
-    {children}
-    {hint !== undefined && !error && (
-      <p id={`${id}-hint`} className="text-meta text-text-tertiary">
-        {hint}
-      </p>
-    )}
-    {error !== undefined && (
-      <p id={`${id}-error`} className="text-meta text-danger">
-        {error}
-      </p>
-    )}
-  </div>
-);
+export const Field = ({id, label, hint, error, children}: FieldProps) => {
+  const describedBy =
+    error !== undefined ? `${id}-error` : hint !== undefined ? `${id}-hint` : undefined;
+  const control = isValidElement<FieldControlProps>(children)
+    ? cloneElement(children, {
+        ...(describedBy === undefined
+          ? {}
+          : {
+              'aria-describedby': [children.props['aria-describedby'], describedBy]
+                .filter((value): value is string => value !== undefined && value.length > 0)
+                .join(' '),
+            }),
+        ...(error === undefined ? {} : {'aria-invalid': true}),
+      })
+    : children;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="text-body-sm font-medium text-text-primary">
+        {label}
+      </label>
+      {control}
+      {hint !== undefined && !error && (
+        <p id={`${id}-hint`} className="text-meta text-text-tertiary">
+          {hint}
+        </p>
+      )}
+      {error !== undefined && (
+        <p id={`${id}-error`} className="text-meta text-danger">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
 
 export interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean;

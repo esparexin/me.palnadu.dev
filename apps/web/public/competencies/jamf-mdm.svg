@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" width="600" height="900">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a192f"/>
+      <stop offset="100%" stop-color="#0071e3"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <circle cx="300" cy="400" r="160" fill="none" stroke="#ffffff" stroke-width="6" opacity="0.15"/>
+  <circle cx="300" cy="400" r="110" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.3"/>
+  <path d="M300 320 C270 320 250 345 250 380 C250 425 285 470 300 480 C315 470 350 425 350 380 C350 345 330 320 300 320 Z" fill="#ffffff" opacity="0.9"/>
+  <text x="300" y="580" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="34" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">JAMF PRO &amp; APPLE MDM</text>
+  <text x="300" y="625" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="20" fill="#a0c4ff" text-anchor="middle">100+ Managed Mac Fleet</text>
+  <text x="300" y="665" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="16" fill="#ffffff" opacity="0.75" text-anchor="middle">98% macOS Patch Compliance</text>
+</svg>

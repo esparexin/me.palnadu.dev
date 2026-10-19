@@ -3,7 +3,12 @@ import {randomUUID} from 'node:crypto';
 import {SignJWT} from 'jose';
 import request from 'supertest';
 import {afterAll, beforeAll, beforeEach, describe, expect, it} from 'vitest';
-import {GENERIC_LOGIN_FAILURE, OWNER_EMAIL, type ApiErrorEnvelope} from '@me-palnadu/contracts';
+import {
+  GENERIC_LOGIN_FAILURE,
+  OWNER_EMAIL,
+  SESSION_LIFETIME_SECONDS,
+  type ApiErrorEnvelope,
+} from '@me-palnadu/contracts';
 import {createTestApp, TEST_AUTH_SECRET} from './test-app.js';
 import {PrismaService} from '../../src/prisma/prisma.service.js';
 import {hashPassword} from '../../src/auth/password.js';
@@ -69,7 +74,7 @@ describe('Admin authentication endpoints (ADR-0009)', () => {
       .setIssuer('me-palnadu-admin')
       .setAudience('me-palnadu-api')
       .setIssuedAt(issuedAt)
-      .setExpirationTime(issuedAt + 900)
+      .setExpirationTime(issuedAt + SESSION_LIFETIME_SECONDS)
       .sign(new TextEncoder().encode(TEST_AUTH_SECRET));
 
     return {session, token, sessionId};
@@ -90,7 +95,7 @@ describe('Admin authentication endpoints (ADR-0009)', () => {
         sessionId: expect.any(String),
       });
       expect(typeof response.body.token).toBe('string');
-      expect(response.body.expiresInSeconds).toBe(900);
+      expect(response.body.expiresInSeconds).toBe(SESSION_LIFETIME_SECONDS);
 
       // Verify database session record
       const session = await prisma.adminSession.findUnique({

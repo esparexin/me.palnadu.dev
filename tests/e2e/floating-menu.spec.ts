@@ -46,7 +46,6 @@ test('opening focuses the first item and Escape closes back to the trigger', asy
     'Experience',
     'Projects',
     'Knowledge Hub',
-    'FAQ',
     'Resume',
     'Contact',
   ]);
@@ -86,7 +85,7 @@ test('Tab past the last item wraps to the close control and back', async ({page}
   const close = panel.getByRole('button', {name: 'Close navigation menu'});
   const contact = panel.getByRole('link', {name: 'Contact'});
 
-  for (const label of ['Projects', 'Knowledge Hub', 'FAQ', 'Resume', 'Contact']) {
+  for (const label of ['Projects', 'Knowledge Hub', 'Resume', 'Contact']) {
     await page.keyboard.press('Tab');
     await expect(panel.getByRole('link', {name: label})).toBeFocused();
   }

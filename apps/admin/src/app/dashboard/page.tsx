@@ -47,16 +47,11 @@ export default async function DashboardPage() {
             <h2 id="content-counts" className="text-h3 font-semibold text-text-primary">
               Content
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <CountCard
                 label="Published articles"
                 value={overview.articles.published}
                 hint={`${overview.articles.draft} draft · ${overview.articles.archived} archived`}
-              />
-              <CountCard
-                label="Published FAQ"
-                value={overview.faq.published}
-                hint={`${overview.faq.draft} draft · ${overview.faq.archived} archived`}
               />
               <CountCard
                 label="Media assets"

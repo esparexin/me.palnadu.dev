@@ -5,7 +5,6 @@ import {HealthModule} from './modules/health/health.module.js';
 import {ExperienceModule} from './modules/experience/experience.module.js';
 import {AdminAuthModule} from './modules/auth/admin.module.js';
 import {KnowledgeModule} from './modules/knowledge/knowledge.module.js';
-import {FaqModule} from './modules/faq/faq.module.js';
 import {MediaModule} from './modules/media/media.module.js';
 import {AuditModule} from './modules/audit/audit.module.js';
 import {OverviewModule} from './modules/overview/overview.module.js';
@@ -47,7 +46,6 @@ import {
     HealthModule,
     ExperienceModule,
     KnowledgeModule,
-    FaqModule,
     MediaModule,
     AuditModule,
     OverviewModule,

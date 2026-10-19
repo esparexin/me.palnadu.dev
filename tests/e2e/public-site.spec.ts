@@ -33,7 +33,7 @@ test('the language is declared and a skip link exists', async ({page}) => {
 });
 
 test('primary navigation reaches every public route without a 404', async ({page}) => {
-  const routes = ['/experience', '/projects', '/knowledge-hub', '/faq', '/resume', '/contact'];
+  const routes = ['/experience', '/projects', '/knowledge-hub', '/resume', '/contact'];
 
   for (const route of routes) {
     const response = await page.goto(route);
@@ -44,7 +44,7 @@ test('primary navigation reaches every public route without a 404', async ({page
 });
 
 test('navigation order is identical on every page', async ({page}) => {
-  const expected = ['Experience', 'Projects', 'Knowledge Hub', 'FAQ', 'Resume', 'Contact'];
+  const expected = ['Experience', 'Projects', 'Knowledge Hub', 'Resume', 'Contact'];
 
   // Scope to the list items: the header also contains the brand link, which is
   // not part of the section order being compared.
@@ -114,7 +114,7 @@ test('a missing article answers 404 with site chrome and a way back', async ({pa
 
 test('focus is visible on every interactive element in the header', async ({page}) => {
   await page.goto('/');
-  const link = page.getByRole('link', {name: 'me.palnadu.dev'}).first();
+  const link = page.getByRole('link', {name: 'Kalyan V Medaboina'}).first();
   await link.focus();
   const outlineWidth = await link.evaluate((element) => getComputedStyle(element).outlineWidth);
   expect(outlineWidth).not.toBe('0px');

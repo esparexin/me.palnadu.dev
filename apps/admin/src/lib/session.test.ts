@@ -134,6 +134,17 @@ describe('admin session utilities', () => {
       vi.unstubAllGlobals();
     });
 
+    it('treats a deactivated administrator as signed out', async () => {
+      mockCookieStore.get.mockReturnValue({value: 'deactivated-token'});
+      const fetchMock = vi.fn().mockResolvedValue({ok: false, status: 403});
+      vi.stubGlobal('fetch', fetchMock);
+
+      const admin = await getAuthenticatedAdmin();
+      expect(admin).toBeNull();
+
+      vi.unstubAllGlobals();
+    });
+
     it('surfaces a throttled API instead of reporting the administrator as signed out', async () => {
       // The session endpoint was once charged to the sign-in budget, so the
       // eleventh page load answered 429. Treating that as "not signed in"

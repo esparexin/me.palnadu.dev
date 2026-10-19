@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" width="600" height="900">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#022c22"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <path d="M300 290 L390 330 V420 C390 480 345 530 300 550 C255 530 210 480 210 420 V330 Z" fill="none" stroke="#34d399" stroke-width="8" opacity="0.9"/>
+  <path d="M260 410 L290 440 L345 375" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="300" y="620" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="34" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">ENDPOINT HARDENING</text>
+  <text x="300" y="665" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="20" fill="#a7f3d0" text-anchor="middle">CIS Benchmarks &amp; FileVault</text>
+  <text x="300" y="705" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="16" fill="#ffffff" opacity="0.75" text-anchor="middle">Sophos DLP · 99.5% Security Score</text>
+</svg>

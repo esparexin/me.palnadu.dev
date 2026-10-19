@@ -87,6 +87,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Documents, ADRs, exceptions, and claim checks
         run: pnpm run check:docs
+      - name: Source file line limit compliance
+        run: pnpm run check:line-limits
 
   boundaries:
     name: Dependency boundaries and contract sync

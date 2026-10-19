@@ -70,10 +70,11 @@ export const getAuthenticatedAdmin = async (): Promise<AdminIdentity | null> => 
     throw new Error('The administration API is unreachable.');
   }
 
-  // Only a rejected credential means "not signed in". A throttled or failing API is
-  // an outage: treating it as signed out signed the administrator out silently and
-  // hid the failure behind the login screen (CODING_STANDARDS.md section 4).
-  if (response.status === 401) return null;
+  // A rejected credential or a deactivated account means "not signed in". A
+  // throttled or failing API is an outage: treating it as signed out signed the
+  // administrator out silently and hid the failure behind the login screen
+  // (CODING_STANDARDS.md section 4).
+  if (response.status === 401 || response.status === 403) return null;
   if (!response.ok) {
     throw new Error(`The administration API answered with status ${response.status}.`);
   }
@@ -94,7 +95,10 @@ export const getAuthenticatedAdmin = async (): Promise<AdminIdentity | null> => 
 export const requireAdmin = async (currentPath: string): Promise<AdminIdentity> => {
   const admin = await getAuthenticatedAdmin();
   if (admin === null) {
-    redirect(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
+    // A Server Component cannot mutate cookies. Route through a handler that
+    // clears the rejected cookie before showing the sign-in screen, so the browser
+    // does not keep presenting a credential the API has already refused.
+    redirect(`/api/session/expired?redirectTo=${encodeURIComponent(currentPath)}`);
   }
   return admin;
 };

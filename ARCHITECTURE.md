@@ -167,7 +167,6 @@ Responsive, SEO-first, read-only against the API. Routes:
 | `/projects` and `/projects/[slug]`           | Project index and detail                                                                                      |
 | `/knowledge-hub` and `/knowledge-hub/[slug]` | Published Knowledge Hub articles by kind, title search, and pagination; Markdown rendered from the shared AST |
 | `/knowledge-hub/rss.xml`                     | RSS 2.0 feed of the latest published articles                                                                 |
-| `/faq`                                       | Published FAQ entries grouped by category                                                                     |
 | `/knowledge`                                 | Permanent redirect (308) to `/knowledge-hub`                                                                  |
 | `/resume`                                    | Structured resume rendered from resume records                                                                |
 | `/contact`                                   | Contact form posting to the API                                                                               |
@@ -181,15 +180,14 @@ Only `draft`-free published content is requested; the API is the filter.
 
 Session-authenticated authoring for content, media, and settings. Routes:
 
-| Route                  | Purpose                                                                          |
-| ---------------------- | -------------------------------------------------------------------------------- |
-| `/login`               | Administrator sign-in (email/password, ADR-0009)                                 |
-| `/dashboard`           | Overview: content counts and recent audited writes                               |
-| `/dashboard/knowledge` | Articles, filtered by kind and status; create/edit, explicit publish transitions |
-| `/dashboard/faq`       | FAQ entries, filtered by category and status                                     |
-| `/dashboard/media`     | Media library: signed direct upload, registration, listing, delete               |
-| `/dashboard/audit`     | Audit trail (owner only), filterable by action and entity                        |
-| `/dashboard/security`  | Sessions with revoke, and password change (which signs out every session)        |
+| Route                  | Purpose                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| `/login`               | Administrator sign-in (email/password, ADR-0009)                                   |
+| `/dashboard`           | Overview: content counts and recent audited writes                                 |
+| `/dashboard/knowledge` | Articles, filtered by status and search; create/edit, explicit publish transitions |
+| `/dashboard/media`     | Media library: signed direct upload, registration, listing, delete                 |
+| `/dashboard/audit`     | Audit trail (owner only), filterable by action and entity                          |
+| `/dashboard/security`  | Sessions with revoke, and password change (which signs out every session)          |
 
 Screens for experience, projects, skills, resume, and the message inbox do not exist:
 the API has no route for them, and `ADR-0010` forbids placeholder screens that imply
@@ -213,7 +211,7 @@ apps/api/src/
 └── modules/           # one folder per domain
     ├── auth/          # credential verification, sessions, revocation
     ├── experience/
-    ├── knowledge/ faq/
+    ├── knowledge/
     ├── media/         # signing and metadata only; never file bytes
     ├── audit/ overview/ revalidation/
     └── health/
@@ -261,7 +259,6 @@ choice is recorded in `docs/adr/0002`.
 | `ResumeSection`  | Ordered resume blocks                                | `kind`, `heading`, `body`, `sortIndex`                                                                      |
 | `ResumeDocument` | Versioned resume                                     | `version`, `headline`, `fileUrl`, `isCurrent`                                                               |
 | `Article`        | Knowledge Hub content                                | `slug` (unique), `kind`, `title`, `excerpt`, `body`, `tags[]`, `status`, `publishedAt`                      |
-| `Faq`            | Frequently asked questions                           | `question`, `answer` (Markdown), `category`, `sortIndex`, `status`, `publishedAt`                           |
 | `MediaAsset`     | Uploaded Cloudinary metadata                         | `publicId` (unique), `secureUrl`, `format`, `resourceType`, `bytes`, `width`, `height`, `alt`               |
 | `ContactMessage` | Public form submissions                              | `name`, `email`, `message`, `status`, `createdAt`                                                           |
 | `AuditLog`       | Every administrative write                           | `actorId`, `action`, `entityType`, `entityId`, `at`, `meta`                                                 |

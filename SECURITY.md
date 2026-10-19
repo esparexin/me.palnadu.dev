@@ -49,7 +49,7 @@ Trust assumptions, each falsifiable:
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
 | Unauthorized content write | Bearer session verified by `AdminSessionGuard` + DB allowlist lookup per request                                                                       | API test with no token, bad token, expired token, revoked allowlist    |
 | Forged role claim          | Role re-read from MongoDB per request; token `role` is advisory                                                                                        | Test with a token carrying an elevated role for a non-allowlisted user |
-| Stolen session token       | 15-minute expiry, `httpOnly` cookie, server-side session record, `tokenVersion` revocation, `Escape`/timeout logout                                    | Revocation test + expiry test                                          |
+| Stolen session token       | 8-hour expiry, `httpOnly` cookie, server-side session record, `tokenVersion` revocation, explicit logout                                               | Revocation test + expiry test                                          |
 | XSS in article body        | No `dangerouslySetInnerHTML`; Markdown sanitised server-side; React escaping; CSP without `unsafe-html`                                                | Render test asserting no script executes; header check                 |
 | CSRF against a write       | API accepts `Authorization: Bearer` only and never authenticates by cookie, so browser credentials are never ambient; a custom header forces preflight | Cross-origin request test returns 401/403                              |
 | Cross-origin data theft    | Explicit CORS allowlist, `credentials: false`                                                                                                          | Preflight test from a disallowed origin                                |
@@ -74,16 +74,19 @@ printed, logged, seeded, or committed.
 The owner account is created through an explicit server-side provisioning command, never
 via an unauthenticated HTTP endpoint or self-service registration:
 
-`pnpm --filter @me-palnadu/api owner:provision --email <email> --password <password>`
+`pnpm --filter @me-palnadu/api owner:provision -- --email <email>`
+
+The password is entered at a hidden prompt. It is never accepted as an argument because
+arguments appear in shell history and process listings.
 
 Rules:
 
 - Email must be valid and normalized (`packages/contracts/src/credentials.ts`).
-- Password must satisfy the repository password policy (`passwordProblems`): 16+
-  characters, at least one uppercase, lowercase, digit, and symbol, and must not contain
-  the email's local part.
-- Passwords are encrypted with `scrypt` from `node:crypto` using standard parameters
-  (N=16384, r=8, p=1, 64-byte key length).
+- Password must satisfy the repository password policy (`passwordProblems`): 12–200
+  characters, at least one uppercase letter, one lowercase letter, and one digit, not a
+  common password, and must not contain the email's local part.
+- Passwords are hashed with `scrypt` from `node:crypto` using N=2^16 (65536), r=8, p=1,
+  and a 64-byte derived key.
 - No default password or credentials in Git or `.env.example`.
 
 ### 4.2 Sign-in flow and throttling
@@ -100,7 +103,8 @@ Rules:
    using `@nestjs/throttler`.
 6. On success:
    - An `AdminSession` record is created in MongoDB with an 8-hour maximum lifetime.
-   - An opaque signed HS256 JWT is returned to `apps/admin` (15-minute access lifetime).
+   - An opaque signed HS256 JWT is returned to `apps/admin` with the same 8-hour lifetime.
+     There is no refresh route (`ADR-0012`).
    - `apps/admin` writes an `HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` (in production)
      cookie (`__Secure-me-palnadu-admin.session` or `me-palnadu-admin.session`).
    - The user is redirected to the sanitized destination (preventing open redirects).
@@ -110,9 +114,9 @@ Rules:
 | Property          | Value                                                                                              | Reason                                                                                                                    |
 | ----------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Strategy          | Database-backed JWT session                                                                        | Stateless verification for claims + immediate DB lookup for revocation, activation, and tokenVersion                      |
-| Hashing           | `scrypt` via `node:crypto` (N=16384, r=8, p=1, keylen=64)                                          | Native Node 22 cryptographic implementation; resistant to GPU brute-force                                                 |
-| Signing           | HS256, `AUTH_SECRET` ≥ 32 bytes, identical value in admin and API environments                     | Both components verify independently; rotation invalidates all sessions by design                                         |
-| Access lifetime   | 15 minutes                                                                                         | Limits the value of a stolen token                                                                                        |
+| Hashing           | `scrypt` via `node:crypto` (N=65536, r=8, p=1, keylen=64)                                          | Native Node 22 cryptographic implementation; resistant to GPU brute-force                                                 |
+| Signing           | HS256, `AUTH_SECRET` ≥ 32 bytes, API-only verification; the admin forwards the token               | Only the API verifies; the admin holds no signing secret by design                                                        |
+| Access lifetime   | 8 hours                                                                                            | Matches the session ceiling; there is no refresh route (`ADR-0012`)                                                       |
 | Session lifetime  | 8 hours absolute                                                                                   | Bounded administrator workday                                                                                             |
 | Algorithm pinning | `algorithms: ['HS256']` on verification                                                            | Blocks `alg: none` and algorithm-confusion attacks                                                                        |
 | Claims            | `sub` (internal user id), `email`, `role`, `sid`, `tv` (token version), `iss`, `aud`, `iat`, `exp` | Identity, email for audit, session handle, token revocation version                                                       |
@@ -132,7 +136,7 @@ API credential in a way an attacker can read.
    1. Extract the bearer token. Absent or malformed ⇒ `UNAUTHENTICATED`.
    2. `jwtVerify` with the pinned algorithm (`HS256`), expected `iss` and `aud`, and the
       shared secret. Failure ⇒ `UNAUTHENTICATED`.
-   3. Load `AdminUser` by the token's `sub`. Missing, inactive (`isActive: false`), or
+   3. Load `AdminUser` by the token's `sub`. Missing, inactive (`active: false`), or
       email mismatch ⇒ `FORBIDDEN` / `UNAUTHENTICATED`.
    4. Load `AdminSession` by `sid`. Revoked (`revokedAt !== null`), expired, or belonging
       to another user ⇒ `UNAUTHENTICATED`.
@@ -148,24 +152,24 @@ API credential in a way an attacker can read.
    password hash and incrementing `tokenVersion`.
 
 **MFA Assessment:** MFA is deferred to a future phase. With the removal of GitHub OAuth,
-the repository relies on strict password complexity (16+ chars, entropy rules), scrypt
-work factor, IP-based login rate limiting, and explicit server-side provisioning as
-compensating controls. The operational risk is documented in `ADR-0009`.
+the repository relies on the 12+ character password policy, scrypt work factor, IP-based
+login rate limiting, and explicit server-side provisioning as compensating controls. The
+operational risk is documented in `ADR-0009`.
 
 ## 5. Public surface hardening
 
-| Control            | Implementation                                                                                                                                                                                                                                                                                                                                         |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Security headers   | CSP (`default-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'none'`, no `unsafe-eval` in production), `Strict-Transport-Security` (max-age ≥ 31536000, includeSubDomains), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` denying camera, microphone, geolocation |
-| CORS               | Explicit origin allowlist per environment; `credentials: false`; `Access-Control-Max-Age: 600`                                                                                                                                                                                                                                                         |
-| Rate limiting      | `@nestjs/throttler` — public reads 120/min per IP, administrative writes 300/min per administrator (`ADR-0007`)                                                                                                                                                                                                                                        |
-| Rate-limit storage | In-memory per API instance. **Limitation:** limits are per instance, so horizontal scaling weakens them. The API is therefore pinned to a single instance with this documented rationale; moving to a shared store requires an ADR                                                                                                                     |
-| Body limits        | JSON body capped at 256KB (`BODY_LIMIT_BYTES`, set explicitly rather than inherited from Express's 100KB default); Markdown fields capped by schema length. Rejection is `PAYLOAD_TOO_LARGE`/413                                                                                                                                                       |
-| Input              | Every write validated by a contracts schema; unknown keys rejected; no dynamic `Object.assign` onto persisted documents                                                                                                                                                                                                                                |
-| Rendering          | Markdown is stored as source and parsed by `@me-palnadu/shared` into a restricted AST that React renders as elements; no HTML string is produced and `dangerouslySetInnerHTML` does not appear in the codebase                                                                                                                                         |
-| Files              | No public upload path. The browser uploads directly to Cloudinary with a short-lived signature; the API never receives bytes, validates the registered URL's cloud and folder, and stores metadata only. All three Cloudinary keys or none, enforced at boot                                                                                           |
-| Draft isolation    | Draft filtering in the API query builder; unauthenticated draft access returns 404, never 403 (403 would confirm existence)                                                                                                                                                                                                                            |
-| Error responses    | Contract error envelope only; no stack traces, driver messages, or collection names                                                                                                                                                                                                                                                                    |
+| Control            | Implementation                                                                                                                                                                                                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Security headers   | API: CSP, `Strict-Transport-Security` in production, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, and `Permissions-Policy`. Admin: equivalent headers in `apps/admin/next.config.ts`, with Cloudinary allowed for images and uploads; HSTS is production-only |
+| CORS               | Explicit origin allowlist per environment; `credentials: false`; `Access-Control-Max-Age: 600`                                                                                                                                                                         |
+| Rate limiting      | `@nestjs/throttler` — public reads 120/min per IP, administrative writes 300/min per administrator (`ADR-0007`)                                                                                                                                                        |
+| Rate-limit storage | In-memory per API instance. **Limitation:** limits are per instance, so horizontal scaling weakens them. The API is therefore pinned to a single instance with this documented rationale; moving to a shared store requires an ADR                                     |
+| Body limits        | JSON body capped at 256KB (`BODY_LIMIT_BYTES`, set explicitly rather than inherited from Express's 100KB default); Markdown fields capped by schema length. Rejection is `PAYLOAD_TOO_LARGE`/413                                                                       |
+| Input              | Every write validated by a contracts schema; unknown keys rejected; no dynamic `Object.assign` onto persisted documents                                                                                                                                                |
+| Rendering          | Markdown is stored as source and parsed by `@me-palnadu/shared` into a restricted AST that React renders as elements; no HTML string is produced and `dangerouslySetInnerHTML` does not appear in the codebase                                                         |
+| Files              | No public upload path. The browser uploads directly to Cloudinary with a short-lived signature; the API never receives bytes, validates the registered URL's cloud and folder, and stores metadata only. All three Cloudinary keys or none, enforced at boot           |
+| Draft isolation    | Draft filtering in the API query builder; unauthenticated draft access returns 404, never 403 (403 would confirm existence)                                                                                                                                            |
+| Error responses    | Contract error envelope only; no stack traces, driver messages, or collection names                                                                                                                                                                                    |
 
 ## 6. Frontend responsibilities
 
@@ -181,13 +185,13 @@ compensating controls. The operational risk is documented in `ADR-0009`.
 
 ## 7. Secrets
 
-| Class                                 | Storage                                                             | Never                                                            |
-| ------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `AUTH_SECRET` (admin and API)         | Vercel and Render environment stores; GitHub Actions secrets for CI | In any file, including `.env.example` values, fixtures, and docs |
-| `DATABASE_URL` (Atlas URI)            | Render environment store                                            | Committed; the URI embeds credentials                            |
-| `REVALIDATE_SECRET` (API and web)     | Vercel and Render environment stores                                | Committed; the API env schema enforces `>= 16` characters        |
-| `CLOUDINARY_API_SECRET`               | Render environment store                                            | Returned by any route, logged, or committed                      |
-| Third-party tokens (analytics, email) | Provider stores                                                     | Committed                                                        |
+| Class                                 | Storage                                                 | Never                                                            |
+| ------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------- |
+| `AUTH_SECRET` (API)                   | Render environment store; GitHub Actions secrets for CI | In any file, including `.env.example` values, fixtures, and docs |
+| `DATABASE_URL` (Atlas URI)            | Render environment store                                | Committed; the URI embeds credentials                            |
+| `REVALIDATE_SECRET` (API and web)     | Vercel and Render environment stores                    | Committed; the API env schema enforces `>= 16` characters        |
+| `CLOUDINARY_API_SECRET`               | Render environment store                                | Returned by any route, logged, or committed                      |
+| Third-party tokens (analytics, email) | Provider stores                                         | Committed                                                        |
 
 Procedure:
 
@@ -224,8 +228,9 @@ advisory audit; and an explicit check that drafts are unreachable without a sess
 
 ### 9.1 What Phase 6B proved, and what it did not
 
-**Proven by `pnpm db:integration` (67 passing: 33 authorization, 18 cross-origin and
-headers, 16 persistence).** The §4.4 API authorization boundary runs on every
+**Proven by `pnpm db:integration` (106 passing across 7 files: 35 authorization, 18
+cross-origin and headers, 16 authentication, 14 experience persistence, 10 content, 7
+rate limiting, and 6 body limits).** The §4.4 API authorization boundary runs on every
 protected request, against a real Nest application and a real MongoDB replica set:
 
 | Control                                                                       | Exercised by                                                                                                                                                        |
@@ -386,7 +391,7 @@ Compatibility was verified rather than assumed: `6.7.1` declares `@nestjs/core` 
 `@nestjs/common` as `^7 || ^8 || ^9 || ^10 || ^11 || ^12`, which covers the pinned
 12.1.3. `pnpm audit --audit-level high` reports no known vulnerabilities.
 
-**Proven by `pnpm db:integration` (5 passing, `rate-limit.int-spec.ts`).** The tests
+**Proven by `pnpm db:integration` (7 passing, `rate-limit.int-spec.ts`).** The tests
 make real requests and assert refusals; a test reading only the configured numbers would
 prove the configuration parses, not that anything is enforced.
 
@@ -415,29 +420,18 @@ a shared store requires an ADR because it changes the deployment assumption.
 
 ### 9.6 Deferred controls
 
-Three items are open by decision, not by omission. Each records what would reopen it, so
-none is silently forgotten and none is quietly implemented to improve a number.
+Role-based denial is **implemented, not deferred**. The API guard reads the stored role
+for every request, and integration tests prove that an editor is refused article
+deletion, media deletion, and audit reading while an owner is allowed. The forged-claim
+test proves that a token's advisory role cannot widen authority.
 
-**1. Role-based denial — not applicable to the current domain model.**
+The remaining deferred control is **MFA**, for the reasons recorded in `ADR-0009` and
+§4.4. There is no administrator-management surface and no second administrator; adding
+one would require a new policy and tests, not a placeholder screen.
 
-`RequireRolesGuard` is implemented and exercised; the forged-claim test proves the role
-is read from the database rather than from a token. What cannot be proven is a _denial_,
-because every Experience write route admits both `owner` and `editor`. There is no route
-on which the two roles differ, so the denial branch has no reachable input.
-
-This is a property of the domain, not a broken control. `ADMIN_ALLOWLIST` contains a
-single administrator, so an owner-only operation would currently deny the only person who
-can perform it — protecting nothing.
-
-Reopen when either becomes true:
-
-- a second administrator exists and administrator-management operations become real
-  requirements; or
-- an existing or planned domain operation has a genuine owner-only requirement.
-
-When it reopens, the policy is defined **first**, then a test proves an editor is denied
-and an owner is allowed. Building an owner-only route now would be manufacturing
-functionality to satisfy a test, which this document does not do.
+Reopen the role model when a second administrator exists or when a new operation has a
+genuine owner-only requirement. Define the policy first, then prove denial and
+allowance.
 
 ### 9.7 Phase 6F: Email/password authentication and owner provisioning (ADR-0009)
 
@@ -445,7 +439,7 @@ functionality to satisfy a test, which this document does not do.
 email and password credentials. Authentication issuance is no longer blocked on third-party
 apps or credentials.
 
-**Proven by `pnpm db:integration` (19 passing in `auth.int-spec.ts`):**
+**Proven by `pnpm db:integration` (16 passing in `auth.int-spec.ts`):**
 
 | Control                     | Asserted behaviour                                                                       |
 | --------------------------- | ---------------------------------------------------------------------------------------- |
@@ -459,9 +453,9 @@ apps or credentials.
 | Direct session revocation   | `POST /api/auth/logout` revokes session; subsequent requests with token fail with 401    |
 | Password change             | `POST /api/auth/change-password` requires current password and enforces policy           |
 | Mass session invalidation   | Password change increments `tokenVersion`, instantly invalidating all issued tokens      |
-| Inactive administrator      | Deactivated administrator (`isActive: false`) cannot log in or use existing sessions     |
+| Inactive administrator      | Deactivated administrator (`active: false`) cannot log in or use existing sessions       |
 
-**Proven by `pnpm --filter @me-palnadu/admin test` (16 passing in `session.test.ts` & `actions.test.ts`):**
+**Proven by `pnpm --filter @me-palnadu/admin test` (20 passing in `session.test.ts` & `actions.test.ts`):**
 
 | Control                    | Asserted behaviour                                                                    |
 | -------------------------- | ------------------------------------------------------------------------------------- |

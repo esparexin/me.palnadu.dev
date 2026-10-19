@@ -19,9 +19,8 @@ export class OverviewService {
 
   async load(): Promise<DashboardOverview> {
     try {
-      const [articleCounts, faqCounts, media, recent] = await Promise.all([
+      const [articleCounts, media, recent] = await Promise.all([
         this.prisma.article.groupBy({by: ['status'], _count: {_all: true}}),
-        this.prisma.faq.groupBy({by: ['status'], _count: {_all: true}}),
         this.prisma.mediaAsset.aggregate({_count: {_all: true}, _sum: {bytes: true}}),
         this.prisma.auditLog.findMany({
           orderBy: [{createdAt: 'desc'}, {id: 'asc'}],
@@ -31,7 +30,6 @@ export class OverviewService {
 
       return {
         articles: countsByStatus(articleCounts),
-        faq: countsByStatus(faqCounts),
         media: {
           assets: media._count._all,
           totalBytes: media._sum.bytes ?? 0,

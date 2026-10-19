@@ -185,9 +185,9 @@ export class AdminService {
   /**
    * Signs the bearer token the admin server forwards to the API.
    *
-   * HS256, pinned algorithm, matching issuer and audience. The token lives for
-   * `SESSION_LIFETIME_SECONDS` regardless of how long the session row lives: the row
-   * is the ceiling, and a short-lived token limits the value of one that leaks.
+   * HS256, pinned algorithm, matching issuer and audience. The token and the session
+   * row share `SESSION_LIFETIME_SECONDS`; the API still re-reads the row so revocation
+   * takes effect before the signature expires.
    */
   private async issueToken(
     claims: Omit<SessionClaims, 'iss' | 'aud' | 'iat' | 'exp'>,

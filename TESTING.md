@@ -174,8 +174,7 @@ the dev server.
    that starts outside the slider still scrolls the page (no scroll-jacking).
 5. `/knowledge-hub` lists published articles with kind filtering, search, and
    pagination; an article renders headings, lists, code blocks, and blockquotes
-   without horizontal overflow. `/knowledge` redirects permanently to it, and `/faq`
-   renders published questions grouped by category.
+   without horizontal overflow. `/knowledge` redirects permanently to it.
 6. `/projects` → project detail renders with links and tech tags.
 7. `/resume` renders from resume records and offers a downloadable document.
 8. Contact form: invalid input shows an accessible error summary; a valid submission
@@ -201,7 +200,7 @@ the dev server.
 **Accessibility**
 
 16. axe-core reports zero serious or critical violations on `/`, `/experience`,
-    `/projects`, `/knowledge-hub`, `/faq`, `/resume`, `/contact`, and the admin dashboard.
+    `/projects`, `/knowledge-hub`, `/resume`, `/contact`, and the admin dashboard.
 
 ## 8. Naming and hygiene
 

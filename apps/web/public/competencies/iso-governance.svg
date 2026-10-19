@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" width="600" height="900">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#3f3f46"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <rect x="230" y="300" width="140" height="190" rx="8" fill="none" stroke="#d4d4d8" stroke-width="6"/>
+  <line x1="260" y1="350" x2="340" y2="350" stroke="#a1a1aa" stroke-width="4" stroke-linecap="round"/>
+  <line x1="260" y1="390" x2="340" y2="390" stroke="#a1a1aa" stroke-width="4" stroke-linecap="round"/>
+  <line x1="260" y1="430" x2="320" y2="430" stroke="#a1a1aa" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="340" cy="450" r="30" fill="#e4e4e7"/>
+  <path d="M330 450 L338 458 L352 444" fill="none" stroke="#18181b" stroke-width="4" stroke-linecap="round"/>
+  <text x="300" y="580" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="34" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">ISO 27001 GOVERNANCE</text>
+  <text x="300" y="625" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="20" fill="#e4e4e7" text-anchor="middle">Audits, Controls &amp; Risk Register</text>
+  <text x="300" y="665" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="16" fill="#ffffff" opacity="0.75" text-anchor="middle">ITIL SLA &amp; ITSM Operations</text>
+</svg>

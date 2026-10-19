@@ -59,7 +59,7 @@ export default async function KnowledgeHubPage({searchParams}: PageProps) {
         <section className="mx-auto max-w-page px-5 pb-8 pt-16 md:px-8 md:pt-24">
           <SectionHeading
             as="h1"
-            eyebrow="me.palnadu.dev"
+            eyebrow="Kalyan V Medaboina"
             title="Knowledge Hub"
             description="Practical writing on endpoint management, MDM, identity, and security. Every article is reviewed and published deliberately; drafts never appear here."
           />

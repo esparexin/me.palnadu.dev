@@ -8,9 +8,6 @@ import {
   ArticleCreateSchema,
   ArticleSchema,
   ArticleUpdateSchema,
-  FaqCreateSchema,
-  FaqSchema,
-  FaqUpdateSchema,
 } from '@me-palnadu/contracts';
 import {adminApiFetch, describeActionError} from './api';
 import type {FormState} from './form-state';
@@ -142,82 +139,4 @@ export const deleteArticleAction = async (id: string): Promise<void> => {
   }
   revalidatePath('/dashboard/knowledge');
   redirect('/dashboard/knowledge');
-};
-
-const faqInput = (formData: FormData) => ({
-  question: text(formData, 'question'),
-  answer: text(formData, 'answer'),
-  category: text(formData, 'category'),
-  sortIndex: Number(text(formData, 'sortIndex') || '0'),
-});
-
-export const createFaqAction = async (
-  _previous: FormState,
-  formData: FormData,
-): Promise<FormState> => {
-  const parsed = FaqCreateSchema.safeParse({...faqInput(formData), status: 'draft'});
-  if (!parsed.success) {
-    return {fieldErrors: fieldErrorsOf(parsed.error.issues)};
-  }
-
-  let id: string;
-  try {
-    const created = await adminApiFetch(API_ROUTES.faqAdmin, FaqSchema, {
-      method: 'POST',
-      body: parsed.data,
-    });
-    id = created.id;
-  } catch (error) {
-    return {error: describeActionError(error)};
-  }
-
-  revalidatePath('/dashboard/faq');
-  redirect(`/dashboard/faq/${id}`);
-};
-
-export const updateFaqAction = async (
-  id: string,
-  _previous: FormState,
-  formData: FormData,
-): Promise<FormState> => {
-  const parsed = FaqUpdateSchema.safeParse(faqInput(formData));
-  if (!parsed.success) {
-    return {fieldErrors: fieldErrorsOf(parsed.error.issues)};
-  }
-
-  try {
-    await adminApiFetch(`${API_ROUTES.faqAdmin}/${id}`, FaqSchema, {
-      method: 'PATCH',
-      body: parsed.data,
-    });
-  } catch (error) {
-    return {error: describeActionError(error)};
-  }
-
-  revalidatePath('/dashboard/faq');
-  revalidatePath(`/dashboard/faq/${id}`);
-  return {};
-};
-
-export const transitionFaqAction = async (id: string, transition: Transition): Promise<void> => {
-  try {
-    await adminApiFetch(`${API_ROUTES.faqAdmin}/${id}/${transitionPath[transition]}`, FaqSchema, {
-      method: 'POST',
-    });
-  } catch (error) {
-    redirect(`/dashboard/faq?error=${encodeURIComponent(describeActionError(error))}`);
-  }
-  revalidatePath('/dashboard/faq');
-  revalidatePath(`/dashboard/faq/${id}`);
-  redirect(`/dashboard/faq/${id}`);
-};
-
-export const deleteFaqAction = async (id: string): Promise<void> => {
-  try {
-    await adminApiFetch(`${API_ROUTES.faqAdmin}/${id}`, NoContentSchema, {method: 'DELETE'});
-  } catch (error) {
-    redirect(`/dashboard/faq?error=${encodeURIComponent(describeActionError(error))}`);
-  }
-  revalidatePath('/dashboard/faq');
-  redirect('/dashboard/faq');
 };

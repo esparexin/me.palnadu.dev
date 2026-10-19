@@ -14,7 +14,6 @@ interface NavItem {
 const ITEMS: readonly NavItem[] = [
   {href: '/dashboard', label: 'Overview'},
   {href: '/dashboard/knowledge', label: 'Knowledge Hub'},
-  {href: '/dashboard/faq', label: 'FAQ'},
   {href: '/dashboard/media', label: 'Media'},
   {href: '/dashboard/audit', label: 'Audit', ownerOnly: true},
   {href: '/dashboard/security', label: 'Security'},

@@ -56,18 +56,6 @@ export const MESSAGE_STATUSES = ['new', 'read', 'replied', 'archived'] as const;
 export const MessageStatusSchema = z.enum(MESSAGE_STATUSES);
 export type MessageStatus = z.infer<typeof MessageStatusSchema>;
 
-/** FAQ grouping. One list, defined once, consumed by the API, admin, and web. */
-export const FAQ_CATEGORIES = [
-  'general',
-  'endpoint_management',
-  'mdm',
-  'identity',
-  'security',
-  'career',
-] as const;
-export const FaqCategorySchema = z.enum(FAQ_CATEGORIES);
-export type FaqCategory = z.infer<typeof FaqCategorySchema>;
-
 /** Cloudinary resource kinds the media library accepts. */
 export const MEDIA_RESOURCE_TYPES = ['image', 'raw'] as const;
 export const MediaResourceTypeSchema = z.enum(MEDIA_RESOURCE_TYPES);
@@ -78,7 +66,13 @@ export const MEDIA_FORMATS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'pdf'] as co
 export const MediaFormatSchema = z.enum(MEDIA_FORMATS);
 export type MediaFormat = z.infer<typeof MediaFormatSchema>;
 
-/** Actions that appear in the administrative audit trail. */
+/**
+ * Actions that appear in the administrative audit trail.
+ *
+ * The FAQ actions remain part of the vocabulary because the audit log is
+ * append-only: rows written before the FAQ surface was removed must still be
+ * readable. No current route emits them.
+ */
 export const AUDIT_ACTIONS = [
   'article_create',
   'article_update',
@@ -108,7 +102,11 @@ export const AUDIT_ACTIONS = [
 export const AuditActionSchema = z.enum(AUDIT_ACTIONS);
 export type AuditAction = z.infer<typeof AuditActionSchema>;
 
-/** Entity types an audit entry may reference. */
+/**
+ * Entity types an audit entry may reference.
+ *
+ * `faq` is retained for historical audit rows; the FAQ surface no longer exists.
+ */
 export const AUDIT_ENTITY_TYPES = [
   'article',
   'faq',

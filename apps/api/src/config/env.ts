@@ -13,7 +13,7 @@ export const EnvSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
   /** Absent until the Atlas cluster is provisioned; readiness reports it honestly. */
   DATABASE_URL: z.string().min(1).optional(),
-  /** Must be byte-identical to the admin application's AUTH_SECRET (SECURITY.md 4.4). */
+  /** API-only signing key; the admin application never verifies tokens (SECURITY.md 4.4). */
   AUTH_SECRET: z.string().min(32).optional(),
   AUTH_ISSUER: z.string().min(1).default('me-palnadu-admin'),
   AUTH_AUDIENCE: z.string().min(1).default('me-palnadu-api'),

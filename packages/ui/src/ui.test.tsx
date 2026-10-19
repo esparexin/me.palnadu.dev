@@ -66,7 +66,19 @@ describe('Field', () => {
     );
     const input = screen.getByLabelText('Email address');
     expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toHaveAttribute('aria-describedby', 'email-error');
     expect(screen.getByText('Enter a valid email address')).toHaveAttribute('id', 'email-error');
+  });
+
+  it('links a hint without marking the field invalid', () => {
+    render(
+      <Field id="email" label="Email" hint="Work address preferred">
+        <TextInput id="email" />
+      </Field>,
+    );
+    const input = screen.getByLabelText('Email');
+    expect(input).toHaveAttribute('aria-describedby', 'email-hint');
+    expect(input).not.toHaveAttribute('aria-invalid');
   });
 
   it('does not render a hint alongside an error', () => {

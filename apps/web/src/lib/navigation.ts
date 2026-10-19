@@ -12,7 +12,6 @@ export const NAV_ITEMS = [
   {href: WEB_ROUTES.experience, label: 'Experience'},
   {href: WEB_ROUTES.projects, label: 'Projects'},
   {href: WEB_ROUTES.knowledgeHub, label: 'Knowledge Hub'},
-  {href: WEB_ROUTES.faq, label: 'FAQ'},
   {href: WEB_ROUTES.resume, label: 'Resume'},
   {href: WEB_ROUTES.contact, label: 'Contact'},
 ] as const;

@@ -41,7 +41,7 @@ Run against the production URLs, not against a build. Any failure triggers §3.
 
 - [ ] Home renders the **View Resume** and **Explore Experience** CTAs.
 - [ ] `/experience` renders the timeline in newest-first order.
-- [ ] `/knowledge-hub` lists published articles and one article renders with code and lists intact; `/knowledge` redirects there and `/faq` lists published questions.
+- [ ] `/knowledge-hub` lists published articles and one article renders with code and lists intact; `/knowledge` redirects there.
 - [ ] `/projects` and one project detail render.
 - [ ] `/contact` rejects invalid input with a visible, accessible error.
 - [ ] `/knowledge-hub/rss.xml` responds 200 with well-formed XML and absolute article links.
@@ -132,16 +132,16 @@ variable, both fixed before resolution.
 
 ## 6. Administrator session and credential operations
 
-| Task                          | Procedure                                                                              | Verification                                                       |
-| ----------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Provision owner credential    | Run `pnpm --filter @me-palnadu/api owner:provision --email <email> --password <pass>`  | Creates `AdminUser` record with scrypt hash; login succeeds        |
-| Break-glass password recovery | Re-run `owner:provision` with new password; updates `passwordHash` and increments `tv` | All existing sessions invalidated; new password authenticates      |
-| Change password (online)      | Authenticated `POST /api/auth/change-password` with current and new password           | Increments `tokenVersion`; requires immediate re-login             |
-| Revoke one session            | Set `revokedAt` on the `AdminSession` record                                           | The next API request from that session returns `401`               |
-| Revoke all sessions           | Increment `AdminUser.tokenVersion`                                                     | All existing tokens fail the `tv` comparison                       |
-| Emergency global logout       | Rotate `AUTH_SECRET` in both the admin and API environments                            | Every session invalid immediately; requires a coordinated redeploy |
-| Deactivate administrator      | Set `active: false` on the `AdminUser` record                                          | Sign-in refused; existing sessions rejected with `401`             |
-| Audit a session               | Query `AuditLog` by `sid`                                                              | Every write for that session is attributable                       |
+| Task                          | Procedure                                                                                                          | Verification                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Provision owner credential    | Run `pnpm --filter @me-palnadu/api owner:provision -- --email <email>` and enter the password at the hidden prompt | Creates `AdminUser` record with scrypt hash; login succeeds   |
+| Break-glass password recovery | Re-run `owner:provision` with new password; updates `passwordHash` and increments `tv`                             | All existing sessions invalidated; new password authenticates |
+| Change password (online)      | Authenticated `POST /api/auth/change-password` with current and new password                                       | Increments `tokenVersion`; requires immediate re-login        |
+| Revoke one session            | Set `revokedAt` on the `AdminSession` record                                                                       | The next API request from that session returns `401`          |
+| Revoke all sessions           | Increment `AdminUser.tokenVersion`                                                                                 | All existing tokens fail the `tv` comparison                  |
+| Emergency global logout       | Rotate `AUTH_SECRET` in the API environment and redeploy the API                                                   | Every JWT fails verification immediately                      |
+| Deactivate administrator      | Set `active: false` on the `AdminUser` record                                                                      | Sign-in refused; existing sessions rejected with `403`        |
+| Audit a session               | Query `AuditLog` by `sid`                                                                                          | Every write for that session is attributable                  |
 
 ## 7. Content operations
 

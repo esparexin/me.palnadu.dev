@@ -185,7 +185,7 @@ describe('authorization boundary', () => {
       iss: ISSUER,
       aud: AUDIENCE,
       iat: now,
-      exp: now + 900,
+      exp: now + SESSION_LIFETIME_SECONDS,
     })}.`;
     await request(app.getHttpServer())
       .post(PROTECTED)
@@ -249,7 +249,10 @@ describe('authorization boundary', () => {
       where: {id: session.id},
       data: {expiresAt: new Date(Date.now() - 1000)},
     });
-    const token = await issueToken({sub: user.id, exp: Math.floor(Date.now() / 1000) + 900});
+    const token = await issueToken({
+      sub: user.id,
+      exp: Math.floor(Date.now() / 1000) + SESSION_LIFETIME_SECONDS,
+    });
     await request(app.getHttpServer())
       .post(PROTECTED)
       .set('Authorization', `Bearer ${token}`)

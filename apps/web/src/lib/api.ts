@@ -1,16 +1,12 @@
 import {
   ArticleListQuerySchema,
-  FaqListQuerySchema,
   PaginatedResponseSchema,
   PublicArticleSchema,
   PublicArticleSummarySchema,
-  PublicFaqSchema,
   type ArticleListQuery,
-  type FaqListQuery,
   type PublicArticle,
   type PaginatedResponse,
   type PublicArticleSummary,
-  type PublicFaq,
 } from '@me-palnadu/contracts';
 
 /**
@@ -85,29 +81,4 @@ export const findPublishedArticle = async (slug: string): Promise<PublicArticle 
   const parsed = PublicArticleSchema.safeParse(await response.json());
   if (!parsed.success) throw new Error('The API response did not match the published contract.');
   return parsed.data;
-};
-
-/**
- * The FAQ page shows every published entry. The API caps a page at 50, so this
- * follows `hasMore` rather than silently truncating; the bound prevents a runaway
- * loop if the API ever returns inconsistent pagination.
- */
-export const listAllPublishedFaqs = async (
-  query: Partial<FaqListQuery> = {},
-): Promise<PublicFaq[]> => {
-  const parsed = FaqListQuerySchema.parse(query);
-  const items: PublicFaq[] = [];
-  for (let page = 1; page <= 10; page += 1) {
-    const search = new URLSearchParams({page: String(page), limit: '50'});
-    if (parsed.category !== undefined) search.set('category', parsed.category);
-    if (parsed.q !== undefined) search.set('q', parsed.q);
-    const response = await read(
-      `/api/faq?${search.toString()}`,
-      PaginatedResponseSchema(PublicFaqSchema),
-      {tags: ['faq']},
-    );
-    items.push(...response.items);
-    if (!response.hasMore) break;
-  }
-  return items;
 };

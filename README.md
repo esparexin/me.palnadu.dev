@@ -4,11 +4,10 @@ Personal professional portfolio: public site, administration interface, and API,
 shared contracts and a design-token source of truth.
 
 > **Status: audit remediation on `feat/admin-full-stack-audit-21st-mcp` — Knowledge
-> Hub, FAQ, media library, administrator sessions/audit, and the fixes from the
-> 2026 audit are committed on that branch; nothing is merged to `main` and nothing
-> is deployed.** Local gates pass (`pnpm verify`, `pnpm db:integration` 107 tests,
-> `pnpm test:e2e` 50 tests), but enforcement claims still require a CI run: areas 8,
-> 12, and 13 and every deployment control remain `SPECIFIED` (`GOVERNANCE.md` §6).
+> Hub, media library, administrator sessions/audit, and the 2026 audit fixes are
+> implemented on that branch; nothing is merged to `main` and nothing is deployed.**
+> Local checks pass, but enforcement claims still require a CI run: areas 8, 12, and
+> 13 and every deployment control remain `SPECIFIED` (`GOVERNANCE.md` §6).
 > The owner credential is provisioned only by `owner:provision`. No content is
 > seeded, so the content-driven public pages still render their scaffold notices;
 > they are not a substitute for approved content.
@@ -36,7 +35,7 @@ shared contracts and a design-token source of truth.
 
 ```
 apps/web         public portfolio — hero CTAs, career timeline, projects, resume, Knowledge Hub
-apps/admin       administration — experience, projects, skills, resume, knowledge, messages, audit
+apps/admin       administration — knowledge, media, audit, and sessions
 apps/api         NestJS — the only authority for validation, authorization, and persistence
 
 packages/contracts       Zod schemas, domain types, enums, error codes, API paths  (SSOT)
@@ -63,32 +62,32 @@ and a mobile swipe slider where swipe-up moves to newer experience and swipe-dow
 earlier, with visible navigation controls. Full specification in
 [UI_UX_STANDARDS.md](UI_UX_STANDARDS.md) §7.
 
-| #   | Gate                          | Command                                        | Local result                        |
-| --- | ----------------------------- | ---------------------------------------------- | ----------------------------------- |
-| 1   | Lint and formatting           | `pnpm lint`, `prettier --check`                | pass                                |
-| 2   | Type safety                   | `pnpm typecheck`                               | pass                                |
-| 3   | Production build              | `pnpm build`                                   | pass, 7 workspaces                  |
-| 4   | Unit, contract, e2e, a11y     | `pnpm test`, `pnpm test:e2e`, `pnpm test:a11y` | 164 unit/contract, 32 e2e (16 a11y) |
-| 5   | Governance and documentation  | `pnpm run check:docs`                          | pass                                |
-| 6   | Secrets and workflow security | `pnpm run check:secrets`, `check:workflows`    | pass                                |
-| 7   | Dependency and licence audit  | `pnpm audit --audit-level high`                | CI only, not yet run                |
-| 9   | Workspace and lockfile        | `pnpm install --frozen-lockfile`               | pass                                |
-| 10  | Boundaries and cycles         | `pnpm run check:boundaries`                    | pass                                |
-| 11  | Pipeline integrity            | `pnpm run check:ci`                            | pass                                |
+| #   | Gate                          | Command                                        | Local result                   |
+| --- | ----------------------------- | ---------------------------------------------- | ------------------------------ |
+| 1   | Lint and formatting           | `pnpm lint`, `prettier --check`                | pass                           |
+| 2   | Type safety                   | `pnpm typecheck`                               | pass                           |
+| 3   | Production build              | `pnpm build`                                   | pass, 7 workspaces             |
+| 4   | Unit, contract, e2e, a11y     | `pnpm test`, `pnpm test:e2e`, `pnpm test:a11y` | run locally; record the output |
+| 5   | Governance and documentation  | `pnpm run check:docs`                          | pass                           |
+| 6   | Secrets and workflow security | `pnpm run check:secrets`, `check:workflows`    | pass                           |
+| 7   | Dependency and licence audit  | `pnpm audit --audit-level high`                | CI only, not yet run           |
+| 9   | Workspace and lockfile        | `pnpm install --frozen-lockfile`               | pass                           |
+| 10  | Boundaries and cycles         | `pnpm run check:boundaries`                    | pass                           |
+| 11  | Pipeline integrity            | `pnpm run check:ci`                            | pass                           |
 
 Run everything with `pnpm verify`, which exits non-zero on the first failing gate.
 
 ## Current phase
 
-| Phase                         | State                                                                                                                      |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| 1. Repository discovery       | Complete — empty repository confirmed, nothing to reuse                                                                    |
-| 2. Governance and SSOT        | Complete and merged                                                                                                        |
-| 3. Architecture and structure | Complete — workspace, packages, apps, and toolchain exist                                                                  |
-| 4. CI/CD and security         | Workflows written; awaiting first run and ruleset creation                                                                 |
-| 5. Quality baseline           | Partly done — Knip and jscpd run by hand during Phase 5                                                                    |
-| 6. Implementation             | Partly done — Knowledge Hub, FAQ, media, audit, sessions, and the audit fixes                                              |
-| 7. Verification               | Partly done — e2e (50), a11y, integration (107), and `pnpm verify` pass locally; PR, CI run, and manual gate still pending |
+| Phase                         | State                                                                      |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| 1. Repository discovery       | Complete — empty repository confirmed, nothing to reuse                    |
+| 2. Governance and SSOT        | Complete and merged                                                        |
+| 3. Architecture and structure | Complete — workspace, packages, apps, and toolchain exist                  |
+| 4. CI/CD and security         | Workflows written; awaiting first run and ruleset creation                 |
+| 5. Quality baseline           | Partly done — Knip and jscpd run by hand during Phase 5                    |
+| 6. Implementation             | Partly done — Knowledge Hub, media, audit, sessions, and the audit fixes   |
+| 7. Verification               | Partly done — local checks pass; PR, CI run, and manual gate still pending |
 
 ## Local setup
 
