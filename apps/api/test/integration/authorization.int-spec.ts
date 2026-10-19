@@ -10,10 +10,7 @@ import {
   PublicExperienceSchema,
   SESSION_LIFETIME_SECONDS,
 } from '@me-palnadu/contracts';
-import {AppModule} from '../../src/app.module.js';
-import {ENV} from '../../src/common/tokens.js';
-import {parseEnv} from '../../src/config/env.js';
-import {ApiExceptionFilter, RequestIdMiddleware} from '../../src/common/api-exception.filter.js';
+import {createTestApp} from './test-app.js';
 import {PrismaService} from '../../src/prisma/prisma.service.js';
 import {AdminService} from '../../src/modules/auth/admin.service.js';
 
@@ -36,6 +33,7 @@ const AUTH_SECRET = 'test-secret-value-that-is-long-enough-32';
 const ISSUER = 'me-palnadu-admin';
 const AUDIENCE = 'me-palnadu-api';
 const SECRET_BYTES = new TextEncoder().encode(AUTH_SECRET);
+
 const GITHUB_ID = ADMIN_ALLOWLIST[0].githubId;
 
 /** A protected, body-less route. Guards run before pipes, so a body is never needed. */
@@ -90,26 +88,7 @@ const issueToken = async (
     .sign(secret);
 
 beforeAll(async () => {
-  const env = parseEnv({
-    NODE_ENV: 'test',
-    DATABASE_URL: process.env['DATABASE_URL'],
-    AUTH_SECRET,
-    AUTH_ISSUER: ISSUER,
-    AUTH_AUDIENCE: AUDIENCE,
-    ALLOWED_ORIGINS: 'http://localhost:3000',
-  });
-
-  const moduleRef = await Test.createTestingModule({imports: [AppModule]})
-    .overrideProvider(ENV)
-    .useValue(env)
-    .compile();
-
-  app = moduleRef.createNestApplication();
-  app.useGlobalFilters(new ApiExceptionFilter());
-  const requestId = new RequestIdMiddleware();
-  app.use((req, res, next) => requestId.use(req, res, next));
-  await app.init();
-
+  app = await createTestApp();
   prisma = app.get(PrismaService);
 });
 

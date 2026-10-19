@@ -62,7 +62,7 @@ describe('persistence error mapping', () => {
     expect(mapped.error.code).toBe('INTERNAL_ERROR');
     expect(mapped.error.message).toBe('Internal server error');
     // The detail reaches the operator's log and never the client.
-    expect(mapped.logMessage).toContain(driverText);
+    expect(mapped.logDetail).toContain(driverText);
     expect(mapped.error.message).not.toContain('mongodb://');
     expect(mapped.error.message).not.toContain('placeholder');
   });

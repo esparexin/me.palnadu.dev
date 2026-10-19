@@ -29,18 +29,18 @@ const uniqueTargetFields = (meta: Record<string, unknown> | undefined): string[]
 export interface MappedError {
   error: ApiError;
   /** Safe to log; never returned to the client. */
-  logMessage: string;
+  logDetail: string;
 }
 
 export const mapPersistenceError = (error: unknown): MappedError => {
   if (error instanceof ApiError) {
-    return {error, logMessage: `${error.code}: ${error.message}`};
+    return {error, logDetail: `${error.code}: ${error.message}`};
   }
 
   if (!isKnownPrismaError(error)) {
     return {
       error: ApiError.internal(),
-      logMessage: `unmapped persistence failure: ${error instanceof Error ? error.message : String(error)}`,
+      logDetail: `unmapped persistence failure: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 
@@ -50,35 +50,35 @@ export const mapPersistenceError = (error: unknown): MappedError => {
       const where = fields.length > 0 ? fields.join(', ') : 'a unique field';
       return {
         error: ApiError.conflict(`A record with this ${where} already exists.`),
-        logMessage: `unique constraint violated on ${where}`,
+        logDetail: `unique constraint violated on ${where}`,
       };
     }
     case 'P2025':
     case 'P2018':
       return {
         error: ApiError.notFound('The requested record does not exist.'),
-        logMessage: `record not found (${error.code})`,
+        logDetail: `record not found (${error.code})`,
       };
     case 'P1001':
     case 'P1002':
       return {
         error: ApiError.internal('The data store is unavailable.'),
-        logMessage: `cannot reach the database (${error.code})`,
+        logDetail: `cannot reach the database (${error.code})`,
       };
     case 'P1008':
       return {
         error: ApiError.internal('The data store timed out.'),
-        logMessage: `database operation timed out (${error.code})`,
+        logDetail: `database operation timed out (${error.code})`,
       };
     case 'P2024':
       return {
         error: ApiError.internal('The data store timed out.'),
-        logMessage: 'connection pool timed out',
+        logDetail: 'connection pool timed out',
       };
     default:
       return {
         error: ApiError.internal(),
-        logMessage: `unmapped prisma error ${error.code}: ${JSON.stringify(error.meta ?? {})}`,
+        logDetail: `unmapped prisma error ${error.code}: ${JSON.stringify(error.meta ?? {})}`,
       };
   }
 };

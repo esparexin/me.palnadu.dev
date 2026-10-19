@@ -242,9 +242,9 @@ advisory audit; and an explicit check that drafts are unreachable without a sess
 
 ### 9.1 What Phase 6B proved, and what it did not
 
-**Proven by `pnpm db:integration` (47 passing: 33 authorization, 14 persistence).** The
-§4.4 API authorization boundary runs on every protected request, against a real Nest
-application and a real MongoDB replica set:
+**Proven by `pnpm db:integration` (67 passing: 33 authorization, 18 cross-origin and
+headers, 16 persistence).** The §4.4 API authorization boundary runs on every
+protected request, against a real Nest application and a real MongoDB replica set:
 
 | Control                                                                       | Exercised by                                                                                                                                                        |
 | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -278,3 +278,61 @@ an operator would reasonably assume they differ. The route has been removed rath
 left misleading. Real archiving needs an archived state in `packages/contracts` and
 `apps/api/prisma/schema.prisma` — a contract and schema decision, not a routing one, so
 it is not taken unilaterally here.
+
+### 9.2 Phase 6C: cross-origin policy and response headers
+
+**Centralization was the prerequisite.** CORS, the `ValidationPipe`, and the security
+headers were configured inside `main.ts`, which the test suite never calls. Every test
+application therefore ran with **no CORS at all**, and `forbidNonWhitelisted` was a
+control with no test. `configureHttp()` in `apps/api/src/common/http-hardening.ts` is
+now the single definition of the HTTP surface, called by both the server and the tests,
+so a test cannot assert against a differently-configured application.
+
+**Proven by `pnpm db:integration` (18 passing, `http-hardening.int-spec.ts`):**
+
+| Control            | Asserted behaviour                                                                                              |
+| ------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Origin allowlist   | Each allowlisted origin receives `Access-Control-Allow-Origin` set to that exact origin                         |
+| Origin denial      | An unlisted origin receives **no** `allow-origin` header; `Vary: Origin` is present                             |
+| Near-miss origins  | `localhost:3000.evil.example`, `https://localhost:3000`, port `3002`, `LOCALHOST`, and `null` are all refused   |
+| No credentials     | `Access-Control-Allow-Credentials` is absent for allowed and denied origins alike                               |
+| Preflight          | An allowlisted preflight is answered with `Access-Control-Max-Age: 600`; a denied origin gets no grant          |
+| Absent `Origin`    | No `allow-origin` header is emitted for a same-origin or server-to-server request                               |
+| Headers on success | `nosniff`, `Referrer-Policy`, `X-Frame-Options`, CSP, `Permissions-Policy`                                      |
+| Headers on errors  | The same headers are present on a 401 and on a 404 — the regression where middleware ran after the failure path |
+| HSTS               | Absent outside production, present in production                                                                |
+
+**Mutation-tested.** Weakening each control fails the suite: `credentials: true` fails
+1 test, `origin: true` fails 4, removing `nosniff` fails 4, weakening CSP to
+`default-src 'self'` fails 2, and removing the middleware fails 5. A test that cannot
+fail is not evidence.
+
+**Two defects found while writing these tests:**
+
+1. An unmatched route returned **500, not 404**. Nest's `NotFoundException` carries a
+   `statusCode` rather than a contract `code`, failed the filter's `isApiError` test,
+   and fell through to the persistence mapper. Now mapped explicitly, with messages
+   replaced rather than echoed so caller input is never reflected into an error body.
+2. The global `ValidationPipe` was registered only in `main.ts`, so
+   `forbidNonWhitelisted` was never exercised by any test. Moved into `configureHttp`.
+
+**Still `SPECIFIED`, and not covered by any test above:**
+
+- Rate limiting. `@nestjs/throttler` is not a dependency. Separate workstream: it needs
+  a dependency rationale in an ADR, a Nest 12 compatibility check, and tests that
+  observe actual throttling.
+- Request body limit. The §5 table specifies 256KB; Express's default is 100KB. The
+  running system is _stricter_ than documented, which is a documentation defect rather
+  than a security hole, but the two must be reconciled deliberately.
+- `Cross-Origin-Resource-Policy` is deliberately **not** set: the public site fetches
+  this API cross-origin, so a `same-origin` policy would break the site the API exists
+  to serve. A test asserts its absence so the omission is not mistaken for an oversight.
+- HSTS assumes TLS terminates upstream. It is gated on `NODE_ENV === 'production'`
+  rather than sent unconditionally, so its presence is a decision and not an accident.
+  Whether the deployment actually terminates TLS is a `DEPLOYMENT_MAP.md` question and
+  is not established by these tests.
+
+**Unchanged from Phase 6B:** GitHub OAuth sign-in, callback handling, session issuance,
+and CSRF remain unproven and unimplemented. The tests mint tokens with `jose` directly.
+CSRF remains inapplicable only while authentication is bearer-only; it must be reassessed
+when cookie-based authentication is introduced.
