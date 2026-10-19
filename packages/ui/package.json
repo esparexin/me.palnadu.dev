@@ -22,14 +22,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@me-palnadu/design-tokens": "workspace:*",
     "@me-palnadu/shared": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.0.0"
   },
   "devDependencies": {
-    "@me-palnadu/contracts": "workspace:*",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@types/react": "19.3.0",

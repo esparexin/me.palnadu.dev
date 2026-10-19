@@ -71,9 +71,6 @@ importers:
       '@me-palnadu/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
-      '@me-palnadu/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@me-palnadu/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -212,16 +209,10 @@ importers:
 
   packages/ui:
     dependencies:
-      '@me-palnadu/design-tokens':
-        specifier: workspace:*
-        version: link:../design-tokens
       '@me-palnadu/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:
-      '@me-palnadu/contracts':
-        specifier: workspace:*
-        version: link:../contracts
       '@testing-library/jest-dom':
         specifier: 7.0.1
         version: 7.0.1(@testing-library/dom@10.4.2)(vitest@5.0.5)
