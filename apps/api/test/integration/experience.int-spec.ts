@@ -164,7 +164,7 @@ describe('Experience persistence', () => {
     await service.create(baseRecord({slug: 'published-entry', published: true}), auditFor('test'));
     await service.create(baseRecord({slug: 'draft-entry', published: false}), auditFor('test'));
     await service.create(
-      baseRecord({slug: 'archived-entry', published: false, current: true}),
+      baseRecord({slug: 'current-draft-entry', published: false, current: true}),
       auditFor('test'),
     );
 
