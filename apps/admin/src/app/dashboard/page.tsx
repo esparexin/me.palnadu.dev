@@ -79,7 +79,7 @@ export default async function DashboardPage() {
               {admin?.role === 'owner' && (
                 <Link
                   href="/dashboard/audit"
-                  className="text-body-sm text-accent-text underline underline-offset-2"
+                  className="inline-flex min-h-6 items-center text-body-sm text-accent-text underline underline-offset-2"
                 >
                   View full audit trail
                 </Link>

@@ -47,7 +47,7 @@ export default async function EditFaqPage({params}: PageProps) {
       <div className="flex flex-col gap-4">
         <Link
           href="/dashboard/faq"
-          className="text-body-sm text-accent-text underline-offset-2 hover:underline"
+          className="inline-flex min-h-6 items-center text-body-sm text-accent-text underline-offset-2 hover:underline"
         >
           ← All FAQ entries
         </Link>

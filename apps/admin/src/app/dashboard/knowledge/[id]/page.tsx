@@ -48,7 +48,7 @@ export default async function EditArticlePage({params}: PageProps) {
       <div className="flex flex-col gap-4">
         <Link
           href="/dashboard/knowledge"
-          className="text-body-sm text-accent-text underline-offset-2 hover:underline"
+          className="inline-flex min-h-6 items-center text-body-sm text-accent-text underline-offset-2 hover:underline"
         >
           ← All articles
         </Link>

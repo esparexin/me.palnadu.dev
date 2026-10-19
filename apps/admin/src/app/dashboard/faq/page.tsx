@@ -135,7 +135,7 @@ export default async function FaqListPage({searchParams}: PageProps) {
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/faq/${faq.id}`}
-                      className="font-medium text-text-primary underline-offset-2 hover:underline"
+                      className="inline-flex min-h-6 items-center font-medium text-text-primary underline-offset-2 hover:underline"
                     >
                       {faq.question}
                     </Link>

@@ -137,7 +137,7 @@ export default async function MediaPage({searchParams}: PageProps) {
                     href={asset.secureUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-meta text-accent-text underline underline-offset-2"
+                    className="inline-flex min-h-6 items-center text-meta text-accent-text underline underline-offset-2"
                   >
                     Open asset
                   </a>
