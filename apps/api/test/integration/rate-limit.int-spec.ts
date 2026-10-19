@@ -202,3 +202,34 @@ describe('administrative rate limiting', () => {
     }
   }, 30_000);
 });
+
+describe('authenticated routes and the sign-in budget', () => {
+  it('does not charge session reads to the sign-in budget', async () => {
+    const {token} = await seedAdmin();
+    const limited = await newApp();
+    try {
+      // The dashboard layout reads this endpoint on every page render. Routes
+      // without an explicit throttle decorator are charged to every registered
+      // throttler, including the sign-in budget, so the eleventh page load in a
+      // fifteen-minute window was refused with 429 while a valid session cookie
+      // was still held: the administrator was silently signed out, and the next
+      // sign-in attempt shared the exhausted budget.
+      for (let attempt = 0; attempt <= LOGIN_LIMIT_PER_WINDOW; attempt += 1) {
+        const response = await request(limited.getHttpServer())
+          .get('/api/auth/session')
+          .set('Authorization', `Bearer ${token}`);
+        expect(response.status).toBe(200);
+      }
+
+      // One budget-spending request proves the sign-in budget was untouched:
+      // a wrong password answers 401 from the credential check, never 429 from
+      // the limiter those session reads must not have consumed.
+      const login = await request(limited.getHttpServer())
+        .post('/api/auth/login')
+        .send({email: 'unknown@example.com', password: 'password-123456'});
+      expect(login.status).toBe(401);
+    } finally {
+      await limited.close();
+    }
+  }, 60_000);
+});

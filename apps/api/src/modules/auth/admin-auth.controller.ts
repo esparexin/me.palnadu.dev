@@ -12,7 +12,7 @@ import {
 } from '@me-palnadu/contracts';
 import {AdminService} from './admin.service.js';
 import {Public} from '../../auth/public.decorator.js';
-import {LoginRateLimit} from '../../auth/throttling.js';
+import {LoginRateLimit, AdminRateLimit} from '../../auth/throttling.js';
 import {ApiError} from '../../common/api-error.js';
 import {ZodValidationPipe} from '../../common/zod-validation.pipe.js';
 import type {RequestWithAdmin} from '../../auth/admin-context.js';
@@ -32,8 +32,17 @@ export class AdminAuthController {
    * Returns the current authenticated administrator session.
    *
    * Protected by `AdminSessionGuard`: the database is re-checked on every request.
+   *
+   * Carries `AdminRateLimit` explicitly. Every named throttler registered in
+   * `forRoot` applies to every route unless overridden or skipped, so without it
+   * this route was also charged to the sign-in budget: the dashboard layout reads
+   * it on every page render, and the eleventh page load in a fifteen-minute window
+   * was refused with 429 while a valid session cookie was still held. The
+   * administrator was silently signed out and the next sign-in attempt shared the
+   * exhausted budget.
    */
   @Get('session')
+  @AdminRateLimit()
   @HttpCode(HttpStatus.OK)
   getSession(@Req() request: RequestWithAdmin) {
     const principal = this.requirePrincipal(request);
@@ -73,6 +82,7 @@ export class AdminAuthController {
   }
 
   @Post('logout')
+  @AdminRateLimit()
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(@Req() request: RequestWithAdmin) {
     const principal = this.requirePrincipal(request);
@@ -81,6 +91,7 @@ export class AdminAuthController {
 
   /** Lists the caller's live sessions, marking the one this request used. */
   @Get('sessions')
+  @AdminRateLimit()
   @HttpCode(HttpStatus.OK)
   async sessions(@Req() request: RequestWithAdmin) {
     const principal = this.requirePrincipal(request);
@@ -91,6 +102,7 @@ export class AdminAuthController {
 
   /** Revokes one of the caller's sessions. Revoking the current one signs out. */
   @Post('sessions/revoke')
+  @AdminRateLimit()
   @HttpCode(HttpStatus.NO_CONTENT)
   async revokeSession(
     @Body(new ZodValidationPipe(RevokeSessionSchema)) body: RevokeSession,
@@ -107,6 +119,7 @@ export class AdminAuthController {
    * consequence of `tokenVersion` being incremented.
    */
   @Post('change-password')
+  @AdminRateLimit()
   @HttpCode(HttpStatus.NO_CONTENT)
   async changePassword(
     @Body(new ZodValidationPipe(ChangePasswordRequestSchema)) body: ChangePasswordRequest,
