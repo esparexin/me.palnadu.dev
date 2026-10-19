@@ -1,5 +1,5 @@
 import {Test, type TestingModule} from '@nestjs/testing';
-import type {INestApplication} from '@nestjs/common';
+import type {NestExpressApplication} from '@nestjs/platform-express';
 import {AppModule} from '../../src/app.module.js';
 import {ENV} from '../../src/common/tokens.js';
 import {configureHttp} from '../../src/common/http-hardening.js';
@@ -29,13 +29,13 @@ export const testEnv = (overrides: Partial<NodeJS.ProcessEnv> = {}): Env =>
     ...overrides,
   });
 
-export const createTestApp = async (env: Env = testEnv()): Promise<INestApplication> => {
+export const createTestApp = async (env: Env = testEnv()): Promise<NestExpressApplication> => {
   const moduleRef: TestingModule = await Test.createTestingModule({imports: [AppModule]})
     .overrideProvider(ENV)
     .useValue(env)
     .compile();
 
-  const app = moduleRef.createNestApplication();
+  const app = moduleRef.createNestApplication<NestExpressApplication>();
   configureHttp(app, env);
   app.useGlobalFilters(new ApiExceptionFilter());
   await app.init();

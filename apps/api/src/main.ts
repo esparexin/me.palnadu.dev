@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import {Logger} from '@nestjs/common';
 import {NestFactory} from '@nestjs/core';
+import type {NestExpressApplication} from '@nestjs/platform-express';
 import {AppModule} from './app.module.js';
 import {ApiExceptionFilter} from './common/api-exception.filter.js';
 import {configureHttp} from './common/http-hardening.js';
@@ -8,7 +9,10 @@ import {parseEnv} from './config/env.js';
 
 async function bootstrap(): Promise<void> {
   const env = parseEnv(process.env);
-  const app = await NestFactory.create(AppModule, {bufferLogs: false});
+  // NestExpressApplication, not INestApplication: `useBodyParser` is declared on the
+  // concrete Express application and is how the body limit is set explicitly rather
+  // than inheriting Express's 100KB default (SECURITY.md 5).
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {bufferLogs: false});
 
   // Cross-origin policy and security headers come from the shared configuration so
   // the tests exercise exactly what is deployed (SECURITY.md 5).
