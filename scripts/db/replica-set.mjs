@@ -28,7 +28,7 @@
  */
 
 import {spawnSync} from 'node:child_process';
-import {existsSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, readFileSync, rmSync, statfsSync, writeFileSync} from 'node:fs';
 import {createServer} from 'node:net';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
@@ -44,7 +44,8 @@ import path from 'node:path';
  * file inside it inherits that owner-only access.
  */
 const STATE_DIR_MODE = 0o700;
-const STATE_DIR = path.join(tmpdir(), 'me-palnadu-test-replica');
+const STATE_DIR_PARENT = tmpdir();
+const STATE_DIR = path.join(STATE_DIR_PARENT, 'me-palnadu-test-replica');
 const STATE_FILE = path.join(STATE_DIR, 'state.json');
 const DATA_DIR = path.join(STATE_DIR, 'data');
 const LOG_FILE = path.join(STATE_DIR, 'mongod.log');
@@ -53,6 +54,34 @@ const REPLICA_SET_NAME = 'rs0';
 const HOST = '127.0.0.1';
 const DEFAULT_PORT = 27118;
 export const TEST_DATABASE = 'me_palnadu_integration_test';
+/**
+ * Refuse to start when the disk is nearly full.
+ *
+ * MongoDB preallocates WiredTiger journal files and writes full-time diagnostic
+ * data, so a replica set needs real free space. On a machine that is already close
+ * to full, starting one can exhaust the disk and crash unrelated services - which
+ * is exactly what happened to a developer's own MongoDB during Phase 6A, where the
+ * full-time diagnostic thread aborted the process with FileNotOpen on a disk at
+ * 100% capacity.
+ *
+ * The harness therefore checks first and explains what to free, rather than
+ * discovering the problem by filling it.
+ */
+const MIN_FREE_BYTES_MB = 500;
+
+const assertFreeSpace = () => {
+  const stats = statfsSync(STATE_DIR_PARENT, {bigint: true});
+  const freeMb = Number(stats.bavail * stats.bsize) / (1024 * 1024);
+  if (freeMb < MIN_FREE_BYTES_MB) {
+    fail(
+      `only ${freeMb.toFixed(0)}MB free on the volume holding ${STATE_DIR_PARENT}; ` +
+        `the replica set needs at least ${MIN_FREE_BYTES_MB}MB for journal and diagnostic files. ` +
+        'Free space and re-run - the harness will not start a database that can fill the disk.',
+    );
+  }
+  return freeMb;
+};
+
 const READY_TIMEOUT_MS = 60_000;
 
 export const fail = (message) => {
@@ -193,6 +222,8 @@ export const up = async ({port = DEFAULT_PORT, quiet = false} = {}) => {
       console.log(`replica-set: already running (pid ${existing.pid}, port ${existing.port})`);
     return existing;
   }
+
+  assertFreeSpace();
 
   rmSync(STATE_DIR, {recursive: true, force: true});
   // Owner-only: the data directory holds a live database for the duration of a run.
