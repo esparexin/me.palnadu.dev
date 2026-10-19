@@ -35,11 +35,36 @@ export class RequestIdMiddleware implements NestMiddleware {
   }
 }
 
-const isApiError = (error: unknown): error is ApiError =>
-  error instanceof ApiError ||
-  (error instanceof HttpException &&
-    error.getResponse() instanceof Object &&
-    'code' in (error.getResponse() as object));
+/**
+ * Nest's own HTTP exceptions, mapped onto the contract's error codes.
+ *
+ * Without this, an unmatched route raised Nest's `NotFoundException`, which carries a
+ * `statusCode` rather than a contract `code`, fell through to the persistence mapper,
+ * and answered an ordinary typo'd URL with a 500. That is wrong in three ways at
+ * once: the status misleads the caller, the noise trains operators to ignore 500s,
+ * and it hides real server faults among them.
+ *
+ * Messages are replaced rather than forwarded. Nest's text embeds the requested path,
+ * and echoing caller input back inside an error body is not something a JSON API
+ * should do by default.
+ */
+const mapHttpException = (error: HttpException): ApiError => {
+  const status = error.getStatus();
+  switch (status) {
+    case 400:
+      return ApiError.badRequest('The request could not be understood.');
+    case 401:
+      return ApiError.unauthenticated('The session token is not valid.');
+    case 403:
+      return new ApiError('FORBIDDEN', 'This account may not perform that action.');
+    case 404:
+      return ApiError.notFound('No route matches the requested path.');
+    case 429:
+      return new ApiError('RATE_LIMITED', 'Too many requests. Slow down and retry later.');
+    default:
+      return ApiError.internal();
+  }
+};
 
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
@@ -51,15 +76,21 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const response = http.getResponse<Response>();
     const requestId = request.id ?? 'unknown';
 
-    const mapped = isApiError(error)
-      ? {error: error as ApiError, logMessage: `${error.name}: ${error.message}`}
-      : mapPersistenceError(error);
+    // `logDetail` is the server-side description. The client only ever receives the
+    // contract envelope, so an unexpected error keeps its diagnostic while the
+    // response stays opaque.
+    const mapped =
+      error instanceof ApiError
+        ? {error, logDetail: `${error.name}: ${error.message}`}
+        : error instanceof HttpException
+          ? {error: mapHttpException(error), logDetail: `HttpException ${error.getStatus()}`}
+          : mapPersistenceError(error);
 
     if (mapped.error.code === 'INTERNAL_ERROR') {
       // Log the safe-to-log detail once; never forward it to the client.
-      this.logger.error({requestId, detail: mapped.logMessage});
+      this.logger.error({requestId, detail: mapped.logDetail});
     } else if (mapped.error.code === 'RATE_LIMITED') {
-      this.logger.warn({requestId, detail: mapped.logMessage});
+      this.logger.warn({requestId, detail: mapped.logDetail});
     }
 
     const envelope = buildEnvelope(mapped.error, requestId);

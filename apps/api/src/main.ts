@@ -1,47 +1,22 @@
 import 'reflect-metadata';
-import {Logger, ValidationPipe} from '@nestjs/common';
+import {Logger} from '@nestjs/common';
 import {NestFactory} from '@nestjs/core';
 import {AppModule} from './app.module.js';
-import {ApiExceptionFilter, RequestIdMiddleware} from './common/api-exception.filter.js';
-import type {RequestWithId} from './common/api-exception.filter.js';
-import {allowedOrigins, parseEnv} from './config/env.js';
-import type {NextFunction, Response} from 'express';
+import {ApiExceptionFilter} from './common/api-exception.filter.js';
+import {configureHttp} from './common/http-hardening.js';
+import {parseEnv} from './config/env.js';
 
-/**
- * Bootstrap.
- *
- * CORS is an exact-origin allowlist and credentials stay off: the API does not
- * authenticate by cookie (SECURITY.md 4.4), so an ambient browser credential must
- * never be accepted here.
- */
 async function bootstrap(): Promise<void> {
   const env = parseEnv(process.env);
   const app = await NestFactory.create(AppModule, {bufferLogs: false});
 
-  app.enableCors({
-    origin: allowedOrigins(env),
-    credentials: false,
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    maxAge: 600,
-  });
-
-  app.useGlobalPipes(
-    // Defence in depth: strip unknown keys and reject unknown ones outright, so a
-    // client can never smuggle a field into a persisted document (SECURITY.md 3).
-    new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
+  // Cross-origin policy and security headers come from the shared configuration so
+  // the tests exercise exactly what is deployed (SECURITY.md 5).
+  configureHttp(app, env);
 
   // One error envelope for every failure, including persistence failures, so a
   // client never has to parse two shapes (CODING_STANDARDS.md section 4).
   app.useGlobalFilters(new ApiExceptionFilter());
-  const requestIdMiddleware = new RequestIdMiddleware();
-  app.use((request: RequestWithId, response: Response, next: NextFunction) => {
-    requestIdMiddleware.use(request, response, next);
-  });
 
   app.enableShutdownHooks();
 

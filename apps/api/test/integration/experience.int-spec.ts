@@ -314,12 +314,12 @@ describe('Experience persistence', () => {
 
   it('maps an unknown persistence failure to an opaque INTERNAL_ERROR', () => {
     // A failure shape the mapper does not recognise must not leak driver detail.
-    const {error, logMessage} = mapPersistenceError(
+    const {error, logDetail} = mapPersistenceError(
       new Error('mongodb://user:placeholder@127.0.0.1:27017/db failed'),
     );
     expect(error.code).toBe('INTERNAL_ERROR');
     expect(error.message).toBe('Internal server error');
-    expect(logMessage).toContain('unmapped');
+    expect(logDetail).toContain('unmapped');
     expect(error.message).not.toContain('mongodb://');
   });
 
