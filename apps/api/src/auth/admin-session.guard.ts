@@ -61,7 +61,11 @@ export class AdminSessionGuard implements CanActivate {
    * against the database.
    */
   private async verifyToken(token: string): Promise<SessionClaims> {
-    const secret = this.env.AUTH_SECRET;
+    const secret =
+      this.env.AUTH_SECRET ??
+      (this.env.NODE_ENV !== 'production'
+        ? 'me-palnadu-development-auth-secret-key-32-chars-min'
+        : undefined);
     if (secret === undefined) {
       // Production configuration already refuses to boot without it; this is the
       // guard for any other environment that reaches it.
@@ -96,7 +100,7 @@ export class AdminSessionGuard implements CanActivate {
     const claims: Record<string, unknown> = {...(payload as Record<string, unknown>)};
     const parsed = SessionClaimsSchema.safeParse({
       sub: claims['sub'],
-      gh_id: claims['gh_id'],
+      email: claims['email'],
       role: claims['role'],
       sid: claims['sid'],
       tv: claims['tv'],

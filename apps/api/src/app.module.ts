@@ -4,6 +4,11 @@ import {ThrottlerModule} from '@nestjs/throttler';
 import {HealthModule} from './modules/health/health.module.js';
 import {ExperienceModule} from './modules/experience/experience.module.js';
 import {AdminAuthModule} from './modules/auth/admin.module.js';
+import {KnowledgeModule} from './modules/knowledge/knowledge.module.js';
+import {FaqModule} from './modules/faq/faq.module.js';
+import {MediaModule} from './modules/media/media.module.js';
+import {AuditModule} from './modules/audit/audit.module.js';
+import {OverviewModule} from './modules/overview/overview.module.js';
 import {PrismaModule} from './prisma/prisma.module.js';
 import {AdminSessionGuard} from './auth/admin-session.guard.js';
 import {RequireRolesGuard} from './auth/require-roles.guard.js';
@@ -11,6 +16,7 @@ import {ConfigModule} from './config/config.module.js';
 import {
   ApiThrottlerGuard,
   adminThrottlerOptions,
+  loginThrottlerOptions,
   publicThrottlerOptions,
 } from './auth/throttling.js';
 
@@ -40,7 +46,12 @@ import {
     AdminAuthModule,
     HealthModule,
     ExperienceModule,
-    ThrottlerModule.forRoot([publicThrottlerOptions, adminThrottlerOptions]),
+    KnowledgeModule,
+    FaqModule,
+    MediaModule,
+    AuditModule,
+    OverviewModule,
+    ThrottlerModule.forRoot([publicThrottlerOptions, adminThrottlerOptions, loginThrottlerOptions]),
   ],
   providers: [
     {provide: APP_GUARD, useClass: AdminSessionGuard},

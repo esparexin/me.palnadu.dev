@@ -1,24 +1,8 @@
 // Prisma schema for the portfolio API.
 //
-// SCOPE (Phase 6A): the Experience slice only. Other collections in
-// ARCHITECTURE.md section 7 arrive with their own vertical slice, never as an
-// up-front guess at future models.
-//
-// SCHEMA MANAGEMENT: Prisma's MongoDB connector does not support `prisma migrate`
-// (verified against Prisma 6.19.3). Schema changes are applied with `prisma db push`
-// as an explicit, reviewed step. That is NOT equivalent to a migration and does NOT
-// give a rollback path for data. See docs/adr/0006 and scripts/check-schema.mjs.
-//
-// CANONICAL VALUES: enum-like fields are `String`, not Prisma `enum` blocks, because
-// the allowed values live once in @me-palnadu/contracts (SSOT_POLICY.md section 1).
-// MongoDB therefore does not enforce these value sets on its own; the API boundary
-// does, using the contract schemas.
-
-// Prisma schema for the portfolio API.
-//
-// SCOPE (Phase 6A): the Experience slice only. Other collections in
-// ARCHITECTURE.md section 7 arrive with their own vertical slice, never as an
-// up-front guess at future models.
+// SCOPE (Phase 6G): the Experience, Knowledge Hub, FAQ, and media slices.
+// Other collections in ARCHITECTURE.md section 7 arrive with their own vertical
+// slice, never as an up-front guess at future models.
 //
 // SCHEMA MANAGEMENT: Prisma's MongoDB connector does not support `prisma migrate`
 // (verified against Prisma 6.19.3). Schema changes are applied with `prisma db push`
@@ -78,21 +62,35 @@ model Experience {
 /// guard re-reads this record on every protected request, so revoking an
 /// administrator takes effect immediately rather than at token expiry
 /// (SECURITY.md section 4).
+/// The single administrator (ADR-0009).
+///
+/// Identity is an email address and a scrypt password hash. `githubId` and `login`
+/// were removed when authentication moved from GitHub OAuth to email and password;
+/// see docs/exceptions.md for the reviewed destructive-change exception.
 model AdminUser {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  githubId    Int      @unique
-  login       String
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  /// Normalized to lower case with surrounding whitespace stripped, so the same
+  /// address cannot exist twice under different spellings.
+  email    String @unique
+  /// Encoded scrypt digest: algorithm, cost parameters, salt and derived key.
+  /// A plaintext password is never stored, logged, or returned (SECURITY.md 4).
+  passwordHash String
   /// Canonical values in @me-palnadu/contracts (ROLES).
   role        String   @default("owner")
   displayName String?
-  /// Incremented to revoke every session an administrator holds.
-  tokenVersion Int     @default(0)
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  lastLoginAt DateTime?
+  /// Incremented to revoke every session an administrator holds. A password change
+  /// increments it, so a credential change invalidates every existing session.
+  tokenVersion Int      @default(0)
+  /// Set to false to block sign-in and invalidate existing sessions without deleting
+  /// the record, which is how an emergency lockout is expressed.
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastLoginAt  DateTime?
+  /// Consecutive failed sign-ins, reset on success. Recorded, not used to lock.
+  failedLoginCount Int @default(0)
 
-  sessions    AdminSession[]
+  sessions AdminSession[]
 }
 
 /// One administrator session.
@@ -134,4 +132,71 @@ model AuditLog {
 
   @@index([actorId, createdAt])
   @@index([entityType, entityId])
+}
+
+/// Knowledge Hub article (ADR-0010).
+///
+/// `body` is Markdown source, rendered by the restricted parser in
+/// @me-palnadu/shared. It is never stored as HTML: an HTML column would make every
+/// renderer a trust boundary.
+model Article {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  slug        String    @unique
+  /// Canonical values in @me-palnadu/contracts (ARTICLE_KINDS).
+  kind        String
+  title       String
+  excerpt     String
+  body        String
+  tags        String[]  @default([])
+  /// Canonical values in @me-palnadu/contracts (DIFFICULTIES); required for interviews.
+  difficulty  String?
+  /// Canonical values in @me-palnadu/contracts (CONTENT_STATUSES).
+  status      String    @default("draft")
+  /// Publication is an instant, stamped by the API. Cleared when the article
+  /// leaves the published state so a stale date cannot look live.
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([kind, status])
+}
+
+/// A frequently asked question (ADR-0010).
+model Faq {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  question    String
+  /// Markdown source, rendered by the same restricted parser as an article body.
+  answer      String
+  /// Canonical values in @me-palnadu/contracts (FAQ_CATEGORIES).
+  category    String    @default("general")
+  sortIndex   Int       @default(0)
+  /// Canonical values in @me-palnadu/contracts (CONTENT_STATUSES).
+  status      String    @default("draft")
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, category, sortIndex])
+}
+
+/// Metadata for an asset uploaded directly to Cloudinary (ADR-0010 §4).
+///
+/// No bytes pass through the API. This row is the register of what was uploaded,
+/// so the library can list and delete assets without querying the provider for
+/// every page render.
+model MediaAsset {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  publicId         String   @unique
+  secureUrl        String
+  format           String
+  resourceType     String
+  bytes            Int
+  width            Int?
+  height           Int?
+  originalFilename String
+  alt              String   @default("")
+  createdAt        DateTime @default(now())
+
+  @@index([createdAt])
 }

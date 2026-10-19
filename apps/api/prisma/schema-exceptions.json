@@ -1,1 +1,30 @@
-[]
+[
+  {
+    "target": "AdminUser.githubId",
+    "kind": "field-removed",
+    "reason": "ADR-0009 replaces GitHub OAuth with email/password authentication for the single-owner dashboard.",
+    "recovery": "Local and ephemeral test databases only; no production data exists. For recovery, re-run baseline schema push or recreate administrator record via CLI.",
+    "exception": "EXC-0002"
+  },
+  {
+    "target": "AdminUser.login",
+    "kind": "field-removed",
+    "reason": "ADR-0009 replaces GitHub OAuth login with normalized email address.",
+    "recovery": "Local and ephemeral test databases only; no production data exists. For recovery, re-run baseline schema push or recreate administrator record via CLI.",
+    "exception": "EXC-0002"
+  },
+  {
+    "target": "AdminUser.email",
+    "kind": "field-added",
+    "reason": "ADR-0009 adds unique normalized email identity for the single-owner dashboard.",
+    "recovery": "Database is wiped and repopulated during tests. In production/staging, the single owner is provisioned using owner:provision CLI before application boot.",
+    "exception": "EXC-0002"
+  },
+  {
+    "target": "AdminUser.passwordHash",
+    "kind": "field-added",
+    "reason": "ADR-0009 adds scrypt password digest for local owner authentication.",
+    "recovery": "Database is wiped and repopulated during tests. In production/staging, the single owner is provisioned using owner:provision CLI before application boot.",
+    "exception": "EXC-0002"
+  }
+]

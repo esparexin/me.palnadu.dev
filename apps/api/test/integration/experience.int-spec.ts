@@ -50,7 +50,7 @@ const service = new ExperienceService(prisma, new AdminService(prisma));
  */
 const auditFor = (entityId: string) => ({
   actorId: '000000000000000000000001',
-  action: 'experience.test',
+  action: 'experience_update',
   entityType: 'experience',
   entityId,
 });

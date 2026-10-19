@@ -3,11 +3,11 @@ import {SignJWT} from 'jose';
 import request from 'supertest';
 import {afterAll, beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
-  ADMIN_ALLOWLIST,
   ApiErrorEnvelopeSchema,
   ExperienceSchema,
   PublicExperienceSchema,
   SESSION_LIFETIME_SECONDS,
+  OWNER_EMAIL,
 } from '@me-palnadu/contracts';
 import {createTestApp} from './test-app.js';
 import {PrismaService} from '../../src/prisma/prisma.service.js';
@@ -32,8 +32,6 @@ const AUTH_SECRET = 'test-secret-value-that-is-long-enough-32';
 const ISSUER = 'me-palnadu-admin';
 const AUDIENCE = 'me-palnadu-api';
 const SECRET_BYTES = new TextEncoder().encode(AUTH_SECRET);
-
-const GITHUB_ID = ADMIN_ALLOWLIST[0].githubId;
 
 /** A protected, body-less route. Guards run before pipes, so a body is never needed. */
 const PROTECTED = '/api/experience/anything/publish';
@@ -62,7 +60,7 @@ let prisma: PrismaService;
 const issueToken = async (
   overrides: Partial<{
     sub: string;
-    gh_id: number;
+    email: string;
     role: string;
     sid: string;
     tv: number;
@@ -73,9 +71,9 @@ const issueToken = async (
   secret: Uint8Array = SECRET_BYTES,
 ) =>
   new SignJWT({
-    gh_id: overrides.gh_id ?? GITHUB_ID,
+    email: overrides.email ?? OWNER_EMAIL,
     role: overrides.role ?? 'owner',
-    sid: 'session-under-test',
+    sid: overrides.sid ?? 'session-under-test',
     tv: overrides.tv ?? 0,
   })
     .setProtectedHeader({alg: 'HS256'})
@@ -107,8 +105,8 @@ beforeEach(async () => {
 const seedAdmin = async (overrides: {role?: string; tokenVersion?: number} = {}) => {
   const user = await prisma.adminUser.create({
     data: {
-      githubId: GITHUB_ID,
-      login: 'esparexin',
+      email: OWNER_EMAIL,
+      passwordHash: 'scrypt$65536$8$1$dummySalt$dummyHash',
       role: overrides.role ?? 'owner',
       tokenVersion: overrides.tokenVersion ?? 0,
     },
@@ -121,7 +119,7 @@ const seedAdmin = async (overrides: {role?: string; tokenVersion?: number} = {})
       expiresAt: new Date(Date.now() + 60_000),
     },
   });
-  const token = await issueToken({sub: user.id, tv: user.tokenVersion});
+  const token = await issueToken({sub: user.id, email: user.email, tv: user.tokenVersion});
   return {user, session, token};
 };
 
@@ -180,7 +178,7 @@ describe('authorization boundary', () => {
     const now = Math.floor(Date.now() / 1000);
     const forged = `${encode({alg: 'none', typ: 'JWT'})}.${encode({
       sub: 'x',
-      gh_id: GITHUB_ID,
+      email: OWNER_EMAIL,
       role: 'owner',
       sid: 's',
       tv: 0,
@@ -219,7 +217,7 @@ describe('authorization boundary', () => {
   it('refuses a signed token for a non-administrator with 403', async () => {
     // The token is genuinely signed, so the caller is authenticated. They are simply
     // not permitted, which is 403 rather than 401.
-    const token = await issueToken({sub: 'someone', gh_id: 1});
+    const token = await issueToken({sub: '507f1f77bcf86cd799439011', email: 'unknown@example.com'});
     const response = await request(app.getHttpServer())
       .post(PROTECTED)
       .set('Authorization', `Bearer ${token}`)
@@ -261,10 +259,14 @@ describe('authorization boundary', () => {
   it('refuses a session that belongs to a different administrator', async () => {
     await seedAdmin();
     const other = await prisma.adminUser.create({
-      data: {githubId: 999, login: 'someone-else', role: 'owner'},
+      data: {
+        email: 'other-admin@me.palnadu.dev',
+        passwordHash: 'scrypt$65536$8$1$dummySalt$dummyHash',
+        role: 'owner',
+      },
     });
     // The session row belongs to the first admin; the token names the second.
-    const token = await issueToken({sub: other.id, gh_id: 999});
+    const token = await issueToken({sub: other.id, email: other.email});
     await request(app.getHttpServer())
       .post(PROTECTED)
       .set('Authorization', `Bearer ${token}`)
@@ -395,7 +397,7 @@ describe('protected writes', () => {
 
     const audits = await prisma.auditLog.findMany();
     expect(audits).toHaveLength(1);
-    expect(audits[0]?.action).toBe('experience.create');
+    expect(audits[0]?.action).toBe('experience_create');
     expect(audits[0]?.actorId).toBe(user.id);
   });
 
@@ -473,7 +475,7 @@ describe('protected writes', () => {
       .set('Authorization', `Bearer ${token}`);
 
     const actions = (await prisma.auditLog.findMany()).map((entry) => entry.action).sort();
-    expect(actions).toEqual(['experience.publish', 'experience.unpublish']);
+    expect(actions).toEqual(['experience_publish', 'experience_unpublish']);
   });
 
   it('updates only the supplied fields', async () => {
@@ -571,10 +573,9 @@ describe('audit atomicity', () => {
 });
 
 describe('contract conformance', () => {
-  it('uses an allowlisted administrator in these tests', async () => {
-    // Guards against the suite drifting from the canonical allowlist.
-    expect(ADMIN_ALLOWLIST).toHaveLength(1);
-    expect(GITHUB_ID).toBeGreaterThan(0);
+  it('uses the canonical owner email address in these tests', async () => {
+    // Guards against the suite drifting from the canonical owner email.
+    expect(OWNER_EMAIL).toBe('owner@me.palnadu.dev');
   });
 
   it('echoes a request id so a client can correlate an error', async () => {
