@@ -9,6 +9,7 @@ import {
 import {parseEnv} from '../../src/config/env.js';
 import {PrismaService} from '../../src/prisma/prisma.service.js';
 import {ExperienceService} from '../../src/modules/experience/experience.service.js';
+import {AdminService} from '../../src/modules/auth/admin.service.js';
 import {mapPersistenceError} from '../../src/common/persistence-error.js';
 
 /**
@@ -39,7 +40,20 @@ const env = parseEnv({NODE_ENV: 'test', DATABASE_URL: databaseUrl});
  * validated environment, never from a hardcoded URL.
  */
 const prisma = new PrismaService(env);
-const service = new ExperienceService(prisma);
+const service = new ExperienceService(prisma, new AdminService(prisma));
+
+/**
+ * Every write now commits its audit entry in the same transaction, so these tests
+ * supply one. `AuditLog.actorId` is not a database-level relation, so a stable
+ * placeholder is sufficient here; who the actor *is* is covered by the authorization
+ * suite, which uses a real administrator.
+ */
+const auditFor = (entityId: string) => ({
+  actorId: '000000000000000000000001',
+  action: 'experience.test',
+  entityType: 'experience',
+  entityId,
+});
 
 const baseRecord = (overrides: Partial<ExperienceCreateInput> = {}): ExperienceCreateInput => {
   const candidate: Record<string, unknown> = {
@@ -104,7 +118,7 @@ afterEach(async () => {
 
 describe('Experience persistence', () => {
   it('creates a record and reads it back through the contract shape', async () => {
-    const created = await service.create(baseRecord());
+    const created = await service.create(baseRecord(), auditFor('test'));
     expect(created.slug).toBe('example-org-endpoint-engineer');
     expect(created.current).toBe(false);
 
@@ -114,7 +128,7 @@ describe('Experience persistence', () => {
   });
 
   it('survives a reconnect, proving the write reached the database and not a cache', async () => {
-    await service.create(baseRecord());
+    await service.create(baseRecord(), auditFor('test'));
     await prisma.$disconnect();
     const reconnected = new PrismaService(env);
     try {
@@ -128,24 +142,31 @@ describe('Experience persistence', () => {
   });
 
   it('rejects a duplicate slug with a CONFLICT, not a second row', async () => {
-    await service.create(baseRecord());
-    await expect(service.create(baseRecord())).rejects.toMatchObject({code: 'CONFLICT'});
+    await service.create(baseRecord(), auditFor('test'));
+    await expect(service.create(baseRecord(), auditFor('test'))).rejects.toMatchObject({
+      code: 'CONFLICT',
+    });
 
     const count = await prisma.experience.count();
     expect(count).toBe(1);
   });
 
   it('reports NOT_FOUND when updating or deleting an unknown slug', async () => {
-    await expect(service.update('does-not-exist', {summary: 'x'})).rejects.toMatchObject({
+    await expect(
+      service.update('does-not-exist', {summary: 'x'}, auditFor('test')),
+    ).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
     await expect(service.delete('does-not-exist')).rejects.toMatchObject({code: 'NOT_FOUND'});
   });
 
   it('exposes only published records on the public path', async () => {
-    await service.create(baseRecord({slug: 'published-entry', published: true}));
-    await service.create(baseRecord({slug: 'draft-entry', published: false}));
-    await service.create(baseRecord({slug: 'archived-entry', published: false, current: true}));
+    await service.create(baseRecord({slug: 'published-entry', published: true}), auditFor('test'));
+    await service.create(baseRecord({slug: 'draft-entry', published: false}), auditFor('test'));
+    await service.create(
+      baseRecord({slug: 'archived-entry', published: false, current: true}),
+      auditFor('test'),
+    );
 
     const published = await service.listPublished();
     expect(published.map((entry) => entry.slug)).toEqual(['published-entry']);
@@ -153,30 +174,38 @@ describe('Experience persistence', () => {
   });
 
   it('returns drafts to an internal listing but never to the public one', async () => {
-    await service.create(baseRecord({slug: 'draft-entry', published: false}));
+    await service.create(baseRecord({slug: 'draft-entry', published: false}), auditFor('test'));
     expect((await service.listAll()).map((entry) => entry.slug)).toEqual(['draft-entry']);
     expect(await service.listPublished()).toEqual([]);
   });
 
   it('applies a partial update without touching untouched fields', async () => {
-    await service.create(baseRecord());
+    await service.create(baseRecord(), auditFor('test'));
     const parsed = ExperienceUpdateSchema.safeParse({title: 'Senior Endpoint Engineer'});
     expect(parsed.success).toBe(true);
 
-    const updated = await service.update('example-org-endpoint-engineer', parsed.data ?? {});
+    const updated = await service.update(
+      'example-org-endpoint-engineer',
+      parsed.data ?? {},
+      auditFor('test'),
+    );
     expect(updated.title).toBe('Senior Endpoint Engineer');
     expect(updated.summary).toBe('Placeholder summary used only in integration tests.');
     expect(updated.tech).toEqual(['Jamf Pro', 'Intune']);
   });
 
   it('stamps publishedAt on publish and clears it on unpublish', async () => {
-    await service.create(baseRecord({published: false}));
+    await service.create(baseRecord({published: false}), auditFor('test'));
     const unpublishedRow = await prisma.experience.findUnique({
       where: {slug: 'example-org-endpoint-engineer'},
     });
     expect(unpublishedRow?.publishedAt).toBeNull();
 
-    const published = await service.update('example-org-endpoint-engineer', {published: true});
+    const published = await service.update(
+      'example-org-endpoint-engineer',
+      {published: true},
+      auditFor('test'),
+    );
     expect(published.published).toBe(true);
 
     const publishedRow = await prisma.experience.findUnique({
@@ -184,7 +213,7 @@ describe('Experience persistence', () => {
     });
     expect(publishedRow?.publishedAt).toBeInstanceOf(Date);
 
-    await service.update('example-org-endpoint-engineer', {published: false});
+    await service.update('example-org-endpoint-engineer', {published: false}, auditFor('test'));
     const reverted = await prisma.experience.findUnique({
       where: {slug: 'example-org-endpoint-engineer'},
     });
@@ -192,14 +221,18 @@ describe('Experience persistence', () => {
   });
 
   it('sets createdAt once and advances updatedAt on change', async () => {
-    await service.create(baseRecord());
+    await service.create(baseRecord(), auditFor('test'));
     const created = await prisma.experience.findUnique({
       where: {slug: 'example-org-endpoint-engineer'},
     });
     expect(created?.createdAt).toBeInstanceOf(Date);
 
     await new Promise((resolve) => setTimeout(resolve, 25));
-    await service.update('example-org-endpoint-engineer', {summary: 'A different summary.'});
+    await service.update(
+      'example-org-endpoint-engineer',
+      {summary: 'A different summary.'},
+      auditFor('test'),
+    );
     const updated = await prisma.experience.findUnique({
       where: {slug: 'example-org-endpoint-engineer'},
     });
@@ -209,12 +242,22 @@ describe('Experience persistence', () => {
   });
 
   it('orders public reads identically to the canonical comparator', async () => {
-    await service.create(baseRecord({slug: 'oldest', startDate: '2019-01', endDate: '2020-01'}));
-    await service.create(baseRecord({slug: 'middle', startDate: '2022-01', endDate: '2023-01'}));
+    await service.create(
+      baseRecord({slug: 'oldest', startDate: '2019-01', endDate: '2020-01'}),
+      auditFor('test'),
+    );
+    await service.create(
+      baseRecord({slug: 'middle', startDate: '2022-01', endDate: '2023-01'}),
+      auditFor('test'),
+    );
     await service.create(
       baseRecord({slug: 'newest-finished', startDate: '2024-01', endDate: '2025-01'}),
+      auditFor('test'),
     );
-    await service.create(baseRecord({slug: 'newest-current', startDate: '2024-01', current: true}));
+    await service.create(
+      baseRecord({slug: 'newest-current', startDate: '2024-01', current: true}),
+      auditFor('test'),
+    );
 
     const fromDatabase = await service.listPublished();
     const byComparator = [...fromDatabase].sort(compareExperience);

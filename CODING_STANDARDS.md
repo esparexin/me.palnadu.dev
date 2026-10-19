@@ -36,6 +36,30 @@ Hard requirements:
 - Prefer `satisfies` over `as` for object literals, and `as const` for literal unions.
 - Discriminated unions over optional-field bags for request payloads.
 
+### 1.1 Dependency injection is explicit, everywhere
+
+This application compiles to ESM. TypeScript does not emit `design:paramtypes` for ESM
+output, so **NestJS cannot infer a constructor parameter's type** and a constructor
+written the usual way resolves to `Nest can't resolve dependencies of the (Service) (?)`
+at boot.
+
+Every constructor dependency must therefore be injected by token:
+
+```ts
+constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+```
+
+This is not a style preference — it is the only form that works. Two things make it easy
+to miss:
+
+- Phase 6A never started a Nest application. Its tests constructed services with
+  `new ExperienceService(prisma)`, so the missing metadata was invisible until Phase 6B
+  built the first real application in a test.
+- The failure appears at boot, far from the constructor that caused it.
+
+`ZodValidationPipe` is the deliberate exception: it is constructed by hand at the
+parameter decorator and never resolved by the injector, so it needs no token.
+
 ## 2. Naming
 
 | Kind                 | Convention                                                      | Example                           |

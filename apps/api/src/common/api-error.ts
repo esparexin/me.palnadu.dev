@@ -44,6 +44,17 @@ export class ApiError extends HttpException {
     return new ApiError('VALIDATION_FAILED', message, details);
   }
 
+  /**
+   * Absent or unusable credentials.
+   *
+   * A missing `Authorization` header is an authentication failure, not a malformed
+   * request body. Reporting it as 422 would tell a client to fix a body it never sent,
+   * and would make the status code useless for deciding whether to re-authenticate.
+   */
+  static unauthenticated(message: string, details?: ApiErrorDetail[]): ApiError {
+    return new ApiError('UNAUTHENTICATED', message, details);
+  }
+
   static notFound(message: string): ApiError {
     return new ApiError('NOT_FOUND', message);
   }
