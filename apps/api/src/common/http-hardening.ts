@@ -1,4 +1,4 @@
-import {ValidationPipe, type INestApplication} from '@nestjs/common';
+import type {INestApplication} from '@nestjs/common';
 import type {NextFunction, Request, Response} from 'express';
 import {allowedOrigins, type Env} from '../config/env.js';
 import {RequestIdMiddleware} from './api-exception.filter.js';
@@ -76,15 +76,21 @@ export const securityHeaders =
 export const configureHttp = (app: INestApplication, env: Env): void => {
   app.use(securityHeaders(env));
 
-  app.useGlobalPipes(
-    // Defence in depth: strip unknown keys and reject unknown ones outright, so a
-    // client can never smuggle a field into a persisted document (SECURITY.md 3).
-    //
-    // This lived in `main.ts` until Phase 6C. Like the CORS configuration, anything
-    // registered only in the entrypoint is not exercised by the suite, so
-    // `forbidNonWhitelisted` was a control with no test.
-    new ValidationPipe({transform: true, whitelist: true, forbidNonWhitelisted: true}),
-  );
+  // No global Nest ValidationPipe here, deliberately.
+  //
+  // Phase 6C found that the one registered in `main.ts` was broken: it requires
+  // `class-validator` and `class-transformer`, which are not dependencies, so
+  // Nest's package loader threw at startup. Moving it into `configureHttp` surfaced
+  // the failure as a non-zero exit from the integration suite.
+  //
+  // Restoring it by installing those packages would be the wrong fix. `ValidationPipe`
+  // only validates when a handler parameter carries a DTO metatype, and no route in
+  // this application has one - `@Body` takes a `ZodValidationPipe` over a contracts
+  // schema instead. So the pipe was a no-op that cost two dependencies to run.
+  //
+  // Contracts schemas remain the single validation mechanism (SSOT_POLICY 4). Adding a
+  // second validator that can disagree with them would trade a latent startup failure
+  // for a subtler one: two answers to the same question about whether a body is valid.
 
   app.enableCors({
     origin: allowedOrigins(env),
