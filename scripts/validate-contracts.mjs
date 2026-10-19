@@ -76,6 +76,17 @@ async function main() {
   }
   note(`validated ${enums.length} contract enum(s): ${[...members.keys()].join(', ')}`);
 
+  // Canonical entity field lists, parsed from the contracts package so this gate
+  // cannot drift from the definitions it protects.
+  const canonicalShapes = new Map();
+  for (const match of contractBody.matchAll(/const ([A-Za-z]+)Shape\s*=\s*\{([\s\S]*?)\n\};/g)) {
+    const fields = [...match[2].matchAll(/(?:^|[\s,{])([a-zA-Z][a-zA-Z0-9]*)\s*:/g)].map(
+      (m) => m[1],
+    );
+    if (fields.length >= 4) canonicalShapes.set(match[1], fields);
+  }
+  note(`canonical entity shapes: ${[...canonicalShapes.keys()].join(', ') || 'none found'}`);
+
   // 2 & 4. No re-declaration outside contracts.
   for (const dir of OTHER_WORKSPACES) {
     for (const file of await walk(path.join(ROOT, dir))) {
@@ -83,21 +94,52 @@ async function main() {
       const rel = path.relative(ROOT, file);
 
       for (const [name, values] of members) {
-        // A literal union or a const array duplicating a contract enum.
-        const union = new RegExp(`(?:'${values[0]}'[^\\n]*\\|)|(?:\\|[^\\n]*'${values[0]}')`);
-        const list = new RegExp(`\\[\\s*(?:'${values[0]}'\\s*,?)+\\s*\\]`, 's');
-        if (values.length > 1 && (union.test(body) || list.test(body))) {
+        if (values.length < 2) continue;
+        const first = values[0];
+
+        // A literal union of two or more contract values on one line.
+        const second = values[1];
+        // A union names at least two members separated by a pipe, in either order.
+        const union = new RegExp(
+          `'${first}'[^\\n]*\\|[^\\n]*'${second}'|'${second}'[^\\n]*\\|[^\\n]*'${first}'`,
+        );
+
+        // A const array literal in a declaration position.
+        //
+        // The assignment or return prefix is required on purpose. Without it,
+        // bracket property access such as `data['summary']` matched the bare
+        // bracket pattern and produced a false positive on ordinary code.
+        const list = new RegExp(
+          `(?:=\\s*|\\breturn\\s*|:\\s*)\\[\\s*'${first}'\\s*,?\\s*(?:'[^']+'\\s*,?\\s*)+\\]`,
+        );
+
+        if (union.test(body) || list.test(body)) {
           fail(
             `${rel}: re-declares the ${name} enum defined in packages/contracts (SSOT_POLICY.md section 2)`,
           );
         }
       }
 
-      if (/z\.object\(\s*\{[^}]*\btitle\b/.test(body) && !rel.startsWith('packages/contracts')) {
-        // Legitimate for UI props; a heuristic that reports for review rather than blocking alone.
-        notes.push(
-          `${rel}: defines a z.object containing "title" - confirm it is a props schema, not a domain entity`,
+      // High-precision duplicate detection: a z.object is only reported when its
+      // field set mirrors a canonical entity shape. A test fixture or a UI props
+      // schema that happens to use a familiar field name is not a second
+      // definition of the entity, and flagging it would train reviewers to ignore
+      // this gate.
+      const objectMatch = /z\.object\(\{([\s\S]*?)\}\)/.exec(body);
+      if (objectMatch !== null) {
+        const declaredFields = new Set(
+          [...objectMatch[1].matchAll(/(?:^|[\s,{])([a-zA-Z][a-zA-Z0-9]*)\s*:/g)].map((m) => m[1]),
         );
+        for (const [entity, fields] of canonicalShapes) {
+          const overlap = fields.filter((field) => declaredFields.has(field));
+          // Most of the declared fields come from one canonical entity: that is a
+          // second definition, whereas a props schema sharing one or two names is not.
+          if (overlap.length >= 4 && overlap.length >= declaredFields.size * 0.75) {
+            fail(
+              `${rel}: z.object mirrors ${overlap.length} fields of the canonical ${entity} shape (${overlap.join(', ')}) - reuse @me-palnadu/contracts (SSOT_POLICY.md section 2)`,
+            );
+          }
+        }
       }
     }
   }

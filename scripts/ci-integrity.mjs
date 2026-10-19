@@ -82,7 +82,7 @@ async function main() {
 
     // Every job needs an explicit conclusion signal; a job whose steps are all
     // optional cannot fail.
-    const jobs = [...body.matchAll(/^  ([a-z0-9-]+):\s*$/gm)].map((m) => m[1]);
+    const jobs = [...body.matchAll(/^ {2}([a-z0-9-]+):\s*$/gm)].map((m) => m[1]);
     for (const job of jobs) {
       const block = body.split(new RegExp(`^  ${job}:\\s*$`, 'm'))[1] ?? '';
       if (/needs:|uses:/.test(block) === false && /if:/.test(block)) {

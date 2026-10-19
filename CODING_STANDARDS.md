@@ -97,12 +97,23 @@ Files export the primary symbol by name. `export default` is allowed only for Ne
 
 ## 5. Logging
 
-- Use the structured logger (`pino` in `api`, `next-logger`-equivalent or a minimal
-  adapter in the Next.js apps). `console.log` is banned in shipped application code;
-  `console.error`/`console.warn` are permitted only in error boundaries and `scripts/`.
+- Use the structured logger interface `{ level, message, requestId, ...fields }`. The API
+  implementation lives in `apps/api/src/common/api-exception.filter.ts`. `console.log` is
+  banned in shipped application code; `console.error`/`console.warn` are permitted only
+  in error boundaries and `scripts/`.
+  **Not yet adopted:** a shipping logger (`pino`) was named here before any logger
+  existed. It is deferred deliberately: a single-process deployment with no log shipping
+  configured gains nothing from the dependency, and adding one before the logging
+  destination is decided would be speculative. The interface is the stable part; the
+  implementation is replaceable without touching call sites.
 - Log shape is `{ level, message, requestId, actorId?, route?, durationMs?, ...fields }`.
 - **Secrets and personal data are never logged.** Contact message bodies, OAuth tokens,
   cookies, and connection strings are redacted at the logger, not at the call site.
+- **Prisma driver error logs are personal data.** The driver logs failed operations with
+  their parameters, which for this schema include organisation names, job titles, and
+  employment dates — professional claims under `AGENTS.md` §4. Those logs are handled
+  like contact submissions and are never shipped to a third-party aggregator without
+  review.
 - Log levels: `error` needs action, `warn` is a recoverable anomaly, `info` is a
   lifecycle event, `debug` is off in production.
 

@@ -49,8 +49,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Prettier check
         run: pnpm exec prettier --check "**/*.{ts,tsx,mjs,json,css,md}"
-      - name: ESLint
+      - name: ESLint (packages and applications)
         run: pnpm lint
+      # scripts/ and tests/ live outside every package's src/, so the per-package
+      # lint task cannot see them. Without this step, dead code in the gate scripts
+      # itself ships unnoticed - which is exactly what happened.
+      - name: ESLint (scripts, gates, and end-to-end suites)
+        run: pnpm run lint:repo
 
   typecheck:
     name: TypeScript type safety
@@ -266,3 +271,42 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - name: Zero serious or critical axe violations
         run: pnpm test:a11y
+
+  integration:
+    name: Database integration tests
+    runs-on: ubuntu-latest
+    needs: [workspace]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 11.2.2
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Prisma's MongoDB connector requires a replica set for transactions, and a
+      # standalone server is not sufficient. The job fails rather than skips when the
+      # database is unavailable (TESTING.md section 4a).
+      - name: Install MongoDB
+        env:
+          # Pinned so the test database cannot change under a green run. The apt
+          # repository does not publish a build for Ubuntu 24.04 (noble) on the 7.0
+          # line, which is why the official tarball is used rather than a package.
+          MONGODB_VERSION: '7.0.29'
+        run: |
+          set -euo pipefail
+          archive="mongodb-linux-x86_64-ubuntu2204-${MONGODB_VERSION}.tgz"
+          curl -fsSL "https://downloads.mongodb.org/linux/${archive}" -o /tmp/mongodb.tgz
+          mkdir -p /tmp/mongodb
+          tar -xzf /tmp/mongodb.tgz -C /tmp/mongodb --strip-components=1
+          echo "/tmp/mongodb/bin" >> "$GITHUB_PATH"
+          reported="$(/tmp/mongodb/bin/mongod --version | head -1)"
+          echo "installed: ${reported}"
+          case "${reported}" in
+            *"v${MONGODB_VERSION}"*) ;;
+            *) echo "FAIL expected mongod v${MONGODB_VERSION}, got: ${reported}"; exit 1 ;;
+          esac
+      - name: Run integration tests against an ephemeral replica set
+        run: pnpm db:integration

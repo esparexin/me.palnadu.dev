@@ -2,7 +2,10 @@ import 'reflect-metadata';
 import {Logger, ValidationPipe} from '@nestjs/common';
 import {NestFactory} from '@nestjs/core';
 import {AppModule} from './app.module.js';
+import {ApiExceptionFilter, RequestIdMiddleware} from './common/api-exception.filter.js';
+import type {RequestWithId} from './common/api-exception.filter.js';
 import {allowedOrigins, parseEnv} from './config/env.js';
+import type {NextFunction, Response} from 'express';
 
 /**
  * Bootstrap.
@@ -31,6 +34,14 @@ async function bootstrap(): Promise<void> {
       forbidNonWhitelisted: true,
     }),
   );
+
+  // One error envelope for every failure, including persistence failures, so a
+  // client never has to parse two shapes (CODING_STANDARDS.md section 4).
+  app.useGlobalFilters(new ApiExceptionFilter());
+  const requestIdMiddleware = new RequestIdMiddleware();
+  app.use((request: RequestWithId, response: Response, next: NextFunction) => {
+    requestIdMiddleware.use(request, response, next);
+  });
 
   app.enableShutdownHooks();
 

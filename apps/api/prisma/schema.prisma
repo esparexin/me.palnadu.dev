@@ -1,0 +1,57 @@
+// Prisma schema for the portfolio API.
+//
+// SCOPE (Phase 6A): the Experience slice only. Other collections in
+// ARCHITECTURE.md section 7 arrive with their own vertical slice, never as an
+// up-front guess at future models.
+//
+// SCHEMA MANAGEMENT: Prisma's MongoDB connector does not support `prisma migrate`
+// (verified against Prisma 6.19.3). Schema changes are applied with `prisma db push`
+// as an explicit, reviewed step. That is NOT equivalent to a migration and does NOT
+// give a rollback path for data. See docs/adr/0006 and scripts/check-schema.mjs.
+//
+// CANONICAL VALUES: enum-like fields are `String`, not Prisma `enum` blocks, because
+// the allowed values live once in @me-palnadu/contracts (SSOT_POLICY.md section 1).
+// MongoDB therefore does not enforce these value sets on its own; the API boundary
+// does, using the contract schemas.
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+/// A career timeline entry.
+///
+/// Ordering mirrors the canonical comparator `compareExperience` in
+/// @me-palnadu/shared (newest first, current role first, then sortIndex, then id).
+/// The index below supports exactly that order; an integration test asserts the
+/// database order and the comparator cannot diverge.
+model Experience {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  slug        String    @unique
+  org         String
+  title       String
+  location    String?
+  /// ISO calendar month, `YYYY-MM`. Month precision is deliberate: a day-level
+  /// employment date is a professional claim we cannot verify (AGENTS.md 4).
+  startDate   String
+  endDate     String?
+  current     Boolean   @default(false)
+  /// Canonical values in @me-palnadu/contracts (EXPERIENCE_KINDS).
+  kind        String
+  summary     String
+  highlights  String[]  @default([])
+  tech        String[]  @default([])
+  sortIndex   Int       @default(0)
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Public reads filter on `published` and order by the comparator's key order.
+  // The unique index on `slug` is created by the field-level `@unique`.
+  @@index([published, startDate, current, sortIndex])
+}

@@ -80,7 +80,7 @@ async function main() {
       }
     }
 
-    const jobs = [...body.matchAll(/^  ([a-z0-9-]+):\s*$/gm)].map((match) => match[1]);
+    const jobs = [...body.matchAll(/^ {2}([a-z0-9-]+):\s*$/gm)].map((match) => match[1]);
     note(`${file}: ${jobs.length} job(s), permissions declared`);
   }
 

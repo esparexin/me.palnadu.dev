@@ -17,7 +17,7 @@ tested.
 | 4   | Verify staging manually: home, experience timeline, one knowledge article, admin login redirect | Notes in the pull request or the release issue                  |
 | 5   | Approve the `production` GitHub environment                                                     | Approval recorded with the approver's identity                  |
 | 6   | Promote the artefact to production: `apps/api`, then `apps/admin`, then `apps/web`              | Deployment URLs per component                                   |
-| 7   | Apply Prisma migrations as an explicit, backwards-compatible step                               | Migration log; `GET /health/ready` returns 200                  |
+| 7   | Apply the schema with `prisma db push` after staging and a verified snapshot                    | `db push` output; `GET /health/ready` returns 200               |
 | 8   | Run the post-deployment verification in §2                                                      | Full report                                                     |
 | 9   | Record the deployment in the release log: SHA, previous good SHA, duration, operator, outcome   | Release log entry                                               |
 
@@ -67,20 +67,22 @@ Decision: roll back if any verification in §2 fails, if the API error rate rise
 content is wrong or unpublished. Rolling back is the default; debugging in production
 is not.
 
-| Component    | Mechanism                                             | Time   | Data implication                                                                                                         |
-| ------------ | ----------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `apps/web`   | Redeploy the previous known-good Vercel deployment    | ~1 min | None                                                                                                                     |
-| `apps/admin` | Redeploy the previous known-good Vercel deployment    | ~1 min | None                                                                                                                     |
-| `apps/api`   | Roll back the Render deploy to the previous image tag | ~3 min | Requires the previous code to tolerate the current schema                                                                |
-| Database     | No automatic rollback                                 | Manual | Prisma migrations must be backwards-compatible; destructive migrations are forbidden in the same release that needs them |
+| Component    | Mechanism                                             | Time   | Data implication                                                                                  |
+| ------------ | ----------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------- |
+| `apps/web`   | Redeploy the previous known-good Vercel deployment    | ~1 min | None                                                                                              |
+| `apps/admin` | Redeploy the previous known-good Vercel deployment    | ~1 min | None                                                                                              |
+| `apps/api`   | Roll back the Render deploy to the previous image tag | ~3 min | Requires the previous code to tolerate the current schema                                         |
+| Database     | No rollback of any kind                               | Manual | There is no migration history. Recovery is forward repair or a point-in-time restore (`ADR-0006`) |
 
 Procedure:
 
 1. Announce in the incident channel with the reason and the target SHA.
 2. Redeploy the previous known-good artefact for each affected component, web last.
 3. Re-run §2 in full.
-4. If the API must be rolled back but a newer migration is incompatible, restore from
-   the Atlas point-in-time backup and verify content integrity before reopening.
+4. If the API must be rolled back but a newer schema change is incompatible with the
+   rolled-back code, restore from the Atlas point-in-time snapshot and verify content
+   integrity before reopening. Prefer a forward-compatible schema change over this
+   path: it is slower and loses writes made since the snapshot.
 5. Record what rolled back, why, and the follow-up task. A rollback is not a resolution.
 
 ## 4. Gate failure triage
@@ -94,6 +96,25 @@ Procedure:
 | `secrets` fails                                | Assume the secret is compromised                              | Rotate first (`SECURITY.md` §7), then remove                                       |
 | `ci-integrity` fails on your own workflow edit | Re-read `CI_GATES.md` area 11                                 | An edit that neutralises a gate is rejected at review                              |
 | `governance` fails                             | Check the index in `AGENTS.md` and `docs/exceptions.md`       | Add the document or correct the stale claim                                        |
+
+## 4a. CodeQL review threads before merge
+
+`main` requires all review threads to be resolved. CodeQL opens a thread on every
+pull request, so **a CodeQL summary thread is expected on every PR** and will block the
+merge until it is handled.
+
+Procedure:
+
+1. Read the thread. It names the rule, the path, and the line.
+2. Check for open code-scanning alerts:
+   `gh api repos/esparexin/me.palnadu.dev/code-scanning/alerts --jq '.[] | {rule: .rule.id, path: .most_recent_instance.location.path}'`
+3. **If an alert is open, fix the code and push.** Do not resolve the thread first.
+4. Only when there are no open alerts for the thread's finding may the thread be
+   resolved, and the resolution is recorded in the pull request with the evidence.
+
+Resolving a thread removes the blocker, not the defect. The two threads raised on the
+Phase 6A pull request were a real insecure-temporary-file finding and a real unused
+variable, both fixed before resolution.
 
 ## 5. Security incident
 

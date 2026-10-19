@@ -24,6 +24,17 @@ export const EnvSchema = z.object({
 
 export type Env = z.infer<typeof EnvSchema>;
 
+/**
+ * Settings that must be present and valid in production.
+ *
+ * The Phase 3 behaviour was to tolerate a missing DATABASE_URL so a developer
+ * could boot without a database. That is correct for development and wrong for
+ * production: a production process that starts without a database serves 503s
+ * while appearing healthy, and the failure surfaces to visitors rather than to
+ * the deploy. The rule is therefore environment-dependent and fails fast.
+ */
+const PRODUCTION_REQUIRED = ['DATABASE_URL', 'AUTH_SECRET'] as const;
+
 export const parseEnv = (source: NodeJS.ProcessEnv): Env => {
   const parsed = EnvSchema.safeParse(source);
   if (!parsed.success) {
@@ -34,6 +45,18 @@ export const parseEnv = (source: NodeJS.ProcessEnv): Env => {
   }
   if (parsed.data.ALLOWED_ORIGINS.includes('*')) {
     throw new Error('ALLOWED_ORIGINS must list exact origins; a wildcard is forbidden');
+  }
+  if (parsed.data.NODE_ENV === 'production') {
+    const missing = PRODUCTION_REQUIRED.filter((key) => parsed.data[key] === undefined);
+    if (missing.length > 0) {
+      // Names only: a value must never reach a log line.
+      throw new Error(
+        `production configuration is incomplete - missing required variables: ${missing.join(', ')}`,
+      );
+    }
+    if (!parsed.data.ALLOWED_ORIGINS.includes('https://')) {
+      throw new Error('production ALLOWED_ORIGINS must use https origins');
+    }
   }
   return parsed.data;
 };

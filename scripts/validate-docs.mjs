@@ -96,7 +96,18 @@ async function main() {
   for (const message of inventory.errors) fail(message);
   const documentedJobs = new Set(inventory.rows.map((row) => row.jobId));
   const documentedChecks = new Set(inventory.rows.map((row) => row.check));
-  note(`gate inventory: ${inventory.rows.length} required check(s) parsed from CI_GATES.md`);
+
+  // Two rows with the same check name would make the ruleset table ambiguous, and
+  // the failure would only show up as a confusing merge block. Caught here instead.
+  const duplicateChecks = [...documentedChecks].filter(
+    (check) => inventory.rows.filter((row) => row.check === check).length > 1,
+  );
+  if (duplicateChecks.length > 0) {
+    fail(`CI_GATES.md section 3 lists duplicate check names: ${duplicateChecks.join(', ')}`);
+  }
+  note(
+    `gate inventory: ${inventory.rows.length} row(s), ${documentedChecks.size} unique check name(s)`,
+  );
 
   const workflowsDir = path.join(ROOT, '.github/workflows');
   const workflowFiles = existsSync(workflowsDir)
