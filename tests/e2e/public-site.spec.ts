@@ -100,6 +100,18 @@ test('shared UI primitives receive their token utilities in the production build
   }
 });
 
+test('a missing article answers 404 with site chrome and a way back', async ({page}) => {
+  // A draft, archived, or unknown slug must not render the bare Next.js 404.
+  const response = await page.goto('/knowledge-hub/does-not-exist');
+  expect(response?.status()).toBe(404);
+  await expect(page.getByRole('heading', {level: 1, name: 'Page not found'})).toBeVisible();
+  await expect(page.locator('nav[aria-label="Primary"]')).toBeVisible();
+
+  const unknown = await page.goto('/no-such-route');
+  expect(unknown?.status()).toBe(404);
+  await expect(page.getByRole('heading', {level: 1, name: 'Page not found'})).toBeVisible();
+});
+
 test('focus is visible on every interactive element in the header', async ({page}) => {
   await page.goto('/');
   const link = page.getByRole('link', {name: 'me.palnadu.dev'}).first();
