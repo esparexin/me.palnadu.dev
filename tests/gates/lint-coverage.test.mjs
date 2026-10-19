@@ -1,4 +1,4 @@
-import {readdirSync, readFileSync, statSync} from 'node:fs';
+import {readdirSync, readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {describe, expect, it} from 'vitest';
 
@@ -31,14 +31,17 @@ const workspaceScripts = () => {
   const found = [];
   for (const group of roots) {
     for (const name of readdirSync(join(ROOT, group))) {
-      const manifestPath = join(ROOT, group, name, 'package.json');
+      // Read the manifest once and treat any failure as "not a workspace". A
+      // `statSync` followed by a `readFileSync` is a check-then-use pair: CodeQL
+      // reports it as js/file-system-race, and it is genuinely racy even here, where
+      // the window is a test run rather than a request.
+      let manifest;
       try {
-        if (!statSync(manifestPath).isFile()) continue;
-        const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-        found.push({name: `${group}/${name}`, lint: manifest.scripts?.lint ?? ''});
+        manifest = JSON.parse(readFileSync(join(ROOT, group, name, 'package.json'), 'utf8'));
       } catch {
-        // A workspace without a readable manifest is not one we can assert about.
+        continue;
       }
+      found.push({name: `${group}/${name}`, lint: manifest.scripts?.lint ?? ''});
     }
   }
   return found;
@@ -61,8 +64,9 @@ const typescriptFiles = (relativeRoot) => {
   };
   const absolute = join(ROOT, relativeRoot);
   try {
-    statSync(absolute);
+    readdirSync(absolute);
   } catch {
+    // No such directory: nothing to cover, and walking it would throw.
     return results;
   }
   walk(absolute, relativeRoot);
