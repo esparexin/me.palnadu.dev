@@ -33,7 +33,7 @@ test('the language is declared and a skip link exists', async ({page}) => {
 });
 
 test('primary navigation reaches every public route without a 404', async ({page}) => {
-  const routes = ['/experience', '/projects', '/knowledge', '/resume', '/contact'];
+  const routes = ['/experience', '/projects', '/knowledge-hub', '/faq', '/resume', '/contact'];
 
   for (const route of routes) {
     const response = await page.goto(route);
@@ -44,7 +44,7 @@ test('primary navigation reaches every public route without a 404', async ({page
 });
 
 test('navigation order is identical on every page', async ({page}) => {
-  const expected = ['Experience', 'Projects', 'Knowledge Hub', 'Resume', 'Contact'];
+  const expected = ['Experience', 'Projects', 'Knowledge Hub', 'FAQ', 'Resume', 'Contact'];
 
   // Scope to the list items: the header also contains the brand link, which is
   // not part of the section order being compared.
@@ -58,6 +58,12 @@ test('navigation order is identical on every page', async ({page}) => {
 
   await page.goto('/projects');
   expect((await navItems(page)).map((label) => label.trim())).toEqual(expected);
+});
+
+test('the legacy Knowledge route redirects permanently to the canonical route', async ({page}) => {
+  const response = await page.request.get('/knowledge', {maxRedirects: 0});
+  expect(response.status()).toBe(308);
+  expect(response.headers()['location']).toBe('/knowledge-hub');
 });
 
 test('the page never scrolls horizontally', async ({page}) => {

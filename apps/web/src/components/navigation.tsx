@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {WEB_ROUTES} from '@me-palnadu/contracts';
 
 /**
  * Header navigation.
@@ -8,11 +9,12 @@ import Link from 'next/link';
  * items in the same places (UI_UX_STANDARDS 7.2).
  */
 export const NAV_ITEMS = [
-  {href: '/experience', label: 'Experience'},
-  {href: '/projects', label: 'Projects'},
-  {href: '/knowledge', label: 'Knowledge Hub'},
-  {href: '/resume', label: 'Resume'},
-  {href: '/contact', label: 'Contact'},
+  {href: WEB_ROUTES.experience, label: 'Experience'},
+  {href: WEB_ROUTES.projects, label: 'Projects'},
+  {href: WEB_ROUTES.knowledgeHub, label: 'Knowledge Hub'},
+  {href: WEB_ROUTES.faq, label: 'FAQ'},
+  {href: WEB_ROUTES.resume, label: 'Resume'},
+  {href: WEB_ROUTES.contact, label: 'Contact'},
 ] as const;
 
 export const Navigation = () => (
