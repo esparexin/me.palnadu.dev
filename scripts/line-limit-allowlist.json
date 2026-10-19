@@ -36,15 +36,6 @@
     "reviewBy": "2026-11-15"
   },
   {
-    "file": "packages/contracts/src/contracts.test.ts",
-    "maxLines": 404,
-    "reason": "All-in-one unit test suite covering all contract domain schemas (experience, articles, media, pagination). Scheduled for domain test split in Refactoring Phase 4.",
-    "allowedBy": "repository owner",
-    "category": "legacy-debt",
-    "added": "2026-10-19",
-    "reviewBy": "2026-11-15"
-  },
-  {
     "file": "apps/api/src/modules/media/media.service.ts",
     "maxLines": 375,
     "reason": "Combines Cloudinary HMAC SHA-1 upload signing and provider deletion with database asset tracking. Scheduled for provider abstraction in Refactoring Phase 3.",
@@ -93,15 +84,6 @@
     "file": "apps/api/src/modules/experience/experience.service.ts",
     "maxLines": 269,
     "reason": "Contains update-builder and row-to-contract DTO mapping inline with query methods. Scheduled for mapper extraction in Refactoring Phase 3.",
-    "allowedBy": "repository owner",
-    "category": "legacy-debt",
-    "added": "2026-10-19",
-    "reviewBy": "2026-11-15"
-  },
-  {
-    "file": "packages/shared/src/markdown.ts",
-    "maxLines": 264,
-    "reason": "Inline markdown subset parser combining AST tokenizers with document text extraction utilities. Scheduled for AST extraction in Refactoring Phase 4.",
     "allowedBy": "repository owner",
     "category": "legacy-debt",
     "added": "2026-10-19",
