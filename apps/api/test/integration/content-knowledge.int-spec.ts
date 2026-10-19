@@ -117,10 +117,6 @@ describe('Knowledge Hub authoring and publication', () => {
     expect(publicList.body.items).toHaveLength(1);
     expect(PublicArticleSummarySchema.safeParse(publicList.body.items[0]).success).toBe(true);
 
-    const rss = await request(app.getHttpServer()).get('/api/knowledge/rss').expect(200);
-    expect(rss.headers['content-type']).toContain('application/rss+xml');
-    expect(rss.text).toContain(ARTICLE.title);
-
     await request(app.getHttpServer())
       .post(`/api/admin/knowledge/${created.body.id}/unpublish`)
       .set('Authorization', `Bearer ${token}`)

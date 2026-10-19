@@ -120,7 +120,7 @@ describe('Experience persistence', () => {
       auditFor('test'),
     );
     expect(updated.title).toBe('Senior Endpoint Engineer');
-    expect(updated.summary).toBe('Placeholder summary used only in tests.');
+    expect(updated.summary).toBe(baseRecord().summary);
     expect(updated.tech).toEqual(['Jamf Pro', 'Intune']);
   });
 
