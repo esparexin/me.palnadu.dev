@@ -266,11 +266,10 @@ protected request, against a real Nest application and a real MongoDB replica se
 - GitHub OAuth sign-in, callback handling, and session issuance (§4.1–4.3). The tests
   mint tokens directly with `jose`; nothing here proves a real sign-in flow works.
 - CSRF protection on the session cookie, and cookie issuance itself.
-- Security headers, CORS, and rate limiting (§5).
-- Role-based _denial_. Every Experience write route admits both `owner` and `editor`,
-  so no route exists on which the two roles differ. The forged-claim test proves the
-  role is read from the database; it cannot yet prove that a lower role is refused an
-  owner-only operation. This closes as soon as an owner-only operation is defined.
+- Role-based _denial_, deferred by decision — see §9.6.
+
+Security headers, CORS and rate limiting were also listed here. They are no longer
+specified: each is implemented and proven in §9.2, §9.4 and §9.5.
 
 **Open domain decision — `archive`.** Archiving was implemented as `published = false`,
 which is byte-for-byte what `unpublish` already did: two names for one behaviour, where
@@ -371,9 +370,7 @@ source of truth — rather than improvised in the API. `STATUS_BY_CODE` is a
 `Record<ErrorCode, number>`, so a new code without a status is a compile error, not a
 silent gap.
 
-**Still outstanding:** rate limiting; OAuth sign-in and session issuance; CSRF
-reassessment once cookie authentication arrives; and the owner-only role-denial gap from
-Phase 6B.
+**Still outstanding:** tracked together in §9.6.
 
 ### 9.4 Why the API does not use `app.useSecurityHeaders()`
 
@@ -432,5 +429,61 @@ anyone documented.
 restart (`ADR-0007`). The API is pinned to a single instance for this reason. Moving to
 a shared store requires an ADR because it changes the deployment assumption.
 
-**Still outstanding:** OAuth sign-in and session issuance; CSRF reassessment once cookie
-authentication arrives; and the owner-only role-denial gap from Phase 6B.
+**Still outstanding:** tracked together in §9.6.
+
+### 9.6 Deferred controls
+
+Three items are open by decision, not by omission. Each records what would reopen it, so
+none is silently forgotten and none is quietly implemented to improve a number.
+
+**1. Role-based denial — not applicable to the current domain model.**
+
+`RequireRolesGuard` is implemented and exercised; the forged-claim test proves the role
+is read from the database rather than from a token. What cannot be proven is a _denial_,
+because every Experience write route admits both `owner` and `editor`. There is no route
+on which the two roles differ, so the denial branch has no reachable input.
+
+This is a property of the domain, not a broken control. `ADMIN_ALLOWLIST` contains a
+single administrator, so an owner-only operation would currently deny the only person who
+can perform it — protecting nothing.
+
+Reopen when either becomes true:
+
+- a second administrator exists and administrator-management operations become real
+  requirements; or
+- an existing or planned domain operation has a genuine owner-only requirement.
+
+When it reopens, the policy is defined **first**, then a test proves an editor is denied
+and an owner is allowed. Building an owner-only route now would be manufacturing
+functionality to satisfy a test, which this document does not do.
+
+**2. GitHub OAuth sign-in and session issuance — blocked on an external dependency.**
+
+Every session test mints a JWT directly with `jose`. That is correct for testing the
+authorization boundary and proves nothing about signing in.
+
+Prerequisites, all outside this repository:
+
+- the GitHub OAuth app exists, created through the account holder's own GitHub account;
+- its registered callback matches the actual Auth.js configuration;
+- local and production callback URLs are handled for their respective environments;
+- the numeric GitHub account ID allowlist remains the authorization authority.
+
+The client secret is never committed, pasted into source or PR bodies, or written to
+logs. It lives in local environment configuration or the deployment secret store.
+
+Once those are confirmed: implement and test the real callback, `state` validation, the
+token exchange, allowlist resolution, session issuance, expiry and revocation.
+
+**3. CSRF protection — revisit when the session transport is chosen.**
+
+Currently inapplicable and deliberately so: the API authenticates by bearer token with
+`credentials: false`, so no ambient browser credential is attached and there is nothing
+for a cross-site request to forge. That holds only while authentication is bearer-only.
+
+It must be reassessed before any cookie-based session is introduced, not after. A test
+harness using bearer tokens is not evidence that a cookie-based flow is safe.
+
+**Standing constraint.** No security control is added merely to raise a test count. Each
+one corresponds to a real requirement, has a stated threat, and has a test that fails
+when the control is removed.
