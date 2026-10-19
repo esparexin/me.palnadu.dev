@@ -2,6 +2,7 @@ import {Controller, Get, HttpStatus, Inject, Res} from '@nestjs/common';
 import {API_ROUTES} from '@me-palnadu/contracts';
 import {ENV} from '../../common/tokens.js';
 import {Public} from '../../auth/public.decorator.js';
+import {PublicRateLimit} from '../../auth/throttling.js';
 import type {Env} from '../../config/env.js';
 
 /**
@@ -32,11 +33,13 @@ interface StatusSetter {
 export class HealthController {
   constructor(@Inject(ENV) private readonly env: Env) {}
 
+  @PublicRateLimit()
   @Get(API_ROUTES.health.live)
   live() {
     return {status: 'ok' as const, uptimeSeconds: Math.round(process.uptime())};
   }
 
+  @PublicRateLimit()
   @Get(API_ROUTES.health.ready)
   ready(@Res({passthrough: true}) response: StatusSetter) {
     const databaseConfigured = this.env.DATABASE_URL !== undefined;

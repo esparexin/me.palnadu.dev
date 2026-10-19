@@ -25,6 +25,7 @@ import {ZodValidationPipe} from '../../common/zod-validation.pipe.js';
 import {Public} from '../../auth/public.decorator.js';
 import {RequireRoles} from '../../auth/require-roles.decorator.js';
 import type {RequestWithAdmin} from '../../auth/admin-context.js';
+import {AdminRateLimit, PublicRateLimit} from '../../auth/throttling.js';
 
 /**
  * The Experience resource over HTTP.
@@ -47,6 +48,7 @@ export class ExperienceController {
   constructor(@Inject(ExperienceService) private readonly experience: ExperienceService) {}
 
   @Public()
+  @PublicRateLimit()
   @Get()
   async listPublished() {
     const records = await this.experience.listPublished();
@@ -54,6 +56,7 @@ export class ExperienceController {
   }
 
   @Public()
+  @PublicRateLimit()
   @Get(':slug')
   async readPublished(@Param('slug') slug: string) {
     const record = await this.experience.findBySlug(slug);
@@ -66,6 +69,7 @@ export class ExperienceController {
   }
 
   @RequireRoles('owner', 'editor')
+  @AdminRateLimit()
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -80,6 +84,7 @@ export class ExperienceController {
   }
 
   @RequireRoles('owner', 'editor')
+  @AdminRateLimit()
   @Patch(':slug')
   async update(
     @Param('slug') slug: string,
@@ -95,6 +100,7 @@ export class ExperienceController {
   }
 
   @RequireRoles('owner', 'editor')
+  @AdminRateLimit()
   @Post(':slug/publish')
   @HttpCode(HttpStatus.OK)
   async publish(@Param('slug') slug: string, @Req() request: RequestWithAdmin) {
@@ -104,6 +110,7 @@ export class ExperienceController {
   }
 
   @RequireRoles('owner', 'editor')
+  @AdminRateLimit()
   @Post(':slug/unpublish')
   @HttpCode(HttpStatus.OK)
   async unpublish(@Param('slug') slug: string, @Req() request: RequestWithAdmin) {
