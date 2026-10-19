@@ -142,20 +142,26 @@ describe('administrative rate limiting', () => {
     }
   }, 120_000);
 
-  it('does not let an unauthenticated caller spend the administrator budget', async () => {
+  it('runs authentication before the throttler and spends no administrator budget', async () => {
     const {token} = await seedAdmin();
     const limited = await newApp();
     try {
-      // No credentials: every one of these is 401 and none of them is counted against
-      // the administrator. If they were, an anonymous caller could lock the single
-      // administrator out by exhausting a budget they do not own.
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        await request(limited.getHttpServer())
-          .post('/api/experience/does-not-exist/publish')
-          .expect(401);
+      // ADMIN_LIMIT_PER_WINDOW + 10 unauthenticated attempts. The count is the point:
+      // an earlier version of this test made 20, which sits below the 300/min
+      // administrative limit and therefore could not tell "authentication ran first"
+      // apart from "the throttler simply had not been reached yet".
+      //
+      // Two claims are proven together. Every response is 401 and never 429, so the
+      // throttler did not run first. The administrator still has a full budget
+      // afterwards, so none of it was charged to an anonymous caller - which, if it
+      // could be, would let anyone lock the single administrator out.
+      for (let attempt = 0; attempt < ADMIN_LIMIT_PER_WINDOW + 10; attempt += 1) {
+        const anonymous = await request(limited.getHttpServer()).post(
+          '/api/experience/does-not-exist/publish',
+        );
+        expect(anonymous.status).toBe(401);
       }
 
-      // The administrator is unaffected: still 404, not 429.
       const response = await request(limited.getHttpServer())
         .post('/api/experience/does-not-exist/publish')
         .set('Authorization', `Bearer ${token}`);
@@ -163,5 +169,5 @@ describe('administrative rate limiting', () => {
     } finally {
       await limited.close();
     }
-  }, 60_000);
+  }, 120_000);
 });
