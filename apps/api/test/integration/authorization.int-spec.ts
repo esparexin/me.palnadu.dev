@@ -2,7 +2,7 @@ import type {INestApplication} from '@nestjs/common';
 import {Test} from '@nestjs/testing';
 import {SignJWT} from 'jose';
 import request from 'supertest';
-import {afterAll, beforeAll, beforeEach, describe, expect, it} from 'vitest';
+import {afterAll, beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   ADMIN_ALLOWLIST,
   ApiErrorEnvelopeSchema,
@@ -15,6 +15,7 @@ import {ENV} from '../../src/common/tokens.js';
 import {parseEnv} from '../../src/config/env.js';
 import {ApiExceptionFilter, RequestIdMiddleware} from '../../src/common/api-exception.filter.js';
 import {PrismaService} from '../../src/prisma/prisma.service.js';
+import {AdminService} from '../../src/modules/auth/admin.service.js';
 
 /**
  * Authorization and HTTP contract tests against a real Nest application and a real
@@ -386,8 +387,19 @@ describe('public surface', () => {
   it('keeps health endpoints reachable without a session', async () => {
     // Without `@Public()` these return 401 and an orchestrator would restart a healthy
     // process - the outage the probe exists to detect.
-    await request(app.getHttpServer()).get('/health/live').expect(200);
-    await request(app.getHttpServer()).get('/health/ready').expect(200);
+    //
+    // The protected-route assertion below is what makes this a real test. Status 200
+    // on its own would also pass if the guards were never registered at all, so it
+    // would be a green light for a completely open API.
+    const live = await request(app.getHttpServer()).get('/health/live').expect(200);
+    expect(live.body.status).toBe('ok');
+    expect(typeof live.body.uptimeSeconds).toBe('number');
+
+    const ready = await request(app.getHttpServer()).get('/health/ready').expect(200);
+    expect(ready.body.status).toBe('ready');
+
+    // The guards are active in this same application; health is exempt, not unguarded.
+    await request(app.getHttpServer()).post(PROTECTED).expect(401);
   });
 });
 
@@ -535,6 +547,48 @@ describe('protected writes', () => {
 
     // The duplicate is refused, so there is no change to attribute to anybody.
     expect(await prisma.auditLog.count()).toBe(0);
+  });
+});
+
+describe('audit atomicity', () => {
+  it('rolls the content write back when the audit entry cannot be written', async () => {
+    // The PR claims content and audit commit in one transaction. Asserting that both
+    // appear on success does not prove it: moving the audit write outside the
+    // transaction would still pass every other test in this file. This test is the one
+    // that distinguishes the two, by making the audit write fail and requiring that the
+    // content change does not survive.
+    const {token} = await seedAdmin();
+    const admin = app.get(AdminService);
+    const failing = vi
+      .spyOn(admin, 'writeAudit')
+      .mockRejectedValueOnce(new Error('audit storage unavailable'));
+
+    try {
+      await request(app.getHttpServer())
+        .post('/api/experience')
+        .set('Authorization', `Bearer ${token}`)
+        .send(VALID_BODY)
+        .expect(500);
+    } finally {
+      failing.mockRestore();
+    }
+
+    // Neither half may persist: an unaudited career entry is exactly the state this
+    // design exists to prevent.
+    expect(await prisma.experience.count()).toBe(0);
+    expect(await prisma.auditLog.count()).toBe(0);
+  });
+
+  it('restores normal behaviour once the audit store recovers', async () => {
+    const {token} = await seedAdmin();
+    await request(app.getHttpServer())
+      .post('/api/experience')
+      .set('Authorization', `Bearer ${token}`)
+      .send(VALID_BODY)
+      .expect(201);
+
+    expect(await prisma.experience.count()).toBe(1);
+    expect(await prisma.auditLog.count()).toBe(1);
   });
 });
 
