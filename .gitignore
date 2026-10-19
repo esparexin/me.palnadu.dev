@@ -13,6 +13,10 @@ service-account*.json
 id_rsa*
 id_ed25519*
 
+# Agent tool configuration can embed credentials (for example an MCP API key).
+# It is local tooling state, never repository content (SECURITY.md section 7).
+.agents/
+
 # ---------------------------------------------------------------------------
 # Dependencies
 # ---------------------------------------------------------------------------
