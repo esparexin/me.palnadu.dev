@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import Link from 'next/link';
 import {Badge, type BadgeTone} from '@me-palnadu/ui';
 import type {ContentStatus} from '@me-palnadu/contracts';
 
@@ -82,17 +83,23 @@ export const Pagination = ({
   return (
     <div className="flex items-center justify-between text-body-sm">
       {page > 1 ? (
-        <a className="text-accent-text underline underline-offset-2" href={href(page - 1)}>
+        <Link
+          className="inline-flex min-h-6 items-center text-accent-text underline underline-offset-2"
+          href={href(page - 1)}
+        >
           Previous
-        </a>
+        </Link>
       ) : (
         <span />
       )}
       <span className="text-text-tertiary">Page {page}</span>
       {hasMore ? (
-        <a className="text-accent-text underline underline-offset-2" href={href(page + 1)}>
+        <Link
+          className="inline-flex min-h-6 items-center text-accent-text underline underline-offset-2"
+          href={href(page + 1)}
+        >
           Next
-        </a>
+        </Link>
       ) : (
         <span />
       )}
