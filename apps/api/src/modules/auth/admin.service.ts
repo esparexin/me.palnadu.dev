@@ -3,42 +3,31 @@ import {randomUUID} from 'node:crypto';
 import {
   RoleSchema,
   type AdminSessionList,
-  type AdminSessionSummary,
-  type AuditAction,
-  type AuditEntityType,
   type Role,
   type SessionClaims,
+  GENERIC_LOGIN_FAILURE,
+  SESSION_MAX_AGE_SECONDS,
+  normalizeEmail,
 } from '@me-palnadu/contracts';
-import {SignJWT} from 'jose';
 import type {Prisma} from '@prisma/client';
 import {ApiError} from '../../common/api-error.js';
 import {mapPersistenceError} from '../../common/persistence-error.js';
 import {PrismaService} from '../../prisma/prisma.service.js';
 import type {AuthenticatedAdmin} from '../../auth/admin-context.js';
-import {hashPassword, verifyAgainstDecoy, verifyPassword} from '../../auth/password.js';
+import {verifyAgainstDecoy, verifyPassword} from '../../auth/password.js';
 import {ENV} from '../../common/tokens.js';
 import type {Env} from '../../config/env.js';
+import {type AuditEntry, writeAuditEntry} from './admin-audit.js';
+import {issueAdminToken} from './admin-token.js';
 import {
-  GENERIC_LOGIN_FAILURE,
-  SESSION_LIFETIME_SECONDS,
-  SESSION_MAX_AGE_SECONDS,
-  normalizeEmail,
-  passwordProblems,
-} from '@me-palnadu/contracts';
+  listAdminSessions,
+  logoutAdminSession,
+  resolveAdminSession,
+  revokeAdminSession,
+} from './admin-sessions.js';
+import {changeAdminPassword} from './admin-password.js';
 
-/**
- * One administrative action to be recorded.
- *
- * `detail` is typed to what Prisma accepts as JSON input rather than `unknown`, so a
- * value that cannot be persisted is a compile error instead of a runtime surprise.
- */
-export interface AuditEntry {
-  actorId: string;
-  action: AuditAction;
-  entityType: AuditEntityType;
-  entityId: string;
-  detail?: Prisma.InputJsonObject;
-}
+export {type AuditEntry, writeAuditEntry};
 
 /**
  * Administrator identity, sessions and audit (ADR-0009).
@@ -146,13 +135,16 @@ export class AdminService {
       throw mapPersistenceError(error).error;
     }
 
-    const token = await this.issueToken({
-      sub: authenticatedAdmin.id,
-      email: authenticatedAdmin.email,
-      role,
-      sid: sessionId,
-      tv: authenticatedAdmin.tokenVersion,
-    });
+    const token = await issueAdminToken(
+      {
+        sub: authenticatedAdmin.id,
+        email: authenticatedAdmin.email,
+        role,
+        sid: sessionId,
+        tv: authenticatedAdmin.tokenVersion,
+      },
+      this.env,
+    );
 
     return {
       admin: {id: authenticatedAdmin.id, email: authenticatedAdmin.email, role, sessionId},
@@ -183,112 +175,26 @@ export class AdminService {
   }
 
   /**
-   * Signs the bearer token the admin server forwards to the API.
-   *
-   * HS256, pinned algorithm, matching issuer and audience. The token and the session
-   * row share `SESSION_LIFETIME_SECONDS`; the API still re-reads the row so revocation
-   * takes effect before the signature expires.
-   */
-  private async issueToken(
-    claims: Omit<SessionClaims, 'iss' | 'aud' | 'iat' | 'exp'>,
-  ): Promise<string> {
-    const secret =
-      this.env.AUTH_SECRET ??
-      (this.env.NODE_ENV !== 'production'
-        ? 'me-palnadu-development-auth-secret-key-32-chars-min'
-        : undefined);
-    if (secret === undefined) {
-      throw new Error('AUTH_SECRET is required to issue administrator sessions');
-    }
-    const issuedAt = Math.floor(Date.now() / 1000);
-    return new SignJWT({
-      email: claims.email,
-      role: claims.role,
-      sid: claims.sid,
-      tv: claims.tv,
-    })
-      .setProtectedHeader({alg: 'HS256'})
-      .setSubject(claims.sub)
-      .setIssuer(this.env.AUTH_ISSUER)
-      .setAudience(this.env.AUTH_AUDIENCE)
-      .setIssuedAt(issuedAt)
-      .setExpirationTime(issuedAt + SESSION_LIFETIME_SECONDS)
-      .sign(new TextEncoder().encode(secret));
-  }
-
-  /**
    * Revokes one session.
    *
    * The row is kept with `revokedAt` set rather than deleted, so "signed out at" stays
    * answerable after the fact.
    */
   async logout(sessionId: string, actorId: string): Promise<void> {
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        await tx.adminSession.update({
-          where: {sessionId},
-          data: {revokedAt: new Date()},
-        });
-        await tx.auditLog.create({
-          data: {actorId, action: 'auth_logout', entityType: 'admin', entityId: sessionId},
-        });
-      });
-    } catch (error) {
-      throw mapPersistenceError(error).error;
-    }
+    return logoutAdminSession(this.prisma, sessionId, actorId);
   }
 
   /**
    * Changes the password and invalidates every existing session.
    *
-   * `tokenVersion` is incremented in the same transaction as the hash write. Keeping
-   * a session alive after the credential it came from has changed is what makes a
-   * password change feel broken, and it leaves a stolen token usable until it expires.
+   * `tokenVersion` is incremented in the same transaction as the hash write.
    */
   async changePassword(
     userId: string,
     currentPassword: string,
     newPassword: string,
   ): Promise<void> {
-    let admin: {id: string; email: string; passwordHash: string; tokenVersion: number} | null;
-    try {
-      admin = await this.prisma.adminUser.findUnique({where: {id: userId}});
-    } catch (error) {
-      throw mapPersistenceError(error).error;
-    }
-    if (admin === null) throw ApiError.unauthenticated('The session token is not valid.');
-    if (!(await verifyPassword(currentPassword, admin.passwordHash))) {
-      throw ApiError.unauthenticated('The current password is not correct.');
-    }
-
-    const problems = passwordProblems(newPassword, admin.email);
-    if (problems.length > 0) {
-      throw ApiError.validationFailed(
-        'The new password does not meet the policy.',
-        problems.map((problem) => ({path: 'newPassword', message: problem})),
-      );
-    }
-
-    const targetAdmin = admin;
-    const passwordHash = await hashPassword(newPassword);
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        await tx.adminUser.update({
-          where: {id: targetAdmin.id},
-          data: {passwordHash, tokenVersion: {increment: 1}},
-        });
-        await tx.auditLog.create({
-          data: {
-            actorId: targetAdmin.id,
-            action: 'auth_password_change',
-            entityType: 'admin',
-            entityId: targetAdmin.id,
-          },
-        });
-      });
-    } catch (error) {
-      throw mapPersistenceError(error).error;
-    }
+    return changeAdminPassword(this.prisma, userId, currentPassword, newPassword);
   }
 
   /**
@@ -299,62 +205,7 @@ export class AdminService {
    * issued under the current token version.
    */
   async resolveSession(claims: SessionClaims): Promise<AuthenticatedAdmin> {
-    let user: {
-      id: string;
-      email: string;
-      role: string;
-      tokenVersion: number;
-      active: boolean;
-    } | null;
-    let session: {
-      sessionId: string;
-      tokenVersion: number;
-      expiresAt: Date;
-      revokedAt: Date | null;
-      userId: string;
-      lastSeenAt: Date;
-    } | null;
-
-    try {
-      [user, session] = await Promise.all([
-        this.prisma.adminUser.findUnique({where: {id: claims.sub}}),
-        this.prisma.adminSession.findUnique({where: {sessionId: claims.sid}}),
-      ]);
-    } catch (error) {
-      throw mapPersistenceError(error).error;
-    }
-
-    if (user === null || user.active === false) {
-      throw new ApiError('FORBIDDEN', 'This account may not administer the site.');
-    }
-
-    if (
-      session === null ||
-      session.revokedAt !== null ||
-      session.userId !== user.id ||
-      session.expiresAt.getTime() <= Date.now()
-    ) {
-      throw new ApiError('UNAUTHENTICATED', 'The session token is not valid.');
-    }
-    if (session.tokenVersion !== user.tokenVersion || claims.tv !== user.tokenVersion) {
-      throw new ApiError('UNAUTHENTICATED', 'The session token is not valid.');
-    }
-
-    // Activity telemetry, written at most every five minutes per session. The
-    // update is not awaited: a failure to record it must not reject a request the
-    // session has already passed every authority check for.
-    if (Date.now() - session.lastSeenAt.getTime() > 5 * 60 * 1000) {
-      void this.prisma.adminSession
-        .update({where: {sessionId: session.sessionId}, data: {lastSeenAt: new Date()}})
-        .catch(() => undefined);
-    }
-
-    return {
-      id: user.id,
-      email: user.email,
-      role: RoleSchema.parse(user.role),
-      sessionId: session.sessionId,
-    };
+    return resolveAdminSession(this.prisma, claims);
   }
 
   /**
@@ -364,28 +215,7 @@ export class AdminService {
    * the query, so a session id from another account cannot be enumerated.
    */
   async listSessions(userId: string, currentSessionId: string): Promise<AdminSessionList> {
-    try {
-      const rows = await this.prisma.adminSession.findMany({
-        where: {userId, expiresAt: {gt: new Date()}},
-        orderBy: [{createdAt: 'desc'}, {id: 'asc'}],
-        take: 20,
-      });
-      return {
-        sessions: rows.map((row): AdminSessionSummary => ({
-          id: row.id,
-          sessionId: row.sessionId,
-          createdAt: row.createdAt.toISOString(),
-          lastSeenAt: row.lastSeenAt.toISOString(),
-          expiresAt: row.expiresAt.toISOString(),
-          ...(row.revokedAt === null ? {} : {revokedAt: row.revokedAt.toISOString()}),
-          current: row.sessionId === currentSessionId,
-          ...(row.ip === null ? {} : {ip: row.ip}),
-          ...(row.userAgent === null ? {} : {userAgent: row.userAgent}),
-        })),
-      };
-    } catch (error) {
-      throw mapPersistenceError(error).error;
-    }
+    return listAdminSessions(this.prisma, userId, currentSessionId);
   }
 
   /**
@@ -396,39 +226,11 @@ export class AdminService {
    * current session is permitted and signs the caller out.
    */
   async revokeSession(userId: string, sessionId: string): Promise<void> {
-    try {
-      const session = await this.prisma.adminSession.findFirst({where: {sessionId, userId}});
-      if (session === null) throw ApiError.notFound('No session with that identifier exists.');
-
-      await this.prisma.$transaction(async (tx) => {
-        await tx.adminSession.update({
-          where: {sessionId},
-          data: {revokedAt: session.revokedAt ?? new Date()},
-        });
-        await tx.auditLog.create({
-          data: {
-            actorId: userId,
-            action: 'auth_session_revoke',
-            entityType: 'admin',
-            entityId: sessionId,
-          },
-        });
-      });
-    } catch (error) {
-      throw mapPersistenceError(error).error;
-    }
+    return revokeAdminSession(this.prisma, userId, sessionId);
   }
 
   /** Writes an audit entry using the caller's transaction client (ADR-0006 §4). */
   async writeAudit(tx: Prisma.TransactionClient, entry: AuditEntry): Promise<void> {
-    await tx.auditLog.create({
-      data: {
-        actorId: entry.actorId,
-        entityType: entry.entityType,
-        entityId: entry.entityId,
-        action: entry.action,
-        ...(entry.detail === undefined ? {} : {detail: entry.detail}),
-      },
-    });
+    return writeAuditEntry(tx, entry);
   }
 }
