@@ -51,28 +51,69 @@ export const BlurText: FC<BlurTextProps> = ({
     };
   }, []);
 
-  const segments = useMemo(() => {
-    return animateBy === 'words' ? text.split(' ') : text.split('');
-  }, [text, animateBy]);
+  const words = useMemo(() => text.split(' '), [text]);
+
+  if (animateBy === 'words') {
+    return (
+      <span ref={ref} className={`inline-flex flex-wrap justify-center ${className}`}>
+        {words.map((word, wordIndex) => (
+          <span
+            key={`${word}-${wordIndex}`}
+            className={`inline-block transition-all duration-base ease-out ${
+              wordIndex > 0 ? 'ml-3 sm:ml-4 md:ml-6' : ''
+            } ${
+              inView
+                ? 'translate-y-0 opacity-100 blur-none'
+                : direction === 'top'
+                  ? '-translate-y-4 opacity-0 blur-sm'
+                  : 'translate-y-4 opacity-0 blur-sm'
+            }`}
+            style={{transitionDelay: `${wordIndex * delay}ms`}}
+          >
+            {word}
+          </span>
+        ))}
+      </span>
+    );
+  }
+
+  // Animate letter by letter with explicit word boundaries and clear inter-word spacing
+  let globalCharIndex = 0;
 
   return (
-    <span ref={ref} className={`inline-flex flex-wrap justify-center ${className}`}>
-      {segments.map((segment, index) => (
-        <span
-          key={`${segment}-${index}`}
-          className={`inline-block transition-all duration-base ease-out ${
-            inView
-              ? 'translate-y-0 opacity-100 blur-none'
-              : direction === 'top'
-                ? '-translate-y-4 opacity-0 blur-sm'
-                : 'translate-y-4 opacity-0 blur-sm'
-          }`}
-          style={{transitionDelay: `${index * delay}ms`}}
-        >
-          {segment}
-          {animateBy === 'words' && index < segments.length - 1 ? '\u00A0' : ''}
-        </span>
-      ))}
+    <span ref={ref} className={`inline-flex flex-wrap items-center justify-center ${className}`}>
+      {words.map((word, wordIndex) => {
+        const letters = word.split('');
+        const wordOffset = globalCharIndex;
+        globalCharIndex += letters.length + 1;
+
+        return (
+          <span
+            key={`word-${word}-${wordIndex}`}
+            className={`inline-flex items-center ${wordIndex > 0 ? 'ml-3 sm:ml-4 md:ml-6' : ''}`}
+          >
+            {wordIndex > 0 ? ' ' : null}
+            {letters.map((char, charIndex) => {
+              const letterIndex = wordOffset + charIndex;
+              return (
+                <span
+                  key={`${char}-${letterIndex}`}
+                  className={`inline-block transition-all duration-base ease-out ${
+                    inView
+                      ? 'translate-y-0 opacity-100 blur-none'
+                      : direction === 'top'
+                        ? '-translate-y-4 opacity-0 blur-sm'
+                        : 'translate-y-4 opacity-0 blur-sm'
+                  }`}
+                  style={{transitionDelay: `${letterIndex * delay}ms`}}
+                >
+                  {char}
+                </span>
+              );
+            })}
+          </span>
+        );
+      })}
     </span>
   );
 };
@@ -91,7 +132,7 @@ export const PortfolioHero = ({
   eyebrow = 'About me',
   firstName = 'Kalyan V',
   lastName = 'Medaboina',
-  tagline = 'Jamf & Apple MDM Engineer | Senior System Administrator | Microsoft Intune',
+  tagline = 'Jamf, Microsoft Intune | Apple & Windows MDM Engineer | Senior System Administrator | Endpoint Management | Cybersecurity Engineer',
   profileImageSrc = '/profile.png',
   profileImageAlt = 'Portrait of Kalyan V Medaboina',
   onScrollClick,
@@ -115,20 +156,21 @@ export const PortfolioHero = ({
           {eyebrow}
         </p>
 
-        {/* Centerpiece: name first, portrait below, then role and actions. */}
+        {/* Centerpiece: full name in prominent oversized typography with blue & black colors */}
         <h1
           id="hero-title"
           aria-label="Kalyan V Medaboina"
-          className="flex flex-col items-center gap-3 text-display font-semibold"
+          className="flex flex-col items-center gap-1 sm:gap-2 md:gap-3 text-display sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold tracking-tight leading-none"
         >
-          <span className="block whitespace-nowrap text-accent">
+          <span className="block text-accent">
             <BlurText text={firstName} delay={70} animateBy="letters" direction="top" />
           </span>
-          <span className="block whitespace-nowrap text-text-primary">
+          <span className="block text-text-primary">
             <BlurText text={lastName} delay={70} animateBy="letters" direction="top" />
           </span>
         </h1>
 
+        {/* Portrait container with rounded-pill framing */}
         <div className="relative h-40 w-32 shrink-0 overflow-hidden rounded-pill border border-border-default bg-surface-subtle shadow-md sm:h-48 sm:w-40 md:h-56 md:w-40 lg:h-64 lg:w-48">
           <Image
             src={profileImageSrc}
@@ -140,7 +182,10 @@ export const PortfolioHero = ({
           />
         </div>
 
-        <p className="max-w-measure text-balance text-lead text-text-secondary">{tagline}</p>
+        {/* Professional Title with clean, responsive typography and balanced line wrapping */}
+        <p className="max-w-measure text-balance text-body sm:text-lead text-text-secondary leading-relaxed">
+          {tagline}
+        </p>
 
         {/* Required Hero CTAs (UI_UX_STANDARDS 7.1) */}
         <div className="flex w-full max-w-measure flex-col items-stretch justify-center gap-4 sm:flex-row sm:items-center">

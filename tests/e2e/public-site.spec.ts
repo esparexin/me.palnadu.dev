@@ -9,7 +9,31 @@ import {expect, test, type Page} from '@playwright/test';
 test('home renders the identity and exactly the two required CTAs', async ({page}) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', {level: 1})).toBeVisible();
+  const heading = page.getByRole('heading', {level: 1});
+  await expect(heading).toBeVisible();
+  await expect(heading).toHaveAccessibleName('Kalyan V Medaboina');
+
+  const nameLines = page.locator('#hero-title > span');
+  await expect(nameLines).toHaveCount(2);
+  await expect(nameLines.nth(0)).toHaveText('Kalyan V');
+  await expect(nameLines.nth(1)).toHaveText('Medaboina');
+
+  await expect(
+    page.getByText(
+      'Jamf, Microsoft Intune | Apple & Windows MDM Engineer | Senior System Administrator | Endpoint Management | Cybersecurity Engineer',
+    ),
+  ).toBeVisible();
+
+  const portrait = page.getByRole('img', {name: 'Portrait of Kalyan V Medaboina'});
+  await expect(portrait).toBeVisible();
+  expect(
+    await page.evaluate(() => {
+      const title = document.querySelector('#hero-title');
+      const image = document.querySelector('main img[alt="Portrait of Kalyan V Medaboina"]');
+      if (!title || !image) return false;
+      return image.getBoundingClientRect().top >= title.getBoundingClientRect().bottom;
+    }),
+  ).toBe(true);
 
   const viewResume = page.getByRole('link', {name: 'View Resume'});
   const exploreExperience = page.getByRole('link', {name: 'Explore Experience'});
@@ -23,6 +47,24 @@ test('home renders the identity and exactly the two required CTAs', async ({page
   // (UI_UX_STANDARDS 7.1).
   await expect(page.getByRole('link', {name: 'View Resume'})).toHaveCount(1);
   await expect(page.getByRole('link', {name: 'Explore Experience'})).toHaveCount(1);
+});
+
+test('hero typography and layout at tablet breakpoint (768px)', async ({page}) => {
+  await page.setViewportSize({width: 768, height: 1024});
+  await page.goto('/');
+  const heading = page.getByRole('heading', {level: 1});
+  await expect(heading).toBeVisible();
+  await expect(heading).toHaveAccessibleName('Kalyan V Medaboina');
+  const portrait = page.getByRole('img', {name: 'Portrait of Kalyan V Medaboina'});
+  await expect(portrait).toBeVisible();
+  expect(
+    await page.evaluate(() => {
+      const title = document.querySelector('#hero-title');
+      const image = document.querySelector('main img[alt="Portrait of Kalyan V Medaboina"]');
+      if (!title || !image) return false;
+      return image.getBoundingClientRect().top >= title.getBoundingClientRect().bottom;
+    }),
+  ).toBe(true);
 });
 
 test('the language is declared and a skip link exists', async ({page}) => {
