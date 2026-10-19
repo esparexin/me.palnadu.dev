@@ -57,24 +57,32 @@ export const getAuthenticatedAdmin = async (): Promise<AdminIdentity | null> => 
   if (token === null) return null;
 
   const apiBase = process.env['ADMIN_API_URL'] ?? 'http://localhost:4000';
+  let response: Response;
   try {
-    const response = await fetch(`${apiBase}/api/auth/session`, {
+    response = await fetch(`${apiBase}/api/auth/session`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
       },
       cache: 'no-store',
     });
-
-    if (!response.ok) return null;
-    const body: unknown = await response.json();
-    const parsed = AdminSessionResponseSchema.safeParse(body);
-    if (!parsed.success) return null;
-
-    return parsed.data.administrator;
   } catch {
-    return null;
+    throw new Error('The administration API is unreachable.');
   }
+
+  // Only a rejected credential means "not signed in". A throttled or failing API is
+  // an outage: treating it as signed out signed the administrator out silently and
+  // hid the failure behind the login screen (CODING_STANDARDS.md section 4).
+  if (response.status === 401) return null;
+  if (!response.ok) {
+    throw new Error(`The administration API answered with status ${response.status}.`);
+  }
+  const body: unknown = await response.json();
+  const parsed = AdminSessionResponseSchema.safeParse(body);
+  if (!parsed.success) {
+    throw new Error('The session response did not match the published contract.');
+  }
+  return parsed.data.administrator;
 };
 
 /**

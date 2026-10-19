@@ -133,5 +133,42 @@ describe('admin session utilities', () => {
 
       vi.unstubAllGlobals();
     });
+
+    it('surfaces a throttled API instead of reporting the administrator as signed out', async () => {
+      // The session endpoint was once charged to the sign-in budget, so the
+      // eleventh page load answered 429. Treating that as "not signed in"
+      // silently signed the administrator out and hid the failure; the error
+      // must reach the route error boundary instead.
+      mockCookieStore.get.mockReturnValue({value: 'valid-token'});
+      const fetchMock = vi.fn().mockResolvedValue({ok: false, status: 429});
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(getAuthenticatedAdmin()).rejects.toThrow('429');
+
+      vi.unstubAllGlobals();
+    });
+
+    it('surfaces an unreachable API instead of reporting the administrator as signed out', async () => {
+      mockCookieStore.get.mockReturnValue({value: 'valid-token'});
+      const fetchMock = vi.fn().mockRejectedValue(new Error('connection refused'));
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(getAuthenticatedAdmin()).rejects.toThrow('unreachable');
+
+      vi.unstubAllGlobals();
+    });
+
+    it('surfaces a contract violation instead of reporting the administrator as signed out', async () => {
+      mockCookieStore.get.mockReturnValue({value: 'valid-token'});
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({administrator: {id: 'admin_123'}}),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(getAuthenticatedAdmin()).rejects.toThrow('did not match the published contract');
+
+      vi.unstubAllGlobals();
+    });
   });
 });
