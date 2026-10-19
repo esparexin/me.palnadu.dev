@@ -141,7 +141,7 @@ export default async function KnowledgeHubPage({searchParams}: PageProps) {
                         ...(query.q === undefined ? {} : {q: query.q}),
                       })}
                       rel="prev"
-                      className="text-body-sm text-accent-text underline underline-offset-2"
+                      className="inline-flex min-h-6 items-center text-body-sm text-accent-text underline underline-offset-2"
                     >
                       Previous
                     </Link>
@@ -156,7 +156,7 @@ export default async function KnowledgeHubPage({searchParams}: PageProps) {
                         ...(query.q === undefined ? {} : {q: query.q}),
                       })}
                       rel="next"
-                      className="text-body-sm text-accent-text underline underline-offset-2"
+                      className="inline-flex min-h-6 items-center text-body-sm text-accent-text underline underline-offset-2"
                     >
                       Next
                     </Link>

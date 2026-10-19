@@ -82,7 +82,7 @@ export default async function ArticlePage({params}: PageProps) {
           <footer className="mt-16 border-t border-border-subtle pt-8">
             <Link
               href={WEB_ROUTES.knowledgeHub}
-              className="text-body-sm text-accent-text underline underline-offset-2"
+              className="inline-flex min-h-6 items-center text-body-sm text-accent-text underline underline-offset-2"
             >
               Back to the Knowledge Hub
             </Link>
