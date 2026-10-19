@@ -8,6 +8,25 @@
    implementation, UI_UX_STANDARDS section 4). */
 @source '../../../../packages/ui/src';
 
+/* Entrance for the floating navigation panel (UI_UX_STANDARDS 7.2). The global
+   reduced-motion rule above collapses it; the panel is never the only cue that
+   the menu opened, aria-expanded and the DOM carry that. */
+@utility animate-fab-panel-in {
+  animation: fab-panel-in var(--duration-slow) var(--ease-out);
+}
+
+@keyframes fab-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;

@@ -233,7 +233,7 @@ A menu button fixed to the right edge, vertically centred.
 | Markup        | `<button>` with `aria-expanded`, `aria-controls="floating-nav-panel"`, `aria-label="Open navigation menu"`                                                  |
 | Toggle        | Activating the button opens when closed and closes when open                                                                                                |
 | Panel         | `id="floating-nav-panel"`, `role="dialog"`, `aria-label="Site navigation"`, `z-index: fab-panel` (210), width ≤ 280px, origin bottom-right, `duration-slow` |
-| Panel content | A visible close control, then Experience, Projects, Knowledge Hub, Resume, Contact                                                                          |
+| Panel content | A visible close control, then Experience, Projects, Knowledge Hub, FAQ, Resume, Contact                                                                     |
 
 Close conditions — **all four are mandatory**:
 
