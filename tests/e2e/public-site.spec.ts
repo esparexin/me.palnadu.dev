@@ -77,6 +77,29 @@ test('the page never scrolls horizontally', async ({page}) => {
   }
 });
 
+test('shared UI primitives receive their token utilities in the production build', async ({
+  page,
+}) => {
+  // Regression: Tailwind scans the app directory only, so utilities used
+  // exclusively inside packages/ui (min-h-10, px-3, py-2, rounded-md) were purged
+  // from the production stylesheet. Every shared control rendered at native size.
+  // The gate test guards the `@source` directive; this proves the stylesheet it
+  // produces actually styles a real control.
+  await page.goto('/knowledge-hub');
+  const heights = await page.evaluate(() => {
+    const measure = (selector: string) =>
+      document.querySelector(selector)?.getBoundingClientRect().height ?? 0;
+    return {
+      search: measure('#q'),
+      kind: measure('#kind'),
+      apply: measure('button[type="submit"]'),
+    };
+  });
+  for (const [name, height] of Object.entries(heights)) {
+    expect(height, `${name} control must render at its token height`).toBeGreaterThanOrEqual(36);
+  }
+});
+
 test('focus is visible on every interactive element in the header', async ({page}) => {
   await page.goto('/');
   const link = page.getByRole('link', {name: 'me.palnadu.dev'}).first();
