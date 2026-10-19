@@ -24,6 +24,7 @@ export {
   type TextareaProps,
 } from './components/field.js';
 export {Badge, type BadgeProps, type BadgeTone} from './components/badge.js';
+export {Dialog, type DialogProps} from './components/dialog.js';
 export {Prose, type ProseProps} from './components/prose.js';
 export {Container, SectionHeading} from './components/layout.js';
 export {cn, type ClassValue} from './lib/cn.js';
