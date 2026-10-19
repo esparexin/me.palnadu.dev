@@ -1,4 +1,4 @@
-import type {INestApplication} from '@nestjs/common';
+import type {NestExpressApplication} from '@nestjs/platform-express';
 import type {NextFunction, Request, Response} from 'express';
 import {allowedOrigins, type Env} from '../config/env.js';
 import {RequestIdMiddleware} from './api-exception.filter.js';
@@ -48,11 +48,40 @@ const PERMANENT_HEADERS: Readonly<Record<string, string>> = {
 const STRICT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';
 
 /**
+ * Maximum accepted JSON body, matching the limit documented in SECURITY.md section 5.
+ *
+ * Express defaults to 100KB. That is a different number from the documented contract,
+ * and an implicit default means the limit is whatever a framework decides rather than
+ * something this repository chose and can test. Stated here so it is a decision.
+ */
+export const BODY_LIMIT_BYTES = 256 * 1024;
+
+/**
  * Sets the hardening headers on the way out.
  *
  * Registered as ordinary middleware so the headers are present on error responses
  * too. A 401 or 404 that arrives without `nosniff` would still be a response a browser
  * sniffs, which is the whole purpose of the header.
+ *
+ * Why not `app.useSecurityHeaders()`, which Nest 12 provides? Measured against this
+ * application, its defaults emit:
+ *
+ *   cross-origin-resource-policy: same-origin   <- would break the public site
+ *   content-security-policy: default-src 'self'; ... upgrade-insecure-requests
+ *   strict-transport-security: max-age=31536000; includeSubDomains  <- unconditionally
+ *   referrer-policy: no-referrer                <- SECURITY.md 5 asks for
+ *                                                 strict-origin-when-cross-origin
+ *   x-frame-options: SAMEORIGIN                 <- this policy uses DENY
+ *
+ * The resource policy is decisive on its own: this API is fetched cross-origin by the
+ * public site, so `same-origin` would break the site the API exists to serve. The CSP
+ * is helmet's document policy - correct for an HTML page, wrong for JSON, and
+ * `upgrade-insecure-requests` would rewrite http to https.
+ *
+ * Nor is `Permissions-Policy` expressible there: it is absent from Nest's option
+ * table entirely, and SECURITY.md 5 requires it. Using the built-in would mean
+ * disabling six defaults, restating the rest, and still keeping a middleware for the
+ * one header it cannot set.
  */
 export const securityHeaders =
   (env: Env) =>
@@ -73,8 +102,11 @@ export const securityHeaders =
  * on every response including a cross-origin preflight that is rejected before any
  * route runs.
  */
-export const configureHttp = (app: INestApplication, env: Env): void => {
+export const configureHttp = (app: NestExpressApplication, env: Env): void => {
   app.use(securityHeaders(env));
+
+  // Applied explicitly rather than inherited from Express's 100KB default.
+  app.useBodyParser('json', {limit: BODY_LIMIT_BYTES});
 
   // No global Nest ValidationPipe here, deliberately.
   //

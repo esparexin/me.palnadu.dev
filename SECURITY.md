@@ -179,7 +179,7 @@ once the GitHub OAuth app exists; until then this control remains `SPECIFIED`.
 | CORS               | Explicit origin allowlist per environment; `credentials: false`; `Access-Control-Max-Age: 600`                                                                                                                                                                                                                                                         |
 | Rate limiting      | `@nestjs/throttler` — public reads 120/min per IP, contact submission 5/hour per IP, admin writes 300/min per user                                                                                                                                                                                                                                     |
 | Rate-limit storage | In-memory per API instance. **Limitation:** limits are per instance, so horizontal scaling weakens them. The API is therefore pinned to a single instance with this documented rationale; moving to a shared store requires an ADR                                                                                                                     |
-| Body limits        | JSON body capped at 256KB; Markdown fields capped by schema length                                                                                                                                                                                                                                                                                     |
+| Body limits        | JSON body capped at 256KB (`BODY_LIMIT_BYTES`, set explicitly rather than inherited from Express's 100KB default); Markdown fields capped by schema length. Rejection is `PAYLOAD_TOO_LARGE`/413                                                                                                                                                       |
 | Input              | Every write validated by a contracts schema; unknown keys rejected; no dynamic `Object.assign` onto persisted documents                                                                                                                                                                                                                                |
 | Rendering          | React escaping only; Markdown → sanitised HTML on the API; no raw HTML injection                                                                                                                                                                                                                                                                       |
 | Files              | No public upload path in the public app; admin media uploads are stored outside the document root, validated by MIME and size, and served with `Content-Disposition` and a fixed content type                                                                                                                                                          |
@@ -336,3 +336,66 @@ fail is not evidence.
 and CSRF remain unproven and unimplemented. The tests mint tokens with `jose` directly.
 CSRF remains inapplicable only while authentication is bearer-only; it must be reassessed
 when cookie-based authentication is introduced.
+
+### 9.3 Phase 6D: request body limit
+
+**Proven by `pnpm db:integration` (6 passing, `body-limit.int-spec.ts`).** The limit is
+set explicitly to `BODY_LIMIT_BYTES` (256KB) through Nest's `useBodyParser`, and a body
+over the limit is refused with `PAYLOAD_TOO_LARGE`/413 in the contract envelope.
+
+| Control                      | Asserted behaviour                                                           |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| Documented limit             | `BODY_LIMIT_BYTES` equals 256KB, matching §5                                 |
+| Just under the limit         | Accepted, and refused at the guard with 401 — a 401 proves the body was read |
+| Just over the limit          | 413 with the contract envelope and a request id                              |
+| Not a server error           | The refusal is never 5xx and never `INTERNAL_ERROR`                          |
+| Applies before authorization | An oversize body is refused on an unauthenticated request too                |
+| Size, not shape              | A small malformed body still fails through the normal path                   |
+
+**Mutation-tested:** removing the explicit limit fails 1 test, reverting 413 to the
+default branch fails 3, and removing the transport-error mapping fails 3.
+
+**Two defects found:**
+
+1. **An oversize body returned 500, not 413.** The Express JSON parser throws a plain
+   object carrying `status: 413`; it is not an `HttpException`, so the filter's
+   `instanceof` branch never saw it and it fell through to the persistence mapper. A
+   client that sent too much was indistinguishable from a server fault, and any alert
+   watching 5xx rates fired on a request the server had simply declined.
+2. **The documented limit and the running limit disagreed.** §5 said 256KB; Express's
+   implicit default was 100KB. The system was stricter than documented, so this was a
+   documentation defect rather than a hole — but an implicit framework default is not a
+   control this repository chose, tested, or can reason about.
+
+`PAYLOAD_TOO_LARGE` is added to `ERROR_CODES` in `@me-palnadu/contracts` — the single
+source of truth — rather than improvised in the API. `STATUS_BY_CODE` is a
+`Record<ErrorCode, number>`, so a new code without a status is a compile error, not a
+silent gap.
+
+**Still outstanding:** rate limiting; OAuth sign-in and session issuance; CSRF
+reassessment once cookie authentication arrives; and the owner-only role-denial gap from
+Phase 6B.
+
+### 9.4 Why the API does not use `app.useSecurityHeaders()`
+
+Nest 12 ships `useSecurityHeaders()`. It was evaluated against this application rather
+than adopted, because its defaults do not fit a JSON API consumed cross-origin. Measured
+by running it and reading the emitted headers:
+
+| Header                         | Nest's default                                     | What this API needs               | Consequence                                                                             |
+| ------------------------------ | -------------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------- |
+| `Cross-Origin-Resource-Policy` | `same-origin`                                      | **absent**                        | Would break the public site, which fetches this API cross-origin                        |
+| `Content-Security-Policy`      | `default-src 'self'` … `upgrade-insecure-requests` | `default-src 'none'`              | A document policy, not a JSON policy; the upgrade directive would rewrite http to https |
+| `Strict-Transport-Security`    | always sent                                        | production only                   | Would apply in development and test                                                     |
+| `Referrer-Policy`              | `no-referrer`                                      | `strict-origin-when-cross-origin` | §5 specifies the latter                                                                 |
+| `X-Frame-Options`              | `SAMEORIGIN`                                       | `DENY`                            | Weaker than §5's `frame-ancestors 'none'`                                               |
+| `Permissions-Policy`           | **not supported**                                  | required by §5                    | No option exists for it                                                                 |
+
+The resource policy alone is decisive. Using the built-in would mean disabling six
+defaults, restating the rest, and keeping a middleware anyway for the one header it
+cannot express. `http-hardening.int-spec.ts` asserts `Cross-Origin-Resource-Policy`
+stays absent so this decision cannot be undone by a well-meaning "use the framework
+built-in".
+
+This entry exists because Phase 6C hand-wrote the middleware without first checking
+what the framework offered. It should have checked.

@@ -36,7 +36,28 @@ export class RequestIdMiddleware implements NestMiddleware {
 }
 
 /**
- * Nest's own HTTP exceptions, mapped onto the contract's error codes.
+ * The status an error carries, when it is a transport-level failure rather than a
+ * Nest exception.
+ *
+ * `express`'s JSON parser rejects an oversize body by throwing a plain object with
+ * `status`/`statusCode` set and `type: 'entity.too.large'` - it is not an
+ * `HttpException`, so the `instanceof` branch never sees it and it used to fall through
+ * to the persistence mapper as a 500.
+ *
+ * The range check is deliberate: only a 4xx is treated as the caller's problem. A
+ * driver error carrying a numeric field must not be reinterpreted as one, and this
+ * runs before the persistence mapper only for statuses a client could have caused.
+ */
+const transportStatus = (error: unknown): number | null => {
+  if (typeof error !== 'object' || error === null) return null;
+  const candidate = error as {status?: unknown; statusCode?: unknown};
+  const value = typeof candidate.status === 'number' ? candidate.status : candidate.statusCode;
+  if (typeof value !== 'number' || !Number.isInteger(value)) return null;
+  return value >= 400 && value <= 499 ? value : null;
+};
+
+/**
+ * HTTP-level failures, mapped onto the contract's error codes.
  *
  * Without this, an unmatched route raised Nest's `NotFoundException`, which carries a
  * `statusCode` rather than a contract `code`, fell through to the persistence mapper,
@@ -48,8 +69,7 @@ export class RequestIdMiddleware implements NestMiddleware {
  * and echoing caller input back inside an error body is not something a JSON API
  * should do by default.
  */
-const mapHttpException = (error: HttpException): ApiError => {
-  const status = error.getStatus();
+const mapHttpException = (status: number): ApiError => {
   switch (status) {
     case 400:
       return ApiError.badRequest('The request could not be understood.');
@@ -59,6 +79,12 @@ const mapHttpException = (error: HttpException): ApiError => {
       return new ApiError('FORBIDDEN', 'This account may not perform that action.');
     case 404:
       return ApiError.notFound('No route matches the requested path.');
+    case 413:
+      // Reached when a body exceeds the configured limit. Previously this fell to the
+      // default branch and answered 500, which told the caller - and any alert that
+      // watches 5xx - that the server had failed rather than that the request was too
+      // big to accept.
+      return ApiError.payloadTooLarge('The request body is larger than this API accepts.');
     case 429:
       return new ApiError('RATE_LIMITED', 'Too many requests. Slow down and retry later.');
     default:
@@ -83,8 +109,16 @@ export class ApiExceptionFilter implements ExceptionFilter {
       error instanceof ApiError
         ? {error, logDetail: `${error.name}: ${error.message}`}
         : error instanceof HttpException
-          ? {error: mapHttpException(error), logDetail: `HttpException ${error.getStatus()}`}
-          : mapPersistenceError(error);
+          ? {
+              error: mapHttpException(error.getStatus()),
+              logDetail: `HttpException ${error.getStatus()}`,
+            }
+          : transportStatus(error) !== null
+            ? {
+                error: mapHttpException(transportStatus(error) as number),
+                logDetail: `transport error status ${String(transportStatus(error))}`,
+              }
+            : mapPersistenceError(error);
 
     if (mapped.error.code === 'INTERNAL_ERROR') {
       // Log the safe-to-log detail once; never forward it to the client.

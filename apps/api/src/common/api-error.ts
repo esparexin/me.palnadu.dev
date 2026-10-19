@@ -17,6 +17,7 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   FORBIDDEN: 403,
   NOT_FOUND: 404,
   CONFLICT: 409,
+  PAYLOAD_TOO_LARGE: 413,
   RATE_LIMITED: 429,
   INTERNAL_ERROR: 500,
 };
@@ -61,6 +62,10 @@ export class ApiError extends HttpException {
 
   static conflict(message: string): ApiError {
     return new ApiError('CONFLICT', message);
+  }
+
+  static payloadTooLarge(message: string): ApiError {
+    return new ApiError('PAYLOAD_TOO_LARGE', message);
   }
 
   static internal(message = 'Internal server error'): ApiError {
