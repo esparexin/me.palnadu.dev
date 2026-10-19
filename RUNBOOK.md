@@ -41,17 +41,17 @@ Run against the production URLs, not against a build. Any failure triggers §3.
 
 - [ ] Home renders the **View Resume** and **Explore Experience** CTAs.
 - [ ] `/experience` renders the timeline in newest-first order.
-- [ ] `/knowledge` lists articles and one article renders with code and lists intact.
+- [ ] `/knowledge-hub` lists published articles and one article renders with code and lists intact; `/knowledge` redirects there and `/faq` lists published questions.
 - [ ] `/projects` and one project detail render.
 - [ ] `/contact` rejects invalid input with a visible, accessible error.
-- [ ] `robots.txt` and `sitemap.xml` respond 200.
+- [ ] `/knowledge-hub/rss.xml` responds 200 with well-formed XML and absolute article links.
 - [ ] No console errors, no hydration warnings, no 404s for local assets.
 
 **Admin**
 
 - [ ] Unauthenticated access to a dashboard route redirects to `/login`.
-- [ ] A non-allowlisted GitHub account is refused, and the attempt is in the audit log.
-- [ ] The allowlisted account reaches the dashboard and can read content.
+- [ ] Wrong credentials are refused with the generic message, and the attempt is in the audit log.
+- [ ] The provisioned owner reaches the dashboard and can read content.
 
 **Cross-cutting**
 
@@ -119,8 +119,8 @@ variable, both fixed before resolution.
 ## 5. Security incident
 
 1. **Contain.** Revoke first: rotate `AUTH_SECRET` (logs out every administrator),
-   revoke the GitHub OAuth app secret, rotate `DATABASE_URL` credentials, and revoke any
-   suspected provider tokens.
+   set `active: false` or increment `tokenVersion` on `AdminUser` to invalidate all active JWTs,
+   rotate `DATABASE_URL` credentials, and revoke any suspected provider tokens.
 2. **Preserve.** Export logs and the Atlas audit trail before rotating anything else.
 3. **Assess.** Determine which asset in `SECURITY.md` §1 was touched: sessions, content,
    personal data, or credentials.
@@ -130,33 +130,36 @@ variable, both fixed before resolution.
    changed as a result. Update `SECURITY.md` if a control was missing.
 6. If personal data was involved, follow the applicable breach-notification process.
 
-## 6. Administrator session operations
+## 6. Administrator session and credential operations
 
-| Task                    | Procedure                                                                         | Verification                                                       |
-| ----------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Revoke one session      | Set `revokedAt` on the `AdminSession` record                                      | The next API request from that session returns `401`               |
-| Revoke all sessions     | Increment `AdminUser.tokenVersion`                                                | All existing tokens fail the `tv` comparison                       |
-| Emergency global logout | Rotate `AUTH_SECRET` in both the admin and API environments                       | Every session invalid immediately; requires a coordinated redeploy |
-| Remove an administrator | Delete the `AdminUser` record and remove the seed entry from `packages/contracts` | Requests fail at the allowlist lookup; the change is in `AuditLog` |
-| Audit a session         | Query `AuditLog` by `sid`                                                         | Every write for that session is attributable                       |
+| Task                          | Procedure                                                                              | Verification                                                       |
+| ----------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Provision owner credential    | Run `pnpm --filter @me-palnadu/api owner:provision --email <email> --password <pass>`  | Creates `AdminUser` record with scrypt hash; login succeeds        |
+| Break-glass password recovery | Re-run `owner:provision` with new password; updates `passwordHash` and increments `tv` | All existing sessions invalidated; new password authenticates      |
+| Change password (online)      | Authenticated `POST /api/auth/change-password` with current and new password           | Increments `tokenVersion`; requires immediate re-login             |
+| Revoke one session            | Set `revokedAt` on the `AdminSession` record                                           | The next API request from that session returns `401`               |
+| Revoke all sessions           | Increment `AdminUser.tokenVersion`                                                     | All existing tokens fail the `tv` comparison                       |
+| Emergency global logout       | Rotate `AUTH_SECRET` in both the admin and API environments                            | Every session invalid immediately; requires a coordinated redeploy |
+| Deactivate administrator      | Set `active: false` on the `AdminUser` record                                          | Sign-in refused; existing sessions rejected with `401`             |
+| Audit a session               | Query `AuditLog` by `sid`                                                              | Every write for that session is attributable                       |
 
 ## 7. Content operations
 
 **Publishing a draft** (the only supported path; direct production data edits outside
 this flow require the owner-approved procedure in `GOVERNANCE.md` §2):
 
-1. Sign in to `apps/admin` as an allowlisted administrator.
+1. Sign in to `apps/admin` as the provisioned owner.
 2. Create or edit the record; save as `draft`. Verify it is **not** visible on the public
    site.
 3. Proofread. Career claims must match the verified record — no invented dates,
    employers, or metrics (`AGENTS.md` §4).
-4. Publish. Confirm the change is live on the public site and in the sitemap.
+4. Publish. Confirm the change is live on the public site and in the RSS feed.
 5. Confirm the corresponding `AuditLog` entries exist.
 
-**Applying seed content** from `content/`: run the documented import command against
-`staging` first, diff the result, then against `production`. The import is idempotent,
-updates only records whose `slug` matches an existing document, and never creates or
-deletes records implicitly. It writes `content.import` audit entries.
+**Applying seed content** from `content/`: no importer exists. `content/` is approved
+reference material, never a second live content store; until an importer ships with its
+own ADR and tests, seed material is entered through the admin UI and audited like any
+other write (`AGENTS.md` §4).
 
 **Quarterly restore drill:** restore the production cluster to a scratch cluster, verify
 the content inventory and one published article, then delete the scratch cluster. Record

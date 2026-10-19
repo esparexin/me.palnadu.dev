@@ -1,21 +1,36 @@
 import {describe, expect, it} from 'vitest';
 import {
-  ADMIN_ALLOWLIST,
   API_ROUTES,
   ARTICLE_KINDS,
+  ArticleCreateSchema,
+  ArticleUpdateSchema,
+  AUDIT_ACTIONS,
+  CACHE_TAGS,
   CONTENT_STATUSES,
   ContactMessageCreateSchema,
   ERROR_CODES,
   ExperienceCreateSchema,
   ExperienceUpdateSchema,
   EXPERIENCE_KINDS,
+  FaqCreateSchema,
+  FAQ_CATEGORIES,
+  MediaRegisterSchema,
+  MediaSignResponseSchema,
   MessageStatusSchema,
   PaginationQuerySchema,
   ProjectCreateSchema,
+  RevalidateRequestSchema,
   ROLES,
   SessionClaimsSchema,
   SkillCategorySchema,
-  isAllowlistedGithubId,
+  AdminEmailSchema,
+  PasswordSchema,
+  passwordProblems,
+  LoginRequestSchema,
+  ChangePasswordRequestSchema,
+  OWNER_EMAIL,
+  SESSION_COOKIE_NAME,
+  WEB_ROUTES,
 } from './index.js';
 
 /** Factories consume the schemas, so a schema change breaks fixtures loudly. */
@@ -47,6 +62,8 @@ describe('enum hygiene (SSOT_POLICY 3.4)', () => {
     EXPERIENCE_KINDS,
     ARTICLE_KINDS,
     CONTENT_STATUSES,
+    FAQ_CATEGORIES,
+    AUDIT_ACTIONS,
     ROLES,
     ERROR_CODES,
   };
@@ -182,29 +199,55 @@ describe('ContactMessageCreateSchema', () => {
   });
 });
 
-describe('admin allowlist (SECURITY.md 4.1)', () => {
-  it('keys administrators on an immutable numeric id', () => {
-    expect(ADMIN_ALLOWLIST.length).toBeGreaterThan(0);
-    for (const entry of ADMIN_ALLOWLIST) {
-      expect(Number.isInteger(entry.githubId)).toBe(true);
-      expect(entry.githubId).toBeGreaterThan(0);
-    }
+describe('administrator credentials (ADR-0009)', () => {
+  it('normalizes email addresses and rejects invalid ones', () => {
+    expect(AdminEmailSchema.parse('  Owner@Me.Palnadu.Dev  ')).toBe('owner@me.palnadu.dev');
+    expect(AdminEmailSchema.safeParse('not-an-email').success).toBe(false);
+    expect(AdminEmailSchema.safeParse('@missing-local.com').success).toBe(false);
+    expect(AdminEmailSchema.safeParse('owner@').success).toBe(false);
   });
 
-  it('recognises a seeded id and refuses an unknown one', () => {
-    expect(isAllowlistedGithubId(ADMIN_ALLOWLIST[0].githubId)).toBe(true);
-    expect(isAllowlistedGithubId(1)).toBe(false);
+  it('enforces password policy rules', () => {
+    expect(PasswordSchema.safeParse('Short1!').success).toBe(false);
+    expect(PasswordSchema.safeParse('alllowercaseletters123').success).toBe(false);
+    expect(PasswordSchema.safeParse('ALLUPPERCASELETTERS123').success).toBe(false);
+    expect(PasswordSchema.safeParse('LettersWithoutDigits').success).toBe(false);
+    expect(PasswordSchema.safeParse('password1234').success).toBe(false);
+
+    const email = 'owner@me.palnadu.dev';
+    const problemsWithEmail = passwordProblems('StrongOwnerPassword123!', email);
+    expect(
+      problemsWithEmail.some((problem) => problem.includes('must not contain the email address')),
+    ).toBe(true);
+
+    expect(PasswordSchema.safeParse('CorrectHorseBattery2026!').success).toBe(true);
   });
 
-  it('never puts a secret in the allowlist shape', () => {
-    expect(Object.keys(ADMIN_ALLOWLIST[0]).sort()).toEqual(['githubId', 'login', 'role']);
+  it('accepts valid login and password change requests', () => {
+    const login = LoginRequestSchema.parse({
+      email: '  OWNER@me.palnadu.dev  ',
+      password: 'any-password-string',
+    });
+    expect(login.email).toBe('owner@me.palnadu.dev');
+    expect(login.password).toBe('any-password-string');
+
+    const change = ChangePasswordRequestSchema.safeParse({
+      currentPassword: 'old-password',
+      newPassword: 'CorrectHorseBattery2026!',
+    });
+    expect(change.success).toBe(true);
+  });
+
+  it('exposes valid owner email and cookie name constants', () => {
+    expect(AdminEmailSchema.safeParse(OWNER_EMAIL).success).toBe(true);
+    expect(SESSION_COOKIE_NAME).toMatch(/^__Secure-/);
   });
 });
 
-describe('session claims', () => {
+describe('session claims (ADR-0009)', () => {
   const claims = {
     sub: 'admin_1',
-    gh_id: 230946749,
+    email: 'owner@me.palnadu.dev',
     role: 'owner',
     sid: 'sess_1',
     tv: 0,
@@ -222,8 +265,135 @@ describe('session claims', () => {
     expect(SessionClaimsSchema.safeParse({...claims, tv: undefined}).success).toBe(false);
   });
 
+  it('requires a valid email address claim', () => {
+    expect(SessionClaimsSchema.safeParse({...claims, email: 'invalid-email'}).success).toBe(false);
+  });
+
   it('rejects an unknown role', () => {
     expect(SessionClaimsSchema.safeParse({...claims, role: 'superuser'}).success).toBe(false);
+  });
+});
+
+describe('Knowledge Hub article contract', () => {
+  const validArticle = () => ({
+    slug: 'jamf-pro-enrollment-guide',
+    kind: 'tutorial' as const,
+    title: 'Jamf Pro enrolment guide',
+    excerpt: 'A placeholder excerpt used only in tests.',
+    body: '## Heading\n\nPlaceholder body used only in tests.',
+    tags: ['Jamf Pro'],
+  });
+
+  it('accepts a minimal article and applies its defaults', () => {
+    const parsed = ArticleCreateSchema.parse(validArticle());
+    expect(parsed.status).toBe('draft');
+    expect(parsed.tags).toEqual(['Jamf Pro']);
+  });
+
+  it('requires a difficulty for interview preparation', () => {
+    expect(ArticleCreateSchema.safeParse({...validArticle(), kind: 'interview'}).success).toBe(
+      false,
+    );
+    expect(
+      ArticleCreateSchema.safeParse({
+        ...validArticle(),
+        kind: 'interview',
+        difficulty: 'advanced',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('does not require the client to choose a publication instant', () => {
+    // The API stamps publishedAt; a browser must not decide when a post went live.
+    expect(ArticleCreateSchema.safeParse({...validArticle(), status: 'published'}).success).toBe(
+      true,
+    );
+  });
+
+  it('keeps a patch partial and free of create-time defaults', () => {
+    const parsed = ArticleUpdateSchema.parse({title: 'Revised title'});
+    expect(Object.keys(parsed)).toEqual(['title']);
+  });
+
+  it('rejects a non-kebab slug', () => {
+    expect(ArticleCreateSchema.safeParse({...validArticle(), slug: 'Not A Slug'}).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('FAQ contract', () => {
+  it('applies category and sort defaults', () => {
+    const parsed = FaqCreateSchema.parse({
+      question: 'What is endpoint management?',
+      answer: 'A placeholder answer used only in tests.',
+    });
+    expect(parsed.category).toBe('general');
+    expect(parsed.sortIndex).toBe(0);
+    expect(parsed.status).toBe('draft');
+  });
+
+  it('rejects an empty answer', () => {
+    expect(FaqCreateSchema.safeParse({question: 'Q?', answer: ''}).success).toBe(false);
+  });
+});
+
+describe('media contract', () => {
+  const asset = {
+    publicId: 'me-palnadu/knowledge/example',
+    secureUrl: 'https://res.cloudinary.com/example/image/upload/example.webp',
+    format: 'webp',
+    resourceType: 'image',
+    bytes: 123_456,
+    width: 1200,
+    height: 800,
+    originalFilename: 'example.webp',
+  };
+
+  it('accepts a registered image asset', () => {
+    expect(MediaRegisterSchema.safeParse(asset).success).toBe(true);
+  });
+
+  it('rejects a format outside the accepted list', () => {
+    expect(MediaRegisterSchema.safeParse({...asset, format: 'svg'}).success).toBe(false);
+  });
+
+  it('rejects an asset above the size ceiling', () => {
+    expect(MediaRegisterSchema.safeParse({...asset, bytes: 20 * 1024 * 1024}).success).toBe(false);
+  });
+
+  it('requires every field a signature response needs', () => {
+    expect(
+      MediaSignResponseSchema.safeParse({
+        signature: 'abc',
+        timestamp: 1,
+        apiKey: 'key',
+        cloudName: 'cloud',
+        folder: 'me-palnadu',
+        uploadUrl: 'https://api.cloudinary.com/v1_1/cloud/image/upload',
+        allowedFormats: ['jpg'],
+      }).success,
+    ).toBe(true);
+  });
+});
+
+describe('revalidation contract', () => {
+  it('accepts tags only and paths only', () => {
+    expect(RevalidateRequestSchema.safeParse({tags: [CACHE_TAGS.articles]}).success).toBe(true);
+    expect(RevalidateRequestSchema.safeParse({paths: ['/knowledge-hub']}).success).toBe(true);
+  });
+
+  it('rejects an empty request', () => {
+    expect(RevalidateRequestSchema.safeParse({}).success).toBe(false);
+  });
+
+  it('rejects a protocol-relative path', () => {
+    expect(RevalidateRequestSchema.safeParse({paths: ['//evil.test']}).success).toBe(false);
+  });
+
+  it('rejects an unbounded tag list', () => {
+    const tags = Array.from({length: 13}, () => CACHE_TAGS.articles);
+    expect(RevalidateRequestSchema.safeParse({tags}).success).toBe(false);
   });
 });
 
@@ -240,6 +410,9 @@ describe('shared primitives', () => {
   it('exposes every documented API route', () => {
     expect(API_ROUTES.health.live).toBe('/health/live');
     expect(API_ROUTES.knowledge).toBe('/api/knowledge');
+    expect(API_ROUTES.knowledgeAdmin).toBe('/api/admin/knowledge');
+    expect(WEB_ROUTES.knowledgeHub).toBe('/knowledge-hub');
+    expect(WEB_ROUTES.faq).toBe('/faq');
   });
 
   it('keeps message status and skill category single-sourced', () => {

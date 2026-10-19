@@ -22,7 +22,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@me-palnadu/design-tokens": "workspace:*"
+    "@me-palnadu/design-tokens": "workspace:*",
+    "@me-palnadu/shared": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.0.0"

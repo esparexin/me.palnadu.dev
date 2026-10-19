@@ -215,6 +215,9 @@ importers:
       '@me-palnadu/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@me-palnadu/shared':
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       '@me-palnadu/contracts':
         specifier: workspace:*

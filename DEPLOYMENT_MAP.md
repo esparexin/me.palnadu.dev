@@ -47,38 +47,41 @@ No values. `description` only.
 
 ### `apps/web`
 
-| Key                    | Public | Purpose                                                 |
-| ---------------------- | ------ | ------------------------------------------------------- |
-| `NEXT_PUBLIC_API_URL`  | Yes    | API base URL for browser requests; public by definition |
-| `NEXT_PUBLIC_SITE_URL` | Yes    | Canonical origin, used for metadata, sitemap, JSON-LD   |
-| `NEXT_PUBLIC_GA_ID`    | Yes    | Analytics identifier; empty means analytics disabled    |
+| Key                    | Public | Purpose                                                                               |
+| ---------------------- | ------ | ------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL`  | Yes    | API base URL for reads; public by definition                                          |
+| `NEXT_PUBLIC_SITE_URL` | Yes    | Canonical origin, used for metadata, RSS links, and absolute URLs                     |
+| `NEXT_PUBLIC_GA_ID`    | Yes    | Analytics identifier; empty means analytics disabled                                  |
+| `REVALIDATE_SECRET`    | No     | Shared with the API; authenticates `POST /api/revalidate` (compared in constant time) |
 
 ### `apps/admin`
 
 | Key                          | Public | Purpose                                                        |
 | ---------------------------- | ------ | -------------------------------------------------------------- |
 | `AUTH_SECRET`                | No     | Session signing key, ≥ 32 bytes; identical to the API's value  |
-| `AUTH_GITHUB_ID`             | No     | GitHub OAuth client id                                         |
-| `AUTH_GITHUB_SECRET`         | No     | GitHub OAuth client secret                                     |
 | `AUTH_TRUST_HOST`            | No     | `true` only behind a trusted proxy                             |
 | `ADMIN_API_URL`              | No     | Server-side API base URL for route handlers and server actions |
 | `ADMIN_ALLOWED_ORIGINS`      | No     | Comma-separated CORS allowlist for the admin origin            |
-| `NEXT_PUBLIC_ADMIN_SITE_URL` | Yes    | Canonical admin origin, used for the OAuth callback display    |
+| `NEXT_PUBLIC_ADMIN_SITE_URL` | Yes    | Canonical admin origin                                         |
 
 ### `apps/api`
 
-| Key               | Public | Purpose                                                 |
-| ----------------- | ------ | ------------------------------------------------------- |
-| `NODE_ENV`        | No     | `production` in production; gates error detail          |
-| `PORT`            | No     | Bind port                                               |
-| `DATABASE_URL`    | No     | Atlas connection string with credentials                |
-| `AUTH_SECRET`     | No     | Same value as the admin's; used to verify bearer tokens |
-| `AUTH_ISSUER`     | No     | Expected JWT issuer                                     |
-| `AUTH_AUDIENCE`   | No     | Expected JWT audience                                   |
-| `ALLOWED_ORIGINS` | No     | Comma-separated exact origins permitted by CORS         |
-| `RATE_LIMIT_MAX`  | No     | Default ceiling for the throttler                       |
-| `TRUST_PROXY`     | No     | Set only when running behind a known proxy              |
-| `LOG_LEVEL`       | No     | `info` in production, never `debug`                     |
+| Key                        | Public | Purpose                                                                  |
+| -------------------------- | ------ | ------------------------------------------------------------------------ |
+| `NODE_ENV`                 | No     | `production` in production; gates error detail                           |
+| `PORT`                     | No     | Bind port                                                                |
+| `DATABASE_URL`             | No     | Atlas connection string with credentials                                 |
+| `AUTH_SECRET`              | No     | Same value as the admin's; used to sign and verify bearer tokens         |
+| `AUTH_ISSUER`              | No     | Expected JWT issuer                                                      |
+| `AUTH_AUDIENCE`            | No     | Expected JWT audience                                                    |
+| `ALLOWED_ORIGINS`          | No     | Comma-separated exact origins permitted by CORS                          |
+| `LOG_LEVEL`                | No     | `info` in production, never `debug`                                      |
+| `WEB_REVALIDATE_URL`       | No     | Web route that receives cache invalidation; absent disables revalidation |
+| `REVALIDATE_SECRET`        | No     | Shared with `apps/web`; >= 16 characters, never logged                   |
+| `CLOUDINARY_CLOUD_NAME`    | No     | Media cloud; all three Cloudinary keys or none, validated at boot        |
+| `CLOUDINARY_API_KEY`       | No     | Public identifier for signing; not a secret but still server-side        |
+| `CLOUDINARY_API_SECRET`    | No     | Signs uploads; never returned by a route                                 |
+| `CLOUDINARY_UPLOAD_FOLDER` | No     | Folder new assets must sit under; defaults to `me-palnadu/media`         |
 
 ### CI/CD (GitHub Actions)
 
@@ -103,19 +106,23 @@ unlisted origin receives no CORS headers and is rejected by the client — and t
 must also reject the actual request, since CORS is a browser control and not an
 authorization mechanism.
 
-## 5. OAuth configuration
+## 5. Authentication configuration (ADR-0009)
 
-One GitHub OAuth app per environment, so a staging compromise cannot reach production.
+`ADR-0009` supersedes GitHub OAuth with direct, single-owner email/password
+authentication. There are no external OAuth applications, client secrets, or provider
+callback dependencies to maintain across environments.
 
-| Environment  | Callback URL                                                    |
-| ------------ | --------------------------------------------------------------- |
-| `local`      | `http://localhost:3001/api/auth/callback/github`                |
-| `staging`    | `https://admin-staging.me.palnadu.dev/api/auth/callback/github` |
-| `production` | `https://admin.me.palnadu.dev/api/auth/callback/github`         |
+The owner account is provisioned exclusively via the explicit CLI command:
+`pnpm --filter @me-palnadu/api owner:provision`
 
-The OAuth app authorises exactly the `read:user` scope; no repository, organisation, or
-email scope is requested. The allowlist in `SECURITY.md` §4.1 is what actually grants
-administration — the OAuth app alone grants nothing.
+| Environment  | Authentication mechanism                           | Provisioning method                                              |
+| ------------ | -------------------------------------------------- | ---------------------------------------------------------------- |
+| `local`      | Email / password, `node:crypto` scrypt credentials | Direct CLI invocation with ephemeral or local MongoDB instance   |
+| `staging`    | Email / password, `node:crypto` scrypt credentials | Controlled operator CLI execution with staging `DATABASE_URL`    |
+| `production` | Email / password, `node:crypto` scrypt credentials | Controlled operator CLI execution with production `DATABASE_URL` |
+
+The admin dashboard authenticates directly against the API auth boundary (`POST /api/auth/login`).
+Protected sessions are maintained via HttpOnly, SameSite=Lax browser cookies.
 
 ## 6. Health checks and data safety
 
@@ -175,11 +182,11 @@ recorded here at that time. Until then the entries above are `SPECIFIED`, not `E
 
 Derived values fixed by these decisions:
 
-| Value                                 | Value                                                                                             |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Production cookie scope               | host-only on `admin.me.palnadu.dev`                                                               |
-| Production API origin allowed by CORS | `https://api.me.palnadu.dev` is the target; the two allowed _origins_ are the web and admin sites |
-| Production OAuth callback             | `https://admin.me.palnadu.dev/api/auth/callback/github`                                           |
+| Value                                 | Value                                                                                                    |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Production cookie scope               | host-only on `admin.me.palnadu.dev`                                                                      |
+| Production API origin allowed by CORS | `https://api.me.palnadu.dev` is the target; the two allowed _origins_ are the web and admin sites        |
+| Media provider folder                 | Cloudinary `me-palnadu/media`; absence of all three keys disables uploads rather than half-enabling them |
 
 ### 7.2 Still open (blocking provisioning of those specific items)
 
@@ -191,7 +198,7 @@ Derived values fixed by these decisions:
 | 7   | Production deploy approval      | Owner approval on the `production` GitHub environment        | Whether release is automatic after merge or manual  |
 
 `SECURITY.md` §4.4 implementation is no longer blocked by items 1 and 2. It remains
-blocked by item 7 for deployment and by the absence of a provisioned GitHub OAuth app.
+blocked by item 7 for deployment. The external GitHub OAuth dependency was eliminated in `ADR-0009`.
 
 ## 8. Ownership
 

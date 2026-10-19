@@ -172,8 +172,10 @@ the dev server.
 4. Mobile swipe slider: swipe up moves to a newer entry, swipe down to an earlier one;
    the "Newer" and "Earlier" controls produce the same result; a vertical page scroll
    that starts outside the slider still scrolls the page (no scroll-jacking).
-5. `/knowledge` lists published articles grouped by kind; an article renders headings,
-   lists, code blocks, and a table without horizontal overflow.
+5. `/knowledge-hub` lists published articles with kind filtering, search, and
+   pagination; an article renders headings, lists, code blocks, and blockquotes
+   without horizontal overflow. `/knowledge` redirects permanently to it, and `/faq`
+   renders published questions grouped by category.
 6. `/projects` → project detail renders with links and tech tags.
 7. `/resume` renders from resume records and offers a downloadable document.
 8. Contact form: invalid input shows an accessible error summary; a valid submission
@@ -186,12 +188,11 @@ the dev server.
 **Admin (`apps/admin`)**
 
 11. Unauthenticated access to any dashboard route redirects to `/login`.
-12. Sign-in with a non-allowlisted GitHub id creates no session; an allowlisted id
-    reaches the dashboard.
+12. Sign-in with a wrong email or password creates no session and shows the generic
+    failure message; the provisioned owner reaches the dashboard.
 13. Session validation: a request to the API with a missing, malformed, expired, or
     revoked token returns `401`; a token whose `tokenVersion` no longer matches returns
-    `401`; a token with an elevated `role` claim for a non-allowlisted user returns
-    `403`.
+    `401`.
 14. Create an experience entry as `draft` → it is absent from the public site → publish
     it → it appears → archive it → it disappears. Audit entries exist for each step.
 15. Creating an article with a malformed slug or an unknown `kind` fails validation with
@@ -200,7 +201,7 @@ the dev server.
 **Accessibility**
 
 16. axe-core reports zero serious or critical violations on `/`, `/experience`,
-    `/projects`, `/knowledge`, `/resume`, `/contact`, and the admin dashboard.
+    `/projects`, `/knowledge-hub`, `/faq`, `/resume`, `/contact`, and the admin dashboard.
 
 ## 8. Naming and hygiene
 

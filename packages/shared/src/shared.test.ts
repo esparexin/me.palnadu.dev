@@ -9,6 +9,11 @@ import {
   formatMonth,
   formatTenure,
   slugify,
+  parseMarkdown,
+  extractHeadings,
+  markdownToPlainText,
+  escapeXml,
+  isAbsoluteHttpUrl,
 } from './index.js';
 
 describe('slugify', () => {
@@ -149,5 +154,62 @@ describe('clampPage', () => {
 
   it('guards against a non-positive limit', () => {
     expect(clampPage(3, 100, 0)).toBe(1);
+  });
+});
+
+describe('markdown subset', () => {
+  it('renders headings at h2 and below with stable ids', () => {
+    const blocks = parseMarkdown('## Getting started\n\n### Install the profile');
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0]).toMatchObject({type: 'heading', depth: 2, id: 'getting-started'});
+    expect(blocks[1]).toMatchObject({type: 'heading', depth: 3, id: 'install-the-profile'});
+  });
+
+  it('does not treat an h1 in the body as a page heading', () => {
+    // The page title is the h1 (UI_UX_STANDARDS 7.4); a `#` line is paragraph text.
+    const blocks = parseMarkdown('# Not a heading');
+    expect(blocks[0]?.type).toBe('paragraph');
+  });
+
+  it('keeps fenced code verbatim and out of inline parsing', () => {
+    const blocks = parseMarkdown('```bash\n**not bold**\n```');
+    expect(blocks).toEqual([{type: 'code', language: 'bash', value: '**not bold**'}]);
+  });
+
+  it('parses lists, quotes, and rules', () => {
+    const blocks = parseMarkdown('- one\n- two\n\n> quoted\n\n---');
+    expect(blocks.map((block) => block.type)).toEqual(['list', 'quote', 'rule']);
+  });
+
+  it('refuses a javascript: link rather than rendering it', () => {
+    const blocks = parseMarkdown('[click](javascript:alert(1))');
+    const paragraph = blocks[0];
+    expect(paragraph?.type).toBe('paragraph');
+    if (paragraph?.type !== 'paragraph') return;
+    const link = paragraph.children.find((node) => node.type === 'link');
+    expect(link).toMatchObject({type: 'link', href: '#'});
+  });
+
+  it('extracts headings for a table of contents', () => {
+    const headings = extractHeadings(parseMarkdown('## One\n\n## Two'));
+    expect(headings.map((heading) => heading.text)).toEqual(['One', 'Two']);
+  });
+
+  it('produces plain text for reading time', () => {
+    expect(markdownToPlainText('## Title\n\nSome **bold** text.')).toBe('Title\n\nSome bold text.');
+  });
+});
+
+describe('xml escaping', () => {
+  it('escapes every character that would break a feed', () => {
+    expect(escapeXml('<a href="x">Tom & Jerry\'s</a>')).toBe(
+      '&lt;a href=&quot;x&quot;&gt;Tom &amp; Jerry&apos;s&lt;/a&gt;',
+    );
+  });
+
+  it('recognises only absolute http(s) URLs', () => {
+    expect(isAbsoluteHttpUrl('https://me.palnadu.dev/knowledge-hub')).toBe(true);
+    expect(isAbsoluteHttpUrl('/knowledge-hub')).toBe(false);
+    expect(isAbsoluteHttpUrl('javascript:alert(1)')).toBe(false);
   });
 });

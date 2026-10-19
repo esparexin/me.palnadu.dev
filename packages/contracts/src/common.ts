@@ -12,6 +12,13 @@ export const MonthSchema = z.string().regex(/^[0-9]{4}-(0[1-9]|1[0-2])$/, 'must 
 
 export const IsoDateSchema = z.iso.date();
 
+/**
+ * Full ISO datetime. Article publication is an instant, not a calendar day: two
+ * articles published on the same date still have a defined order, and a cache tag
+ * can be invalidated at the moment the status changed.
+ */
+export const IsoDateTimeSchema = z.iso.datetime({offset: true});
+
 export const NonEmptyTextSchema = z.string().trim().min(1);
 
 export const TechTagSchema = z
@@ -82,6 +89,21 @@ export const PaginatedResponseSchema = <T extends z.ZodType>(item: T) =>
     hasMore: z.boolean(),
   });
 
+/**
+ * The response schema for a 204. Named so a client can parse "no content" without
+ * importing Zod itself or casting the result.
+ */
+export const NoContentSchema = z.void();
+
+/** The inferred envelope, so a service returns a typed list without re-declaring it. */
+export interface PaginatedResponse<T> {
+  items: T[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+}
+
 export const ERROR_CODES = [
   'BAD_REQUEST',
   'VALIDATION_FAILED',
@@ -92,6 +114,8 @@ export const ERROR_CODES = [
   'PAYLOAD_TOO_LARGE',
   'RATE_LIMITED',
   'INTERNAL_ERROR',
+  'SETUP_REQUIRED',
+  'DEPENDENCY_UNAVAILABLE',
 ] as const;
 export const ErrorCodeSchema = z.enum(ERROR_CODES);
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>;
@@ -113,10 +137,38 @@ export const API_ROUTES = {
     live: '/health/live',
     ready: '/health/ready',
   },
+  auth: {
+    login: '/api/auth/login',
+    logout: '/api/auth/logout',
+    changePassword: '/api/auth/change-password',
+    session: '/api/auth/session',
+    sessions: '/api/auth/sessions',
+    sessionsRevoke: '/api/auth/sessions/revoke',
+  },
   experience: '/api/experience',
   projects: '/api/projects',
   skills: '/api/skills',
   resume: '/api/resume',
   knowledge: '/api/knowledge',
+  knowledgeAdmin: '/api/admin/knowledge',
+  faq: '/api/faq',
+  faqAdmin: '/api/admin/faq',
+  media: '/api/admin/media',
+  audit: '/api/admin/audit',
+  overview: '/api/admin/overview',
+  sessions: '/api/auth/sessions',
   messages: '/api/messages',
+} as const;
+
+/** Public web routes. Canonical names live here so links and sitemap agree. */
+export const WEB_ROUTES = {
+  home: '/',
+  experience: '/experience',
+  projects: '/projects',
+  knowledgeHub: '/knowledge-hub',
+  faq: '/faq',
+  resume: '/resume',
+  contact: '/contact',
+  revalidate: '/api/revalidate',
+  rss: '/knowledge-hub/rss.xml',
 } as const;

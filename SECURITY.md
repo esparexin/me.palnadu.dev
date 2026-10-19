@@ -28,11 +28,9 @@ or an API response. See `GOVERNANCE.md` §6.
  Contact form ──────┘              │  Authorization decided here
                                   │
  Administrator ──▶ apps/admin ───▶ apps/api
-   (GitHub OAuth)      │   Bearer    │
-                       │   session   └──▶ AuditLog
-                       └──▶ MongoDB Atlas (read sessions only)
-
- GitHub (identity provider) ──▶ apps/admin callback ──▶ apps/api
+   (Email/Pass,        │   Bearer    │
+    ADR-0009)          │   session   └──▶ AuditLog
+                       └──▶ (HttpOnly Cookie)
 ```
 
 Trust assumptions, each falsifiable:
@@ -47,129 +45,112 @@ Trust assumptions, each falsifiable:
 
 ## 3. Threats and controls
 
-| Threat                       | Control                                                                                                                                                | Verification                                                           |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| Unauthorized content write   | Bearer session verified by `AdminSessionGuard` + DB allowlist lookup per request                                                                       | API test with no token, bad token, expired token, revoked allowlist    |
-| Forged role claim            | Role re-read from MongoDB per request; token `role` is advisory                                                                                        | Test with a token carrying an elevated role for a non-allowlisted user |
-| Stolen session token         | 15-minute expiry, `httpOnly` cookie, server-side session record, `tokenVersion` revocation, `Escape`/timeout logout                                    | Revocation test + expiry test                                          |
-| XSS in article body          | No `dangerouslySetInnerHTML`; Markdown sanitised server-side; React escaping; CSP without `unsafe-html`                                                | Render test asserting no script executes; header check                 |
-| CSRF against a write         | API accepts `Authorization: Bearer` only and never authenticates by cookie, so browser credentials are never ambient; a custom header forces preflight | Cross-origin request test returns 401/403                              |
-| Cross-origin data theft      | Explicit CORS allowlist, `credentials: false`                                                                                                          | Preflight test from a disallowed origin                                |
-| Spam on the contact form     | Per-IP rate limit, honeypot field, length caps, no HTML rendering of submissions                                                                       | Rate-limit test; honeypot test                                         |
-| Content scraping of drafts   | Draft filter applied in the API query, not in the UI                                                                                                   | Unauthenticated request for a draft returns 404                        |
-| Secret committed to Git      | `.gitignore` + gate 12 secret scan + `gh secret set` only, never a value in a file                                                                     | Scan run + `git log -p` audit                                          |
-| Dependency compromise        | Lockfile with `--frozen-lockfile`, advisory audit gate, minimal dependency count                                                                       | Gate 7 run                                                             |
-| Pipeline injection           | `permissions: contents: read`, actions pinned to commit SHAs, no secret interpolation into `run:` blocks, no `pull_request_target` checkout of PR code | Workflow review + gate 6                                               |
-| Mass assignment              | Write schemas are explicit `z.object` allowlists; `unknown` keys rejected                                                                              | Test posting an unexpected field                                       |
-| Prototype/JSON pollution     | Nest body parser limits, schemas strip unknown keys                                                                                                    | Test with `__proto__` payload                                          |
-| Denial of service on the API | Rate limits, request body size limits, pagination caps                                                                                                 | Load check in staging                                                  |
-| Audit trail tampering        | Audit writes are append-only from the application; the API exposes no delete/update route for `AuditLog`                                               | Route inventory test                                                   |
+| Threat                     | Control                                                                                                                                                | Verification                                                           |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Unauthorized content write | Bearer session verified by `AdminSessionGuard` + DB allowlist lookup per request                                                                       | API test with no token, bad token, expired token, revoked allowlist    |
+| Forged role claim          | Role re-read from MongoDB per request; token `role` is advisory                                                                                        | Test with a token carrying an elevated role for a non-allowlisted user |
+| Stolen session token       | 15-minute expiry, `httpOnly` cookie, server-side session record, `tokenVersion` revocation, `Escape`/timeout logout                                    | Revocation test + expiry test                                          |
+| XSS in article body        | No `dangerouslySetInnerHTML`; Markdown sanitised server-side; React escaping; CSP without `unsafe-html`                                                | Render test asserting no script executes; header check                 |
+| CSRF against a write       | API accepts `Authorization: Bearer` only and never authenticates by cookie, so browser credentials are never ambient; a custom header forces preflight | Cross-origin request test returns 401/403                              |
+| Cross-origin data theft    | Explicit CORS allowlist, `credentials: false`                                                                                                          | Preflight test from a disallowed origin                                |
+| Spam on the contact form   | Per-IP rate limit, honeypot field, length caps, no HTML rendering of submissions                                                                       | Rate-limit test; honeypot test                                         |
+| Content scraping of drafts | Draft filter applied in the API query, not in the UI                                                                                                   | Unauthenticated request for a draft returns 404                        |
+| Secret committed to Git    | `.gitignore` + gate 12 secret scan + `gh secret set` only, never a value in a file                                                                     | Scan run + `git log -p` audit                                          |
+| Dependency compromise      | Lockfile with `--frozen-lockfile`, advisory audit gate, minimal dependency count                                                                       | Gate 7 run                                                             |
+| Pipeline injection         | `permissions: contents: read`, actions pinned to commit SHAs, no secret interpolation into `run:` blocks, no `pull_request_target` checkout of PR code | Workflow review + gate 6                                               |
+| Mass assignment            | Write schemas are explicit `z.object` allowlists; `unknown` keys rejected                                                                              | Test posting an unexpected field                                       |
+| Prototype/JSON pollution   | Nest body parser limits, schemas strip unknown keys                                                                                                    | Test with `__proto__` payload                                          |
+| Audit trail tampering      | Audit writes are append-only from the application; the API exposes no delete/update route for `AuditLog`                                               | Route inventory test                                                   |
 
-## 4. Administrator authentication
+## 4. Administrator authentication (email and password, ADR-0009)
 
-**Decision (ADR-0003):** Auth.js with the GitHub OAuth provider. No password is ever
-stored, transmitted, or hashed, because no local credential exists.
+**Decision (ADR-0009):** Single-owner authentication by email and password, superseding
+the GitHub OAuth decisions in `ADR-0003` and `ADR-0008`. The owner does not couple
+administration access to a third-party account. No password is ever stored reversibly,
+printed, logged, seeded, or committed.
 
-### 4.1 Allowlist
+### 4.1 Owner provisioning
 
-Administration is granted **only** to explicitly enumerated GitHub accounts, matched on
-the immutable numeric GitHub user id — never on the login, which can be renamed.
+The owner account is created through an explicit server-side provisioning command, never
+via an unauthenticated HTTP endpoint or self-service registration:
 
-| GitHub id   | Login       | Name               | Role    |
-| ----------- | ----------- | ------------------ | ------- |
-| `230946749` | `esparexin` | Kalyan V Medaboina | `owner` |
-
-```ts
-// packages/contracts — the allowlist is a contract, so client and server agree.
-export const ADMIN_ALLOWLIST = [{githubId: 230946749, login: 'esparexin', role: 'owner'}] as const;
-```
+`pnpm --filter @me-palnadu/api owner:provision --email <email> --password <password>`
 
 Rules:
 
-- The allowlist in contracts is the **seed**; the `AdminUser` collection is the
-  **authority**. A GitHub account absent from the database cannot write anything,
-  regardless of what any token claims.
-- Adding an administrator is a code change (seed) **and** a database change, both
-  audited. There is no self-service invitation, no public registration, and no
-  user-management UI.
-- If the GitHub OAuth app is compromised, GitHub still only asserts an identity; the
-  database allowlist still rejects unknown ids.
+- Email must be valid and normalized (`packages/contracts/src/credentials.ts`).
+- Password must satisfy the repository password policy (`passwordProblems`): 16+
+  characters, at least one uppercase, lowercase, digit, and symbol, and must not contain
+  the email's local part.
+- Passwords are encrypted with `scrypt` from `node:crypto` using standard parameters
+  (N=16384, r=8, p=1, 64-byte key length).
+- No default password or credentials in Git or `.env.example`.
 
-### 4.2 Sign-in flow
+### 4.2 Sign-in flow and throttling
 
-1. Administrator visits `/login` on the admin host and selects "Sign in with GitHub".
-2. Auth.js redirects to GitHub with `state`, `nonce`, `PKCE`, and
-   `redirect_uri = https://<ADMIN_DOMAIN>/api/auth/callback/github`.
-3. GitHub returns the code; Auth.js exchanges it server-side for the token, fetches
-   `/user` for the numeric id, and verifies the id against the allowlist.
-4. **Allowlist failure** ⇒ no session is created, no cookie is set, and the event is
-   recorded as a rejected attempt. The failure response is deliberately generic.
-5. Success ⇒ a signed session token is issued and a session record is created.
+1. Administrator visits `/login` in `apps/admin` and inputs email and password using
+   `@me-palnadu/ui` accessible primitives.
+2. Form submission executes Next.js server action `loginAction`, which calls
+   `POST /api/auth/login` on the API boundary.
+3. API verifies credentials using constant-time comparison (`timingSafeEqual`). If the
+   account is unknown, a decoy scrypt calculation executes to resist timing enumeration.
+4. If authentication fails, the API returns a generic failure message:
+   `"Those credentials were not recognised."` preventing account enumeration.
+5. `POST /api/auth/login` is strictly rate-limited by IP to 10 attempts per 15 minutes
+   using `@nestjs/throttler`.
+6. On success:
+   - An `AdminSession` record is created in MongoDB with an 8-hour maximum lifetime.
+   - An opaque signed HS256 JWT is returned to `apps/admin` (15-minute access lifetime).
+   - `apps/admin` writes an `HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` (in production)
+     cookie (`__Secure-me-palnadu-admin.session` or `me-palnadu-admin.session`).
+   - The user is redirected to the sanitized destination (preventing open redirects).
 
 ### 4.3 Token and cookie properties
 
-| Property          | Value                                                                                              | Reason                                                                                                                                                                                       |
-| ----------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Strategy          | Auth.js JWT (no database session adapter needed)                                                   | One fewer component; sessions are still recorded in the API's own `AdminSession` collection for revocation and audit                                                                         |
-| Signing           | HS256, `AUTH_SECRET` ≥ 32 bytes, identical value in admin and API environments                     | Both components verify independently; rotation invalidates all sessions by design                                                                                                            |
-| Access lifetime   | 15 minutes                                                                                         | Limits the value of a stolen token                                                                                                                                                           |
-| Session lifetime  | 8 hours absolute, refreshed at most every 15 minutes                                               | Bounded administrator workday                                                                                                                                                                |
-| Algorithm pinning | `algorithms: ['HS256']` on verification                                                            | Blocks `alg: none` and algorithm-confusion attacks                                                                                                                                           |
-| Claims            | `sub` (internal user id), `gh_id`, `role`, `sid`, `tv` (token version), `iss`, `aud`, `iat`, `exp` | Identity, authority hint, session handle, revocation version                                                                                                                                 |
-| Cookie flags      | `httpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, host-only, `__Secure-` prefix                      | `Lax` is required for the OAuth redirect to return the session cookie; `__Host-` is impossible with `SameSite=Lax` plus an OAuth round trip, so `__Secure-` is the strongest workable prefix |
-| Rotation          | Changing `AUTH_SECRET` invalidates every session immediately                                       | Emergency revocation lever                                                                                                                                                                   |
-
-`AUTH_SECRET`, the GitHub client id, and the GitHub client secret exist only in the
-Vercel and Render environment stores. `.env.example` documents the key names with empty
-values.
+| Property          | Value                                                                                              | Reason                                                                                                                    |
+| ----------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Strategy          | Database-backed JWT session                                                                        | Stateless verification for claims + immediate DB lookup for revocation, activation, and tokenVersion                      |
+| Hashing           | `scrypt` via `node:crypto` (N=16384, r=8, p=1, keylen=64)                                          | Native Node 22 cryptographic implementation; resistant to GPU brute-force                                                 |
+| Signing           | HS256, `AUTH_SECRET` ≥ 32 bytes, identical value in admin and API environments                     | Both components verify independently; rotation invalidates all sessions by design                                         |
+| Access lifetime   | 15 minutes                                                                                         | Limits the value of a stolen token                                                                                        |
+| Session lifetime  | 8 hours absolute                                                                                   | Bounded administrator workday                                                                                             |
+| Algorithm pinning | `algorithms: ['HS256']` on verification                                                            | Blocks `alg: none` and algorithm-confusion attacks                                                                        |
+| Claims            | `sub` (internal user id), `email`, `role`, `sid`, `tv` (token version), `iss`, `aud`, `iat`, `exp` | Identity, email for audit, session handle, token revocation version                                                       |
+| Cookie flags      | `httpOnly`, `Secure` (prod), `SameSite=Lax`, `Path=/`, host-only, `__Secure-` prefix (prod)        | Prevents script access; `SameSite=Lax` prevents CSRF on ambient cross-site queries; `__Secure-` ensures TLS in production |
+| Mass Revocation   | Incrementing `AdminUser.tokenVersion`                                                              | Invalidates all active tokens instantly across all devices                                                                |
 
 ### 4.4 Session validation between `apps/admin` and `apps/api`
 
-This is the control most likely to be implemented wrongly, so it is specified
-end-to-end.
+Principle: the API never trusts the admin frontend, and the browser never holds the
+API credential in a way an attacker can read.
 
-**Principle: the API never trusts the admin frontend, and the browser never holds the
-API credential in a way an attacker can read.**
-
-1. The OAuth cookie is scoped to the **admin host only** and is never readable by
-   JavaScript (`httpOnly`). It is never sent to the API.
+1. The session cookie is scoped to the **admin host only** and is never readable by
+   JavaScript (`httpOnly`). It is never sent directly to the API by the browser.
 2. Server-side code in `apps/admin` (route handlers, server actions) reads the session
-   and calls the API with an `Authorization: Bearer <token>` header.
-3. `apps/api` applies `AdminSessionGuard` to every non-public controller, in this exact
-   order:
+   cookie and calls the API with an `Authorization: Bearer <token>` header.
+3. `apps/api` applies `AdminSessionGuard` to every non-public controller:
    1. Extract the bearer token. Absent or malformed ⇒ `UNAUTHENTICATED`.
-   2. `jwtVerify` with the pinned algorithm, expected `iss` and `aud`, and the shared
-      secret. Failure ⇒ `UNAUTHENTICATED`.
-   3. Load `AdminUser` by the token's `gh_id`. Missing, inactive, or not matching the
-      claim ⇒ `FORBIDDEN`.
-   4. Load `AdminSession` by `sid`. Revoked, expired, or belonging to another user ⇒
-      `UNAUTHENTICATED`.
+   2. `jwtVerify` with the pinned algorithm (`HS256`), expected `iss` and `aud`, and the
+      shared secret. Failure ⇒ `UNAUTHENTICATED`.
+   3. Load `AdminUser` by the token's `sub`. Missing, inactive (`isActive: false`), or
+      email mismatch ⇒ `FORBIDDEN` / `UNAUTHENTICATED`.
+   4. Load `AdminSession` by `sid`. Revoked (`revokedAt !== null`), expired, or belonging
+      to another user ⇒ `UNAUTHENTICATED`.
    5. Compare `AdminUser.tokenVersion` with the token's `tv`. Mismatch ⇒
-      `UNAUTHENTICATED` (this is how mass revocation works).
-   6. Attach the freshly loaded user to the request. The guard, not the handler,
-      reads the role.
-4. **Why the database is consulted on every request:** role changes and allowlist
-   revocations take effect immediately, instead of waiting for a token to expire. A
-   purely stateless check would accept a token for up to 15 minutes after revocation.
-5. **Why the token is not forwarded to the browser:** a browser-side token would be
-   reachable by injected script and by any XSS. Keeping it server-to-server removes an
-   entire class of session theft.
-6. Public routes are opted in explicitly (`@Public()`). There is no "forgot the guard"
-   failure mode, because a route that forgets the decorator fails closed.
-7. Logout deletes the `AdminSession` record and rotates `AUTH_SECRET` if the session
-   was suspected stolen. `sid` is written to `AuditLog` for sign-in, sign-out, and every
-   subsequent write.
+      `UNAUTHENTICATED`.
+   6. Attach the loaded administrator context to the request.
+4. Logout calls `POST /api/auth/logout`, setting `revokedAt` on the `AdminSession` record
+   and clearing the cookie.
+5. Password change calls `POST /api/auth/change-password`, verifies the current password,
+   updates the `passwordHash`, and increments `tokenVersion`, instantly terminating all
+   active sessions.
+6. Break-glass recovery re-executes `owner:provision` on the server host, updating the
+   password hash and incrementing `tokenVersion`.
 
-**Known limitation, accepted and documented:** `AdminSession` lookups add one database
-round trip per admin request. This is acceptable for a single-administrator portfolio
-and is the deliberate cost of immediate revocation.
-
-**Resolved dependency:** the domains are fixed — `admin.me.palnadu.dev` for the admin
-application and `api.me.palnadu.dev` for the API, with no existing DNS record on either
-(`DEPLOYMENT_MAP.md` §7.1). The production cookie scope is host-only on
-`admin.me.palnadu.dev` and the OAuth callback is
-`https://admin.me.palnadu.dev/api/auth/callback/github`. Implementation of §4 may begin
-once the GitHub OAuth app exists; until then this control remains `SPECIFIED`.
+**MFA Assessment:** MFA is deferred to a future phase. With the removal of GitHub OAuth,
+the repository relies on strict password complexity (16+ chars, entropy rules), scrypt
+work factor, IP-based login rate limiting, and explicit server-side provisioning as
+compensating controls. The operational risk is documented in `ADR-0009`.
 
 ## 5. Public surface hardening
 
@@ -181,8 +162,8 @@ once the GitHub OAuth app exists; until then this control remains `SPECIFIED`.
 | Rate-limit storage | In-memory per API instance. **Limitation:** limits are per instance, so horizontal scaling weakens them. The API is therefore pinned to a single instance with this documented rationale; moving to a shared store requires an ADR                                                                                                                     |
 | Body limits        | JSON body capped at 256KB (`BODY_LIMIT_BYTES`, set explicitly rather than inherited from Express's 100KB default); Markdown fields capped by schema length. Rejection is `PAYLOAD_TOO_LARGE`/413                                                                                                                                                       |
 | Input              | Every write validated by a contracts schema; unknown keys rejected; no dynamic `Object.assign` onto persisted documents                                                                                                                                                                                                                                |
-| Rendering          | React escaping only; Markdown → sanitised HTML on the API; no raw HTML injection                                                                                                                                                                                                                                                                       |
-| Files              | No public upload path in the public app; admin media uploads are stored outside the document root, validated by MIME and size, and served with `Content-Disposition` and a fixed content type                                                                                                                                                          |
+| Rendering          | Markdown is stored as source and parsed by `@me-palnadu/shared` into a restricted AST that React renders as elements; no HTML string is produced and `dangerouslySetInnerHTML` does not appear in the codebase                                                                                                                                         |
+| Files              | No public upload path. The browser uploads directly to Cloudinary with a short-lived signature; the API never receives bytes, validates the registered URL's cloud and folder, and stores metadata only. All three Cloudinary keys or none, enforced at boot                                                                                           |
 | Draft isolation    | Draft filtering in the API query builder; unauthenticated draft access returns 404, never 403 (403 would confirm existence)                                                                                                                                                                                                                            |
 | Error responses    | Contract error envelope only; no stack traces, driver messages, or collection names                                                                                                                                                                                                                                                                    |
 
@@ -200,12 +181,13 @@ once the GitHub OAuth app exists; until then this control remains `SPECIFIED`.
 
 ## 7. Secrets
 
-| Class                                                     | Storage                                                             | Never                                                            |
-| --------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `AUTH_SECRET` | Vercel and Render environment stores; GitHub Actions secrets for CI | In any file, including `.env.example` values, fixtures, and docs |
-| `DATABASE_URL` (Atlas URI)                                | Render and Vercel environment stores                                | Committed; the URI embeds credentials                            |
-| OAuth callback and CORS URLs                              | Environment values                                                  | Hardcoded in source                                              |
-| Third-party tokens (analytics, email)                     | Provider stores                                                     | Committed                                                        |
+| Class                                 | Storage                                                             | Never                                                            |
+| ------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `AUTH_SECRET` (admin and API)         | Vercel and Render environment stores; GitHub Actions secrets for CI | In any file, including `.env.example` values, fixtures, and docs |
+| `DATABASE_URL` (Atlas URI)            | Render environment store                                            | Committed; the URI embeds credentials                            |
+| `REVALIDATE_SECRET` (API and web)     | Vercel and Render environment stores                                | Committed; the API env schema enforces `>= 16` characters        |
+| `CLOUDINARY_API_SECRET`               | Render environment store                                            | Returned by any route, logged, or committed                      |
+| Third-party tokens (analytics, email) | Provider stores                                                     | Committed                                                        |
 
 Procedure:
 
@@ -263,13 +245,10 @@ protected request, against a real Nest application and a real MongoDB replica se
 
 **Still `SPECIFIED`, and not covered by any test above:**
 
-- GitHub OAuth sign-in, callback handling, and session issuance (§4.1–4.3). The tests
-  mint tokens directly with `jose`; nothing here proves a real sign-in flow works.
-- CSRF protection on the session cookie, and cookie issuance itself.
 - Role-based _denial_, deferred by decision — see §9.6.
 
-Security headers, CORS and rate limiting were also listed here. They are no longer
-specified: each is implemented and proven in §9.2, §9.4 and §9.5.
+Security headers, CORS, rate limiting, and email/password authentication (ADR-0009) were
+also listed here. Each is now implemented and proven in §9.2, §9.4, §9.5, and §9.7.
 
 **Open domain decision — `archive`.** Archiving was implemented as `published = false`,
 which is byte-for-byte what `unpublish` already did: two names for one behaviour, where
@@ -330,10 +309,13 @@ fail is not evidence.
   Whether the deployment actually terminates TLS is a `DEPLOYMENT_MAP.md` question and
   is not established by these tests.
 
-**Unchanged from Phase 6B:** GitHub OAuth sign-in, callback handling, session issuance,
-and CSRF remain unproven and unimplemented. The tests mint tokens with `jose` directly.
-CSRF remains inapplicable only while authentication is bearer-only; it must be reassessed
-when cookie-based authentication is introduced.
+**Current state (Phase 6F):** sign-in is email/password with scrypt verification,
+database-backed sessions, and `owner:provision` as the only way to create the owner
+account. The API still accepts bearer tokens only; the admin host holds the cookie.
+CSRF remains inapplicable while browser mutations are Next.js Server Actions with
+origin checks and the API never authenticates by cookie. Every session and audit
+claim in §9.7 is proven by an integration run; the Cloudinary upload path is unproven
+against a real provider because no credentials exist in this repository.
 
 ### 9.3 Phase 6D: request body limit
 
@@ -457,32 +439,45 @@ When it reopens, the policy is defined **first**, then a test proves an editor i
 and an owner is allowed. Building an owner-only route now would be manufacturing
 functionality to satisfy a test, which this document does not do.
 
-**2. GitHub OAuth sign-in and session issuance — blocked on an external dependency.**
+### 9.7 Phase 6F: Email/password authentication and owner provisioning (ADR-0009)
 
-Every session test mints a JWT directly with `jose`. That is correct for testing the
-authorization boundary and proves nothing about signing in.
+`ADR-0009` supersedes GitHub OAuth (`ADR-0003`, `ADR-0008`) with direct, single-owner
+email and password credentials. Authentication issuance is no longer blocked on third-party
+apps or credentials.
 
-Prerequisites, all outside this repository:
+**Proven by `pnpm db:integration` (19 passing in `auth.int-spec.ts`):**
 
-- the GitHub OAuth app exists, created through the account holder's own GitHub account;
-- its registered callback matches the actual Auth.js configuration;
-- local and production callback URLs are handled for their respective environments;
-- the numeric GitHub account ID allowlist remains the authorization authority.
+| Control                     | Asserted behaviour                                                                       |
+| --------------------------- | ---------------------------------------------------------------------------------------- |
+| Successful authentication   | Valid owner email and password returns JWT token and session metadata                    |
+| Password verification       | Incorrect password is rejected with 401 and generic error                                |
+| Account enumeration defense | Unknown email returns 401 with identical generic error; constant-time decoy runs         |
+| Decoy timing defense        | Decoy computation runs for non-existent users so response duration does not reveal state |
+| Throttling / abuse defense  | Excessive login attempts (>10 within 15 min) are blocked with 429 Too Many Requests      |
+| Session creation            | Successful login creates an active `AdminSession` record in MongoDB                      |
+| Session validation          | `GET /api/auth/session` returns current authenticated identity when token is valid       |
+| Direct session revocation   | `POST /api/auth/logout` revokes session; subsequent requests with token fail with 401    |
+| Password change             | `POST /api/auth/change-password` requires current password and enforces policy           |
+| Mass session invalidation   | Password change increments `tokenVersion`, instantly invalidating all issued tokens      |
+| Inactive administrator      | Deactivated administrator (`isActive: false`) cannot log in or use existing sessions     |
 
-The client secret is never committed, pasted into source or PR bodies, or written to
-logs. It lives in local environment configuration or the deployment secret store.
+**Proven by `pnpm --filter @me-palnadu/admin test` (16 passing in `session.test.ts` & `actions.test.ts`):**
 
-Once those are confirmed: implement and test the real callback, `state` validation, the
-token exchange, allowlist resolution, session issuance, expiry and revocation.
+| Control                    | Asserted behaviour                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------- |
+| Open redirect defense      | `sanitizeRedirectPath` rejects absolute URLs, protocol-relative URLs, and bad schemes |
+| Cookie security attributes | Session cookie is written with `httpOnly: true`, `sameSite: 'lax'`, and `path: '/'`   |
+| Environment scoping        | Production uses `__Secure-` cookie prefix and `secure: true`                          |
+| Session recovery / readout | `getAuthenticatedAdmin` retrieves valid principal and returns null on bad session     |
+| Server action safety       | `loginAction` validates inputs, calls API, sets cookie, and handles redirects         |
+| Logout action safety       | `logoutAction` notifies API, deletes cookie, and redirects to `/login`                |
 
-**3. CSRF protection — revisit when the session transport is chosen.**
+**Status of deferred controls (§9.6):**
 
-Currently inapplicable and deliberately so: the API authenticates by bearer token with
-`credentials: false`, so no ambient browser credential is attached and there is nothing
-for a cross-site request to forge. That holds only while authentication is bearer-only.
-
-It must be reassessed before any cookie-based session is introduced, not after. A test
-harness using bearer tokens is not evidence that a cookie-based flow is safe.
+- **GitHub OAuth sign-in:** Superseded by `ADR-0009`. The external dependency is removed.
+- **CSRF protection:** Cookie-based sessions exist only on the admin domain with `SameSite=Lax`. The API continues to reject cookie authentication, accepting bearer tokens only. Admin browser mutations use Next.js Server Actions with built-in origin checks.
+- **Role-based denial:** Remains deferred until multiple administrators or distinct role requirements exist.
+- **MFA:** Deferred per `ADR-0009`. Password policy, scrypt work factor, IP rate limits, and server-side provisioning provide compensating controls.
 
 **Standing constraint.** No security control is added merely to raise a test count. Each
 one corresponds to a real requirement, has a stated threat, and has a test that fails

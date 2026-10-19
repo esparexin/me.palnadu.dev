@@ -1,4 +1,9 @@
-import type {InputHTMLAttributes, ReactNode} from 'react';
+import type {
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from 'react';
 import {cn} from '../lib/cn.js';
 
 const FIELD_CLASS =
@@ -46,6 +51,35 @@ export interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
 export const TextInput = ({className, invalid = false, ...rest}: TextInputProps) => (
   <input
     className={cn(FIELD_CLASS, invalid && FIELD_INVALID_CLASS, className)}
+    aria-invalid={invalid || undefined}
+    {...rest}
+  />
+);
+
+export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  invalid?: boolean;
+}
+
+export const Textarea = ({className, invalid = false, ...rest}: TextareaProps) => (
+  <textarea
+    className={cn(
+      FIELD_CLASS,
+      'min-h-48 resize-y font-mono text-meta',
+      invalid && FIELD_INVALID_CLASS,
+      className,
+    )}
+    aria-invalid={invalid || undefined}
+    {...rest}
+  />
+);
+
+export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  invalid?: boolean;
+}
+
+export const Select = ({className, invalid = false, ...rest}: SelectProps) => (
+  <select
+    className={cn(FIELD_CLASS, 'cursor-pointer', invalid && FIELD_INVALID_CLASS, className)}
     aria-invalid={invalid || undefined}
     {...rest}
   />

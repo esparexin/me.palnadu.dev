@@ -129,3 +129,32 @@ export const clampPage = (requested: number, totalItems: number, limit: number):
   const lastPage = Math.max(1, Math.ceil(totalItems / limit));
   return Math.min(Math.max(1, Math.trunc(requested)), lastPage);
 };
+
+/**
+ * XML text escaping for the RSS feed.
+ *
+ * Written here rather than pulled from a dependency: the feed is one document with
+ * five characters that matter, and a dependency for it would be a larger surface
+ * than the function.
+ */
+export const escapeXml = (value: string): string =>
+  value
+    .replace(/&/gu, '&amp;')
+    .replace(/</gu, '&lt;')
+    .replace(/>/gu, '&gt;')
+    .replace(/"/gu, '&quot;')
+    .replace(/'/gu, '&apos;');
+
+/**
+ * True when a string is an absolute http(s) URL, for feed and JSON-LD links.
+ *
+ * A regular expression rather than `new URL`: this package is imported by browser
+ * and server bundles alike, and it deliberately does not depend on a DOM or Node
+ * type library. The pattern requires a non-empty authority and rejects whitespace,
+ * which is what matters when the value is interpolated into XML.
+ */
+const ABSOLUTE_HTTP_URL = /^https?:\/\/[^/\s]+(?:[/?#][^\s]*)?$/iu;
+
+export const isAbsoluteHttpUrl = (value: string): boolean => ABSOLUTE_HTTP_URL.test(value);
+
+export * from './markdown.js';
