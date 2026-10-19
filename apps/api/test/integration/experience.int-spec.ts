@@ -1,4 +1,3 @@
-import {PrismaClient} from '@prisma/client';
 import {afterAll, afterEach, beforeAll, describe, expect, it} from 'vitest';
 import {compareExperience} from '@me-palnadu/shared';
 import {
@@ -8,7 +7,6 @@ import {
   type ExperienceCreateInput,
 } from '@me-palnadu/contracts';
 import {parseEnv} from '../../src/config/env.js';
-import {ENV} from '../../src/common/tokens.js';
 import {PrismaService} from '../../src/prisma/prisma.service.js';
 import {ExperienceService} from '../../src/modules/experience/experience.service.js';
 import {mapPersistenceError} from '../../src/common/persistence-error.js';

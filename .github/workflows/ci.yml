@@ -49,8 +49,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Prettier check
         run: pnpm exec prettier --check "**/*.{ts,tsx,mjs,json,css,md}"
-      - name: ESLint
+      - name: ESLint (packages and applications)
         run: pnpm lint
+      # scripts/ and tests/ live outside every package's src/, so the per-package
+      # lint task cannot see them. Without this step, dead code in the gate scripts
+      # itself ships unnoticed - which is exactly what happened.
+      - name: ESLint (scripts, gates, and end-to-end suites)
+        run: pnpm run lint:repo
 
   typecheck:
     name: TypeScript type safety

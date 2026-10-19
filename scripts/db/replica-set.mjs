@@ -54,7 +54,6 @@ const HOST = '127.0.0.1';
 const DEFAULT_PORT = 27118;
 export const TEST_DATABASE = 'me_palnadu_integration_test';
 const READY_TIMEOUT_MS = 60_000;
-const SHUTDOWN_TIMEOUT_MS = 15_000;
 
 export const fail = (message) => {
   console.error(`replica-set: ${message}`);
@@ -162,6 +161,7 @@ const verifyTransactions = async (uri) => {
       `transactions are unavailable on this deployment, and Prisma requires them: ${
         error instanceof Error ? error.message : String(error)
       }`,
+      {cause: error},
     );
   } finally {
     await client.close().catch(() => undefined);

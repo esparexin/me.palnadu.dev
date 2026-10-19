@@ -28,7 +28,7 @@ const run = (command, args, env) =>
     shell: process.platform === 'win32',
   });
 
-let replica = null;
+let replica;
 
 try {
   replica = await up({quiet: true});

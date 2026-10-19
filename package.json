@@ -19,7 +19,7 @@
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "check:contracts": "node scripts/validate-contracts.mjs",
     "check:ci": "node scripts/ci-integrity.mjs",
-    "verify": "pnpm run check:structure && pnpm run check:docs && pnpm run check:secrets && pnpm run check:workflows && pnpm run check:schema && pnpm run test:gates && pnpm run format:check && pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build && pnpm run check:boundaries && pnpm run check:contracts && pnpm run check:ci",
+    "verify": "pnpm run check:structure && pnpm run check:docs && pnpm run check:secrets && pnpm run check:workflows && pnpm run check:schema && pnpm run test:gates && pnpm run format:check && pnpm run lint:repo && pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build && pnpm run check:boundaries && pnpm run check:contracts && pnpm run check:ci",
     "check:workflows": "node scripts/check-workflows.mjs",
     "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
     "test:a11y": "playwright test --config tests/e2e/playwright.config.ts tests/e2e/a11y",
@@ -30,7 +30,8 @@
     "db:replica:down": "node scripts/db/replica-set.mjs down",
     "db:replica:status": "node scripts/db/replica-set.mjs status",
     "db:integration": "node scripts/db/run-integration.mjs",
-    "check:schema": "node scripts/check-schema.mjs"
+    "check:schema": "node scripts/check-schema.mjs",
+    "lint:repo": "eslint scripts tests --max-warnings 0"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

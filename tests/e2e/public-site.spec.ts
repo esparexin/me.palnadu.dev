@@ -1,4 +1,4 @@
-import {expect, test} from '@playwright/test';
+import {expect, test, type Page} from '@playwright/test';
 
 /**
  * Critical public journeys that exist in the Phase 3 scaffold
@@ -50,7 +50,7 @@ test('navigation order is identical on every page', async ({page}) => {
   // not part of the section order being compared.
   // DOM order, not the accessibility tree: below lg the list is display:none,
   // so a role query would find nothing on mobile even though the order is correct.
-  const navItems = (page: import('@playwright/test').Page) =>
+  const navItems = (page: Page) =>
     page.locator('nav[aria-label="Primary"] ul li a').allInnerTexts();
 
   await page.goto('/');
