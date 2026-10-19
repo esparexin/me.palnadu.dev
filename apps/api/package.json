@@ -9,7 +9,7 @@
     "dev": "node --watch dist/main.js",
     "start": "node dist/main.js",
     "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src",
+    "lint": "eslint src test *.ts",
     "test": "vitest run",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
