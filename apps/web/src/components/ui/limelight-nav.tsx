@@ -6,7 +6,9 @@ import {usePathname} from 'next/navigation';
 import {NAV_ITEMS} from '../../lib/navigation';
 
 const activeIndexFor = (pathname: string) =>
-  NAV_ITEMS.findIndex(({href}) => pathname === href || pathname.startsWith(`${href}/`));
+  NAV_ITEMS.findIndex(({href}) =>
+    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`),
+  );
 
 /**
  * Desktop limelight navigation.
