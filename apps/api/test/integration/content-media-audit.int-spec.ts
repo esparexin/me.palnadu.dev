@@ -89,7 +89,7 @@ describe('media library, audit, and admin sessions', () => {
         .send({resourceType: 'image'})
         .expect(200);
       expect(MediaSignResponseSchema.safeParse(signed.body).success).toBe(true);
-      expect(signed.body.signature).toMatch(/^[0-9a-f]{40}$/);
+      expect(signed.body.signature).toMatch(/^[0-9a-f]{64}$/);
       expect(JSON.stringify(signed.body)).not.toContain('test-secret');
     });
 
