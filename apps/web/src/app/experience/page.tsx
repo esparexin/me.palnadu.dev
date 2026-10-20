@@ -1,25 +1,18 @@
-import {SectionHeading} from '@me-palnadu/ui';
 import {Navigation} from '../../components/navigation';
-import {PhaseNotice} from '../../components/phase-notice';
+import {ProfessionalExperience} from '../../components/professional-experience';
 
 export const metadata = {title: 'Career timeline'};
 
-const CONTENTS = [
-  'Horizontal desktop timeline with hover previews and an independently scrollable popup',
-  'Mobile bottom-to-top swipe slider with visible navigation controls',
-  'Entries loaded from the API, ordered by compareExperience',
-] as const;
-
-export default function Page() {
+export default function ExperiencePage() {
   return (
     <>
       <Navigation />
       <main id="main-content">
-        <section className="mx-auto max-w-page px-5 py-24 md:px-8">
-          <SectionHeading as="h1" eyebrow="Kalyan V Medaboina" title="Career timeline" />
-          <PhaseNotice phase="Phase 6" contents={CONTENTS} />
-        </section>
+        <ProfessionalExperience headingLevel="h1" />
       </main>
+      <footer className="border-t border-border-subtle py-10">
+        <p className="text-meta text-text-tertiary text-center">Kalyan V Medaboina</p>
+      </footer>
     </>
   );
 }

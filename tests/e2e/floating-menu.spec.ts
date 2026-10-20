@@ -39,10 +39,11 @@ test('opening focuses the first item and Escape closes back to the trigger', asy
   const {trigger, panel} = await openMenu(page);
 
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  await expect(panel.getByRole('link', {name: 'Experience'})).toBeFocused();
+  await expect(panel.getByRole('link', {name: 'About Me'})).toBeFocused();
 
   // Same items in the same order as the header list (WCAG 3.2.3).
   await expect(panel.getByRole('link')).toHaveText([
+    'About Me',
     'Experience',
     'Projects',
     'Knowledge Hub',
@@ -85,7 +86,7 @@ test('Tab past the last item wraps to the close control and back', async ({page}
   const close = panel.getByRole('button', {name: 'Close navigation menu'});
   const contact = panel.getByRole('link', {name: 'Contact'});
 
-  for (const label of ['Projects', 'Knowledge Hub', 'Resume', 'Contact']) {
+  for (const label of ['Experience', 'Projects', 'Knowledge Hub', 'Resume', 'Contact']) {
     await page.keyboard.press('Tab');
     await expect(panel.getByRole('link', {name: label})).toBeFocused();
   }

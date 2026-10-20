@@ -92,7 +92,7 @@ test('primary navigation reaches every public route without a 404', async ({page
 });
 
 test('navigation order is identical on every page', async ({page}) => {
-  const expected = ['Experience', 'Projects', 'Knowledge Hub', 'Resume', 'Contact'];
+  const expected = ['About Me', 'Experience', 'Projects', 'Knowledge Hub', 'Resume', 'Contact'];
 
   // Scope to the list items: the header also contains the brand link, which is
   // not part of the section order being compared.
@@ -115,6 +115,7 @@ test('desktop navigation exposes every destination and its active state', async 
   const nav = page.locator('nav[aria-label="Primary"]');
   const beam = page.getByTestId('limelight-beam');
   const destinations = [
+    ['About Me', '/'],
     ['Experience', '/experience'],
     ['Projects', '/projects'],
     ['Knowledge Hub', '/knowledge-hub'],
@@ -131,19 +132,19 @@ test('desktop navigation exposes every destination and its active state', async 
 
   await expect(projects).toHaveAttribute('aria-current', 'page');
   await expect(experience).not.toHaveAttribute('aria-current', 'page');
-  await expect(beam).toHaveAttribute('data-spotlight-index', '1');
+  await expect(beam).toHaveAttribute('data-spotlight-index', '2');
 
   await experience.focus();
-  await expect(beam).toHaveAttribute('data-spotlight-index', '0');
+  await expect(beam).toHaveAttribute('data-spotlight-index', '1');
 
   await projects.hover();
-  await expect(beam).toHaveAttribute('data-spotlight-index', '1');
+  await expect(beam).toHaveAttribute('data-spotlight-index', '2');
 
   await experience.hover();
-  await expect(beam).toHaveAttribute('data-spotlight-index', '0');
+  await expect(beam).toHaveAttribute('data-spotlight-index', '1');
 
   await page.mouse.move(10, 300);
-  await expect(beam).toHaveAttribute('data-spotlight-index', '1');
+  await expect(beam).toHaveAttribute('data-spotlight-index', '2');
 });
 
 test('the legacy Knowledge route redirects permanently to the canonical route', async ({page}) => {

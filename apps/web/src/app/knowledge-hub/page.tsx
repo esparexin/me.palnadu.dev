@@ -9,8 +9,9 @@ import {
 } from '@me-palnadu/contracts';
 import {Button, Field, SectionHeading, Select, TextInput} from '@me-palnadu/ui';
 import {Navigation} from '../../components/navigation';
-import {ArticleCard} from '../../components/article-card';
+import {FloatingCardGallery} from '../../components/ui/floating-card-gallery';
 import {listPublishedArticles} from '../../lib/api';
+import {DEFAULT_KNOWLEDGE_CARDS, mapArticlesToGalleryCards} from './knowledge-cards';
 
 export const metadata: Metadata = {
   title: 'Knowledge Hub',
@@ -51,21 +52,29 @@ export default async function KnowledgeHubPage({searchParams}: PageProps) {
 
   const result = await listPublishedArticles(query).catch(() => null);
   const totalPages = result === null ? 0 : Math.max(1, Math.ceil(result.total / result.limit));
+  const hasFilter = query.q !== undefined || query.kind !== undefined;
+
+  const galleryCards =
+    result && result.items.length > 0
+      ? mapArticlesToGalleryCards(result.items)
+      : hasFilter
+        ? []
+        : DEFAULT_KNOWLEDGE_CARDS;
 
   return (
     <>
       <Navigation />
       <main id="main-content">
-        <section className="mx-auto max-w-page px-5 pb-8 pt-16 md:px-8 md:pt-24">
+        <section className="mx-auto w-full max-w-7xl px-5 pb-8 pt-16 md:px-8 md:pt-24">
           <SectionHeading
             as="h1"
             eyebrow="Kalyan V Medaboina"
             title="Knowledge Hub"
-            description="Practical writing on endpoint management, MDM, identity, and security. Every article is reviewed and published deliberately; drafts never appear here."
+            description="Practical writing on endpoint management, MDM, identity, and security. Explore interactive 3D guides, troubleshooting playbooks, and architecture blueprints."
           />
         </section>
 
-        <section className="mx-auto max-w-page px-5 pb-24 md:px-8">
+        <section className="mx-auto w-full max-w-7xl px-5 pb-24 md:px-8">
           <form method="get" className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end">
             <Field id="q" label="Search">
               <TextInput
@@ -91,7 +100,7 @@ export default async function KnowledgeHubPage({searchParams}: PageProps) {
             </Button>
           </form>
 
-          {result === null ? (
+          {result === null && hasFilter ? (
             <div
               role="status"
               className="rounded-lg border border-border-subtle bg-surface-subtle p-8"
@@ -100,12 +109,12 @@ export default async function KnowledgeHubPage({searchParams}: PageProps) {
                 The Knowledge Hub is temporarily unavailable. Please try again shortly.
               </p>
             </div>
-          ) : result.items.length === 0 ? (
+          ) : galleryCards.length === 0 ? (
             <div className="rounded-lg border border-border-subtle bg-surface-subtle p-8">
               <p className="text-body text-text-secondary">
                 No published articles match this view yet.
               </p>
-              {(query.q !== undefined || query.kind !== undefined) && (
+              {hasFilter && (
                 <p className="mt-2 text-body-sm text-text-tertiary">
                   <Link href={WEB_ROUTES.knowledgeHub} className="underline underline-offset-2">
                     Clear the filters
@@ -116,19 +125,22 @@ export default async function KnowledgeHubPage({searchParams}: PageProps) {
             </div>
           ) : (
             <>
-              <p aria-live="polite" className="mb-6 text-meta text-text-tertiary">
-                {result.total} {result.total === 1 ? 'article' : 'articles'}
-                {totalPages > 1 && ` · page ${result.page} of ${totalPages}`}
-              </p>
-              <ul className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {result.items.map((article) => (
-                  <li key={article.id}>
-                    <ArticleCard article={article} />
-                  </li>
-                ))}
-              </ul>
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                <p aria-live="polite" className="text-meta text-text-tertiary">
+                  {result && result.total > 0
+                    ? `${result.total} ${result.total === 1 ? 'article' : 'articles'}`
+                    : `${galleryCards.length} featured guides`}
+                  {totalPages > 1 && ` · page ${result?.page} of ${totalPages}`}
+                </p>
+                <p className="text-meta text-text-tertiary">
+                  Click any card to expand details or launch guide
+                </p>
+              </div>
 
-              {totalPages > 1 && (
+              {/* 3D Floating Card Gallery */}
+              <FloatingCardGallery cards={galleryCards} maxCards={PAGE_SIZE} />
+
+              {totalPages > 1 && result && (
                 <nav
                   aria-label="Knowledge Hub pagination"
                   className="mt-12 flex items-center justify-between"

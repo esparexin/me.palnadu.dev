@@ -20,7 +20,7 @@ export const BlurText: FC<BlurTextProps> = ({
   direction = 'top',
   className = '',
 }) => {
-  const [inView, setInView] = useState(false);
+  const [inView, setInView] = useState(true);
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
