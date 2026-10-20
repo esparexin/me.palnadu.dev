@@ -3,11 +3,39 @@ import {Logger} from '@nestjs/common';
 import {NestFactory} from '@nestjs/core';
 import type {NestExpressApplication} from '@nestjs/platform-express';
 import {AppModule} from './app.module.js';
+import {existsSync, readFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
 import {ApiExceptionFilter} from './common/api-exception.filter.js';
 import {configureHttp} from './common/http-hardening.js';
 import {parseEnv} from './config/env.js';
 
 async function bootstrap(): Promise<void> {
+  try {
+    process.loadEnvFile?.();
+  } catch {
+    // ignore missing .env file
+  }
+
+  if (process.env['DATABASE_URL'] === undefined && process.env['NODE_ENV'] !== 'production') {
+    const stateFile = path.join(tmpdir(), 'me-palnadu-test-replica', 'state.json');
+    if (existsSync(stateFile)) {
+      try {
+        const state: unknown = JSON.parse(readFileSync(stateFile, 'utf8'));
+        if (
+          typeof state === 'object' &&
+          state !== null &&
+          'uri' in state &&
+          typeof state.uri === 'string'
+        ) {
+          process.env['DATABASE_URL'] = state.uri;
+        }
+      } catch {
+        // ignore malformed state file
+      }
+    }
+  }
+
   const env = parseEnv(process.env);
   // NestExpressApplication, not INestApplication: `useBodyParser` is declared on the
   // concrete Express application and is how the body limit is set explicitly rather

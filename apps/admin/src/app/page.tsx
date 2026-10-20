@@ -1,10 +1,10 @@
 import {redirect} from 'next/navigation';
+import {getAuthenticatedAdmin} from '../lib/session';
 
-/**
- * Every dashboard route requires a session, so the root redirects to the sign-in
- * entry point. The redirect is a convenience only: the API decides authorization
- * on every operation regardless of what this route does (SECURITY.md section 2).
- */
-export default function AdminRootPage() {
+export default async function AdminRootPage() {
+  const admin = await getAuthenticatedAdmin();
+  if (admin !== null) {
+    redirect('/dashboard');
+  }
   redirect('/login');
 }

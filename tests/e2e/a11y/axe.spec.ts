@@ -9,7 +9,7 @@ import {expect, test} from '@playwright/test';
  * focus order makes sense, and the Manual Verification Gate covers that.
  */
 
-const ROUTES = ['/', '/experience', '/projects', '/knowledge', '/resume', '/contact'];
+const ROUTES = ['/', '/experience', '/projects', '/knowledge-hub', '/resume', '/contact'];
 
 for (const route of ROUTES) {
   test(`${route} has no serious or critical accessibility violations`, async ({page}) => {

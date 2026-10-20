@@ -4,7 +4,7 @@ Exceptions to the rules in `AGENTS.md`, `ARCHITECTURE.md`, `SSOT_POLICY.md`,
 `CODING_STANDARDS.md`, `UI_UX_STANDARDS.md`, and `CI_GATES.md` are recorded here
 (`GOVERNANCE.md` §5). An exception that is not in this file does not exist.
 
-**Current exceptions: 1 (consumed)** — `EXC-0001`, the bootstrap merge of the governance baseline with no automated gates. It expires at the first merge that lands after `CI_GATES.md` area 1 is implemented.
+**Current exceptions: 2 (0 active, 2 consumed)** — `EXC-0001` (consumed: the Phase 3 pull request implemented gates 1–7 and 9–11), `EXC-0002` (consumed: `apps/api/prisma/baseline.prisma` was updated to the intended schema and `pnpm check:schema` passes).
 
 ## Rules
 
@@ -32,6 +32,20 @@ Exceptions to the rules in `AGENTS.md`, `ARCHITECTURE.md`, `SSOT_POLICY.md`,
 | Created              | 2026-10-18                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Review by            | 2026-10-25, or on implementation of `CI_GATES.md` area 1, whichever is sooner                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Status               | consumed - the Phase 3 pull request implements areas 1-7 and 9-11, so the next merge is subject to them                                                                                                                                                                                                                                                                                                                                                                                         |
+
+### EXC-0002 — Destructive Prisma schema transition for email/password administrator authentication
+
+| Field                | Value                                                                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rule                 | `CI_GATES.md` area 5 (destructive schema changes without reviewed exception) and `ARCHITECTURE.md` §6                                                                           |
+| Scope                | `apps/api/prisma/schema.prisma` (`AdminUser.githubId`, `AdminUser.login`, `AdminUser.email`, `AdminUser.passwordHash`)                                                          |
+| Requirement          | Supercession of GitHub OAuth by single-owner email/password authentication per `ADR-0009` requires replacing GitHub numeric identity fields with email and passwordHash digest. |
+| Justification        | No production data exists yet; the repository is in pre-production development. Retaining dead GitHub OAuth columns would create schema bloat and duplicate identity models.    |
+| Compensating control | Schema change is gated by `scripts/check-schema.mjs` matching `apps/api/prisma/schema-exceptions.json`. Integration tests and migrations run against isolated test databases.   |
+| Owner                | Repository owner                                                                                                                                                                |
+| Created              | 2026-10-19                                                                                                                                                                      |
+| Review by            | 2027-01-19 (90 days)                                                                                                                                                            |
+| Status               | consumed — the baseline was updated to the intended schema in the same change; `pnpm check:schema` reports that the schema matches the committed baseline.                      |
 
 This exception covers the merge of the governance baseline only. It is not precedent:
 the very next merge must satisfy the gates, and area 12's ruleset must exist before any

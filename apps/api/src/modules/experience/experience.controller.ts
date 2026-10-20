@@ -10,7 +10,6 @@ import {
   Post,
   Req,
 } from '@nestjs/common';
-import type {Prisma} from '@prisma/client';
 import {
   ExperienceCreateSchema,
   ExperienceSchema,
@@ -26,6 +25,7 @@ import {Public} from '../../auth/public.decorator.js';
 import {RequireRoles} from '../../auth/require-roles.decorator.js';
 import type {RequestWithAdmin} from '../../auth/admin-context.js';
 import {AdminRateLimit, PublicRateLimit} from '../../auth/throttling.js';
+import {auditOf} from '../../common/audit.js';
 
 /**
  * The Experience resource over HTTP.
@@ -78,7 +78,7 @@ export class ExperienceController {
   ) {
     const created = await this.experience.create(
       body,
-      auditOf(request, 'experience.create', body.slug),
+      auditOf(request, 'experience_create', 'experience', body.slug),
     );
     return ExperienceSchema.parse(created);
   }
@@ -94,7 +94,7 @@ export class ExperienceController {
     const updated = await this.experience.update(
       slug,
       body,
-      auditOf(request, 'experience.update', slug, {fields: Object.keys(body)}),
+      auditOf(request, 'experience_update', 'experience', slug, {fields: Object.keys(body)}),
     );
     return ExperienceSchema.parse(updated);
   }
@@ -105,7 +105,11 @@ export class ExperienceController {
   @HttpCode(HttpStatus.OK)
   async publish(@Param('slug') slug: string, @Req() request: RequestWithAdmin) {
     return ExperienceSchema.parse(
-      await this.experience.setPublished(slug, true, auditOf(request, 'experience.publish', slug)),
+      await this.experience.setPublished(
+        slug,
+        true,
+        auditOf(request, 'experience_publish', 'experience', slug),
+      ),
     );
   }
 
@@ -118,36 +122,8 @@ export class ExperienceController {
       await this.experience.setPublished(
         slug,
         false,
-        auditOf(request, 'experience.unpublish', slug),
+        auditOf(request, 'experience_unpublish', 'experience', slug),
       ),
     );
   }
 }
-
-/**
- * Builds the audit entry for an administrative write.
- *
- * The actor is read from the request only after `AdminSessionGuard` has resolved it
- * against the database, so a forged claim cannot name an author. Its absence here is a
- * wiring fault rather than a client error, and fails closed.
- */
-const auditOf = (
-  request: RequestWithAdmin,
-  action: string,
-  entityId: string,
-  detail?: Prisma.InputJsonObject,
-) => {
-  if (request.admin === undefined) {
-    throw new ApiError('UNAUTHENTICATED', 'The session token is not valid.');
-  }
-  return {
-    actorId: request.admin.id,
-    action,
-    entityType: 'experience',
-    entityId,
-    // Conditional spread, not `detail: detail ?? undefined`: under
-    // `exactOptionalPropertyTypes` a key present with an undefined value is a type
-    // error, and omitting it keeps the optional genuinely optional.
-    ...(detail === undefined ? {} : {detail}),
-  };
-};

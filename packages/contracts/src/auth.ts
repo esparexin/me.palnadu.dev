@@ -1,30 +1,40 @@
 import {z} from 'zod';
 import {RoleSchema, type Role} from './enums.js';
-import {NonEmptyTextSchema} from './common.js';
+import {AdminEmailSchema} from './credentials.js';
 
 /**
- * Administrator allowlist seed (SECURITY.md 4.1).
+ * Administrator identity and session claims (SECURITY.md §4).
  *
- * The immutable numeric GitHub id is the identity. A login can be renamed; an id
- * cannot be transferred. This array is only the seed: `AdminUser` in the database
- * is the authority, and a GitHub identity absent from the database cannot write
- * anything regardless of what any token claims.
+ * Identity moved from GitHub OAuth to email and password in `ADR-0009`. The GitHub
+ * numeric id is gone: `sub` is the `AdminUser` id and `email` is carried for audit
+ * and for display, never for authorization — the API re-reads the database on every
+ * protected request.
  */
-export const ADMIN_ALLOWLIST = [{githubId: 230946749, login: 'esparexin', role: 'owner'}] as const;
 
-export const AdminAllowlistEntrySchema = z.object({
-  githubId: z.number().int().positive(),
-  login: NonEmptyTextSchema.max(60),
-  role: RoleSchema,
-});
-export type AdminAllowlistEntry = z.infer<typeof AdminAllowlistEntrySchema>;
+/**
+ * The owner address, used by the provisioning command and its tests.
+ *
+ * There is no allowlist in the database sense any more. Authentication is an
+ * `AdminUser` row; this constant exists so the provisioning command and the test
+ * fixtures agree on a value without hardcoding it in several places.
+ */
+export const OWNER_EMAIL = 'owner@me.palnadu.dev';
 
-/** Decoded session claims. `role` is advisory: the API re-reads the database. */
+export const AdminRoleSchema = RoleSchema;
+
+/**
+ * Decoded session claims. `role` is advisory only: the API re-reads the database and
+ * the stored role is what decides.
+ */
 export const SessionClaimsSchema = z.object({
+  /** The `AdminUser` id. */
   sub: z.string().min(1),
-  gh_id: z.number().int().positive(),
+  /** Carried for audit and display. Not an authorization input. */
+  email: AdminEmailSchema,
   role: RoleSchema,
+  /** The `AdminSession.sessionId` this token was issued against. */
   sid: z.string().min(1),
+  /** Token version at issue; a mismatch invalidates the session. */
   tv: z.number().int().min(0),
   iss: z.string().min(1),
   aud: z.string().min(1),
@@ -33,13 +43,24 @@ export const SessionClaimsSchema = z.object({
 });
 export type SessionClaims = z.infer<typeof SessionClaimsSchema>;
 
-export const SESSION_LIFETIME_SECONDS = 15 * 60;
-export const SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
-export const SESSION_COOKIE_NAME = '__Secure-me-palnadu-admin.session';
+/**
+ * Access token lifetime.
+ *
+ * This equals the server-side session ceiling because there is no refresh route:
+ * a shorter token would simply sign the administrator out mid-session while the
+ * cookie and session row still claimed validity. `ADR-0012` records that choice.
+ */
+export const SESSION_LIFETIME_SECONDS = 8 * 60 * 60;
+export const SESSION_MAX_AGE_SECONDS = SESSION_LIFETIME_SECONDS;
 export const JWT_ALGORITHM = 'HS256' as const;
 
-/** True when the GitHub identity is seeded as an administrator. */
-export const isAllowlistedGithubId = (githubId: number): boolean =>
-  ADMIN_ALLOWLIST.some((entry) => entry.githubId === githubId);
+/**
+ * The browser cookie.
+ *
+ * `__Secure-` rather than `__Host-`: the OAuth redirect previously required
+ * `SameSite=Lax` so the cookie would survive the return trip, and `__Host-` forbids
+ * that combination.
+ */
+export const SESSION_COOKIE_NAME = '__Secure-me-palnadu-admin.session';
 
 export type {Role};

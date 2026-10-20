@@ -160,14 +160,17 @@ router-coupled behaviour. A primitive that needs the router belongs in the app.
 
 Responsive, SEO-first, read-only against the API. Routes:
 
-| Route                                | Purpose                                                                           |
-| ------------------------------------ | --------------------------------------------------------------------------------- |
-| `/`                                  | Hero with **View Resume** and **Explore Experience** CTAs, highlights             |
-| `/experience`                        | Career timeline — desktop horizontal, mobile swipe slider                         |
-| `/projects` and `/projects/[slug]`   | Project index and detail                                                          |
-| `/knowledge` and `/knowledge/[slug]` | Knowledge Hub by kind: tutorials, KT guides, troubleshooting, interview questions |
-| `/resume`                            | Structured resume rendered from resume records                                    |
-| `/contact`                           | Contact form posting to the API                                                   |
+| Route                                        | Purpose                                                                                                       |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `/`                                          | Hero with **View Resume** and **Explore Experience** CTAs, highlights                                         |
+| `/experience`                                | Career timeline — desktop horizontal, mobile swipe slider                                                     |
+| `/projects` and `/projects/[slug]`           | Project index and detail                                                                                      |
+| `/knowledge-hub` and `/knowledge-hub/[slug]` | Published Knowledge Hub articles by kind, title search, and pagination; Markdown rendered from the shared AST |
+| `/knowledge-hub/rss.xml`                     | RSS 2.0 feed of the latest published articles                                                                 |
+| `/knowledge`                                 | Permanent redirect (308) to `/knowledge-hub`                                                                  |
+| `/resume`                                    | Structured resume rendered from resume records                                                                |
+| `/contact`                                   | Contact form posting to the API                                                                               |
+| `/api/revalidate`                            | `POST` on-demand cache invalidation, authenticated by `REVALIDATE_SECRET`                                     |
 
 Requirements: metadata API on every route, `sitemap.xml`, `robots.txt`, JSON-LD for
 `Person` and `CreativeWork`, no interactive element that blocks normal page scrolling.
@@ -177,17 +180,18 @@ Only `draft`-free published content is requested; the API is the filter.
 
 Session-authenticated authoring for content, media, and settings. Routes:
 
-| Route                     | Purpose                                    |
-| ------------------------- | ------------------------------------------ |
-| `/login`                  | GitHub OAuth entry point                   |
-| `/(dashboard)`            | Overview                                   |
-| `/(dashboard)/experience` | Career timeline entries CRUD               |
-| `/(dashboard)/projects`   | Projects CRUD                              |
-| `/(dashboard)/skills`     | Skills CRUD                                |
-| `/(dashboard)/resume`     | Resume sections and document               |
-| `/(dashboard)/knowledge`  | Articles CRUD, filtered by kind and status |
-| `/(dashboard)/messages`   | Contact submissions                        |
-| `/(dashboard)/audit`      | Audit log                                  |
+| Route                  | Purpose                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| `/login`               | Administrator sign-in (email/password, ADR-0009)                                   |
+| `/dashboard`           | Overview: content counts and recent audited writes                                 |
+| `/dashboard/knowledge` | Articles, filtered by status and search; create/edit, explicit publish transitions |
+| `/dashboard/media`     | Media library: signed direct upload, registration, listing, delete                 |
+| `/dashboard/audit`     | Audit trail (owner only), filterable by action and entity                          |
+| `/dashboard/security`  | Sessions with revoke, and password change (which signs out every session)          |
+
+Screens for experience, projects, skills, resume, and the message inbox do not exist:
+the API has no route for them, and `ADR-0010` forbids placeholder screens that imply
+capability the system does not have.
 
 Rules: no public registration, no user-management screens, every form validated with
 contracts schemas before submit **and** re-validated by the API, no raw HTML input
@@ -205,9 +209,11 @@ apps/api/src/
 ├── config/            # env schema + validation
 ├── prisma/            # PrismaService
 └── modules/           # one folder per domain
-    ├── auth/          # session verification, allowlist enforcement
-    ├── experience/ projects/ skills/ resume/
-    ├── knowledge/ messages/ media/ audit/
+    ├── auth/          # credential verification, sessions, revocation
+    ├── experience/
+    ├── knowledge/
+    ├── media/         # signing and metadata only; never file bytes
+    ├── audit/ overview/ revalidation/
     └── health/
 ```
 
@@ -245,7 +251,7 @@ choice is recorded in `docs/adr/0002`.
 
 | Collection       | Purpose                                              | Key fields                                                                                                  |
 | ---------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `AdminUser`      | Allowlisted GitHub identities                        | `githubId` (unique), `login`, `role`, `tokenVersion`, `lastLoginAt`                                         |
+| `AdminUser`      | The single administrator (ADR-0009)                  | `email` (unique), `passwordHash`, `role`, `tokenVersion`, `active`, `lastLoginAt`                           |
 | `AdminSession`   | Server-side session records for revocation and audit | `sid` (unique), `userId`, `ip`, `userAgent`, `createdAt`, `lastSeenAt`, `revokedAt`                         |
 | `Experience`     | Career timeline entries                              | `org`, `title`, `startDate`, `endDate`, `current`, `highlights[]`, `tech[]`, `sortIndex`, `published`       |
 | `Project`        | Portfolio projects                                   | `slug` (unique), `title`, `summary`, `body`, `role`, `tech[]`, `links`, `status`, `featured`, `publishedAt` |
@@ -253,6 +259,7 @@ choice is recorded in `docs/adr/0002`.
 | `ResumeSection`  | Ordered resume blocks                                | `kind`, `heading`, `body`, `sortIndex`                                                                      |
 | `ResumeDocument` | Versioned resume                                     | `version`, `headline`, `fileUrl`, `isCurrent`                                                               |
 | `Article`        | Knowledge Hub content                                | `slug` (unique), `kind`, `title`, `excerpt`, `body`, `tags[]`, `status`, `publishedAt`                      |
+| `MediaAsset`     | Uploaded Cloudinary metadata                         | `publicId` (unique), `secureUrl`, `format`, `resourceType`, `bytes`, `width`, `height`, `alt`               |
 | `ContactMessage` | Public form submissions                              | `name`, `email`, `message`, `status`, `createdAt`                                                           |
 | `AuditLog`       | Every administrative write                           | `actorId`, `action`, `entityType`, `entityId`, `at`, `meta`                                                 |
 

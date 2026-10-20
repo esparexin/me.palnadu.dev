@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" width="600" height="900">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <rect x="200" y="320" width="200" height="130" rx="16" fill="none" stroke="#ffffff" stroke-width="6" opacity="0.8"/>
+  <rect x="260" y="450" width="80" height="20" rx="4" fill="#ffffff" opacity="0.8"/>
+  <line x1="230" y1="470" x2="370" y2="470" stroke="#ffffff" stroke-width="8" stroke-linecap="round" opacity="0.8"/>
+  <polygon points="300,350 330,400 270,400" fill="#38bdf8"/>
+  <text x="300" y="580" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="34" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">ZERO TOUCH (ADE / DEP)</text>
+  <text x="300" y="625" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="20" fill="#bae6fd" text-anchor="middle">Apple Business Manager</text>
+  <text x="300" y="665" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="16" fill="#ffffff" opacity="0.75" text-anchor="middle">PreStage &amp; Automated Onboarding</text>
+</svg>

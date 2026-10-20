@@ -1,0 +1,20 @@
+[
+  {
+    "file": "scripts/db/replica-set.mjs",
+    "maxLines": 381,
+    "reason": "Developer and CI MongoDB single-node replica set lifecycle management CLI. Co-locates subcommands (up, down, status), signal handlers, socket checks, and WiredTiger disk safeguards. Operational tooling exception.",
+    "allowedBy": "repository owner",
+    "category": "tooling-exception",
+    "added": "2026-10-19",
+    "reviewBy": "2027-01-19"
+  },
+  {
+    "file": "scripts/lib/schema-diff.mjs",
+    "maxLines": 298,
+    "reason": "Prisma schema AST tokenizer and diff classification engine. Co-locates field parsing, index parsing, and breaking-change taxonomy. Operational tooling exception.",
+    "allowedBy": "repository owner",
+    "category": "tooling-exception",
+    "added": "2026-10-19",
+    "reviewBy": "2027-01-19"
+  }
+]

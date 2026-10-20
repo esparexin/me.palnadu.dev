@@ -13,13 +13,25 @@ export const EnvSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
   /** Absent until the Atlas cluster is provisioned; readiness reports it honestly. */
   DATABASE_URL: z.string().min(1).optional(),
-  /** Must be byte-identical to the admin application's AUTH_SECRET (SECURITY.md 4.4). */
+  /** API-only signing key; the admin application never verifies tokens (SECURITY.md 4.4). */
   AUTH_SECRET: z.string().min(32).optional(),
   AUTH_ISSUER: z.string().min(1).default('me-palnadu-admin'),
   AUTH_AUDIENCE: z.string().min(1).default('me-palnadu-api'),
   /** Exact origins only. A wildcard is a defect and is rejected here. */
   ALLOWED_ORIGINS: z.string().default('http://localhost:3000,http://localhost:3001'),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
+  /**
+   * Public URL of the web app's `POST /api/revalidate` route. Absent means cache
+   * invalidation is skipped and the write still succeeds (ADR-0010 5).
+   */
+  WEB_REVALIDATE_URL: z.url().optional(),
+  /** Shared secret presented to the web revalidation route. Never logged. */
+  REVALIDATE_SECRET: z.string().min(16).optional(),
+  /** Media library provider (ADR-0010 4). All three are required for uploads. */
+  CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
+  CLOUDINARY_API_KEY: z.string().min(1).optional(),
+  CLOUDINARY_API_SECRET: z.string().min(1).optional(),
+  CLOUDINARY_UPLOAD_FOLDER: z.string().min(1).default('me-palnadu/media'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -42,6 +54,19 @@ export const parseEnv = (source: NodeJS.ProcessEnv): Env => {
       .map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`)
       .join('; ');
     throw new Error(`invalid environment configuration - ${detail}`);
+  }
+  const cloudinary = [
+    parsed.data.CLOUDINARY_CLOUD_NAME,
+    parsed.data.CLOUDINARY_API_KEY,
+    parsed.data.CLOUDINARY_API_SECRET,
+  ];
+  const configuredCloudinary = cloudinary.filter((value) => value !== undefined).length;
+  if (configuredCloudinary !== 0 && configuredCloudinary !== cloudinary.length) {
+    // A half-configured media library reports `configured: false` while an operator
+    // believes it is on. Refuse the boot rather than serve a misleading status.
+    throw new Error(
+      'CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET must be set together',
+    );
   }
   if (parsed.data.ALLOWED_ORIGINS.includes('*')) {
     throw new Error('ALLOWED_ORIGINS must list exact origins; a wildcard is forbidden');

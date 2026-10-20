@@ -129,3 +129,46 @@ export const clampPage = (requested: number, totalItems: number, limit: number):
   const lastPage = Math.max(1, Math.ceil(totalItems / limit));
   return Math.min(Math.max(1, Math.trunc(requested)), lastPage);
 };
+
+/**
+ * XML text escaping for the RSS feed.
+ *
+ * Written here rather than pulled from a dependency: the feed is one document with
+ * five characters that matter, and a dependency for it would be a larger surface
+ * than the function.
+ */
+export const escapeXml = (value: string): string =>
+  value
+    .replace(/&/gu, '&amp;')
+    .replace(/</gu, '&lt;')
+    .replace(/>/gu, '&gt;')
+    .replace(/"/gu, '&quot;')
+    .replace(/'/gu, '&apos;');
+
+/**
+ * True when a string is an absolute http(s) URL, for feed and JSON-LD links.
+ *
+ * Implemented using linear string checks without nested or overlapping regex quantifiers
+ * to prevent polynomial regular expression (ReDoS) vulnerability, and without DOM or
+ * Node globals to maintain package purity (ARCHITECTURE.md §4).
+ */
+export const isAbsoluteHttpUrl = (value: string): boolean => {
+  if (typeof value !== 'string' || value.length < 8) return false;
+  if (/[\s]/.test(value)) return false;
+
+  let rest: string;
+  const lower = value.toLowerCase();
+  if (lower.startsWith('https://')) {
+    rest = value.slice(8);
+  } else if (lower.startsWith('http://')) {
+    rest = value.slice(7);
+  } else {
+    return false;
+  }
+
+  const delimiterIndex = rest.search(/[/?#]/);
+  const authority = delimiterIndex === -1 ? rest : rest.slice(0, delimiterIndex);
+  return authority.length > 0;
+};
+
+export * from './markdown.js';

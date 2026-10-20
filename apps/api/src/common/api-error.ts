@@ -20,6 +20,8 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   PAYLOAD_TOO_LARGE: 413,
   RATE_LIMITED: 429,
   INTERNAL_ERROR: 500,
+  SETUP_REQUIRED: 503,
+  DEPENDENCY_UNAVAILABLE: 502,
 };
 
 export interface ApiErrorDetail {
@@ -70,6 +72,21 @@ export class ApiError extends HttpException {
 
   static internal(message = 'Internal server error'): ApiError {
     return new ApiError('INTERNAL_ERROR', message);
+  }
+
+  /**
+   * A feature is unavailable because the deployment is missing configuration.
+   *
+   * 503, not 500: the code is correct, the deployment is incomplete, and an
+   * operator can fix it without a code change (ADR-0010 §4).
+   */
+  static setupRequired(message: string): ApiError {
+    return new ApiError('SETUP_REQUIRED', message);
+  }
+
+  /** An upstream provider refused or could not be reached. */
+  static dependencyUnavailable(message: string): ApiError {
+    return new ApiError('DEPENDENCY_UNAVAILABLE', message);
   }
 }
 
