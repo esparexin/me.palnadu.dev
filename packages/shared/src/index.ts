@@ -148,13 +148,27 @@ export const escapeXml = (value: string): string =>
 /**
  * True when a string is an absolute http(s) URL, for feed and JSON-LD links.
  *
- * A regular expression rather than `new URL`: this package is imported by browser
- * and server bundles alike, and it deliberately does not depend on a DOM or Node
- * type library. The pattern requires a non-empty authority and rejects whitespace,
- * which is what matters when the value is interpolated into XML.
+ * Implemented using linear string checks without nested or overlapping regex quantifiers
+ * to prevent polynomial regular expression (ReDoS) vulnerability, and without DOM or
+ * Node globals to maintain package purity (ARCHITECTURE.md §4).
  */
-const ABSOLUTE_HTTP_URL = /^https?:\/\/[^/\s]+(?:[/?#][^\s]*)?$/iu;
+export const isAbsoluteHttpUrl = (value: string): boolean => {
+  if (typeof value !== 'string' || value.length < 8) return false;
+  if (/[\s]/.test(value)) return false;
 
-export const isAbsoluteHttpUrl = (value: string): boolean => ABSOLUTE_HTTP_URL.test(value);
+  let rest: string;
+  const lower = value.toLowerCase();
+  if (lower.startsWith('https://')) {
+    rest = value.slice(8);
+  } else if (lower.startsWith('http://')) {
+    rest = value.slice(7);
+  } else {
+    return false;
+  }
+
+  const delimiterIndex = rest.search(/[/?#]/);
+  const authority = delimiterIndex === -1 ? rest : rest.slice(0, delimiterIndex);
+  return authority.length > 0;
+};
 
 export * from './markdown.js';

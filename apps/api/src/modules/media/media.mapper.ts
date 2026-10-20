@@ -81,7 +81,7 @@ export const isDeploymentAsset = ({
 };
 
 /**
- * Cloudinary's documented signing recipe: SHA-1 over alphabetically sorted
+ * Cloudinary's documented signing recipe: SHA-256 over alphabetically sorted
  * `key=value` pairs joined with `&`, followed by the API secret.
  */
 export const signParams = (params: Record<string, string>, apiSecret: string): string => {
@@ -89,7 +89,7 @@ export const signParams = (params: Record<string, string>, apiSecret: string): s
     .sort()
     .map((key) => `${key}=${params[key]}`)
     .join('&');
-  return createHash('sha1').update(`${payload}${apiSecret}`).digest('hex');
+  return createHash('sha256').update(`${payload}${apiSecret}`).digest('hex');
 };
 
 export const destroyCloudinaryAsset = async (params: {
@@ -109,6 +109,7 @@ export const destroyCloudinaryAsset = async (params: {
     timestamp: String(timestamp),
     api_key: params.apiKey,
     signature,
+    signature_algorithm: 'sha256',
   });
 
   let response: Response;

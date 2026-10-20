@@ -32,7 +32,7 @@ export const generateMetadata = async ({params}: PageProps): Promise<Metadata> =
 
 export default async function ArticlePage({params}: PageProps) {
   const {slug} = await params;
-  const article = await findPublishedArticle(slug);
+  const article = await findPublishedArticle(slug).catch(() => null);
   if (article === null) notFound();
 
   return (

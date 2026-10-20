@@ -84,6 +84,7 @@ export const MediaUploader = ({status}: {status: MediaStatus}) => {
       body.set('api_key', signed.data.apiKey);
       body.set('timestamp', String(signed.data.timestamp));
       body.set('signature', signed.data.signature);
+      body.set('signature_algorithm', 'sha256');
       body.set('folder', signed.data.folder);
       body.set('allowed_formats', signed.data.allowedFormats.join(','));
 

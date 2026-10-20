@@ -185,7 +185,7 @@ export const PortfolioHero = ({
         </div>
 
         <p className="max-w-measure text-balance text-lead text-surface-muted sm:text-h3">
-          <BlurText text={tagline} delay={35} animateBy="words" direction="bottom" />
+          {tagline}
         </p>
 
         {/* Required Hero CTAs (UI_UX_STANDARDS 7.1) */}

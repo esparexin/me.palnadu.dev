@@ -88,7 +88,7 @@ Cloudinary is the storage provider. The API never proxies file bytes:
 3. The admin server action registers the resulting asset with
    `POST /api/admin/media`, which stores a `MediaAsset` row.
 
-Signing uses `node:crypto` SHA1 over the Cloudinary parameter string. No SDK is
+Signing uses `node:crypto` SHA-256 over the Cloudinary parameter string. No SDK is
 added. `CLOUDINARY_API_SECRET` exists only in the API process and is never
 returned by a route. When the three Cloudinary keys are absent, the media routes
 return a `SETUP_REQUIRED` state instead of failing obscurely; the admin UI shows

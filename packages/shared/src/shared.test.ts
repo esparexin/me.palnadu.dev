@@ -209,7 +209,11 @@ describe('xml escaping', () => {
 
   it('recognises only absolute http(s) URLs', () => {
     expect(isAbsoluteHttpUrl('https://me.palnadu.dev/knowledge-hub')).toBe(true);
+    expect(isAbsoluteHttpUrl('http://example.com:8080/path?query=1#frag')).toBe(true);
     expect(isAbsoluteHttpUrl('/knowledge-hub')).toBe(false);
     expect(isAbsoluteHttpUrl('javascript:alert(1)')).toBe(false);
+    expect(isAbsoluteHttpUrl('https://')).toBe(false);
+    expect(isAbsoluteHttpUrl('http:// has space')).toBe(false);
+    expect(isAbsoluteHttpUrl(`http://!#${'!#'.repeat(100)}`)).toBe(true);
   });
 });

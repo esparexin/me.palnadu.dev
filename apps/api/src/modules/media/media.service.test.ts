@@ -78,8 +78,10 @@ describe('media registration ownership', () => {
  */
 describe('Cloudinary request signing', () => {
   it('hashes sorted key=value pairs with the secret appended', () => {
-    // Independently computed: sha1("a=1&b=2secret")
-    expect(signParams({b: '2', a: '1'}, 'secret')).toBe('69021e767b8b2f38af0bcc5fcefee075eb2ec60d');
+    // Independently computed: sha256("a=1&b=2secret")
+    expect(signParams({b: '2', a: '1'}, 'secret')).toBe(
+      '3dd3741768ea30b971cdf2169b9cb74954d0c7c326305649fef2a65f525ad15a',
+    );
   });
 
   it('is independent of insertion order', () => {

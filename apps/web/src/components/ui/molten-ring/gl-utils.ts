@@ -45,7 +45,6 @@ export function createColorReader() {
   const ctx = probe.getContext('2d', {willReadFrequently: true});
   return (css: string): [number, number, number] => {
     if (!ctx) return [0, 0, 0];
-    ctx.fillStyle = '#000';
     ctx.fillStyle = css;
     ctx.fillRect(0, 0, 1, 1);
     const [r = 0, g = 0, b = 0] = ctx.getImageData(0, 0, 1, 1).data;

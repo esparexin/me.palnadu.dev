@@ -13,7 +13,6 @@
  * - Passing --strict audits every file against the 250-line limit ignoring allowlists.
  */
 import {readdir, readFile, writeFile} from 'node:fs/promises';
-import {existsSync, readFileSync} from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
@@ -45,10 +44,16 @@ async function findSourceFiles(relativeDir) {
   const results = [];
   const absoluteDir = path.join(ROOT, relativeDir);
 
-  if (!existsSync(absoluteDir)) return results;
-
   async function walk(currentAbs, currentRel) {
-    const entries = await readdir(currentAbs, {withFileTypes: true});
+    let entries;
+    try {
+      entries = await readdir(currentAbs, {withFileTypes: true});
+    } catch (err) {
+      if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') {
+        return;
+      }
+      throw err;
+    }
     for (const entry of entries) {
       if (entry.name.startsWith('.') && entry.name !== '.github') continue;
       if (SKIP_DIRECTORIES.has(entry.name)) continue;
@@ -71,11 +76,14 @@ async function findSourceFiles(relativeDir) {
 async function main() {
   const allowlistPath = path.join(ROOT, ALLOWLIST_FILE);
   let allowlist = [];
-  if (existsSync(allowlistPath)) {
-    try {
-      allowlist = JSON.parse(readFileSync(allowlistPath, 'utf8'));
-    } catch (err) {
-      console.error(`check-line-limits: failed to parse ${ALLOWLIST_FILE}: ${err.message}`);
+  try {
+    const raw = await readFile(allowlistPath, 'utf8');
+    allowlist = JSON.parse(raw);
+  } catch (err) {
+    if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') {
+      allowlist = [];
+    } else {
+      console.error(`check-line-limits: failed to parse ${ALLOWLIST_FILE}: ${err?.message ?? err}`);
       process.exit(1);
     }
   }
@@ -152,9 +160,9 @@ async function main() {
   // Also check root configuration files (e.g. eslint.config.mjs)
   const rootFiles = ['eslint.config.mjs'];
   for (const file of rootFiles) {
-    if (existsSync(path.join(ROOT, file))) {
-      totalFilesScanned++;
+    try {
       const content = await readFile(path.join(ROOT, file), 'utf8');
+      totalFilesScanned++;
       const lineCount = content.split('\n').length;
       if (lineCount > MAX_LINES) {
         violatingFiles.push({file, lines: lineCount, excess: lineCount - MAX_LINES});
@@ -162,6 +170,11 @@ async function main() {
           failures.push(`${file}: ${lineCount} lines exceeds ${MAX_LINES}-line limit`);
         }
       }
+    } catch (err) {
+      if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') {
+        continue;
+      }
+      throw err;
     }
   }
 
