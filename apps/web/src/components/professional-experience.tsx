@@ -30,12 +30,12 @@ export const CAREER_MOLTEN_ITEMS: MoltenRingItem[] = [
   },
   {
     image: '/competencies/jamf-mdm.svg',
-    title: 'Enterprise MDM Architecture',
+    title: 'Apple Device Management',
     meta: 'Zero Touch ADE/DEP · PreStage Enrollments · CIS Benchmark',
   },
   {
     image: '/competencies/endpoint-security.svg',
-    title: 'Cybersecurity & ISO 27001',
+    title: 'Endpoint Security Operations',
     meta: 'CIS Hardening · FileVault · VAPT · Compliance Auditing',
   },
 ];
@@ -53,6 +53,7 @@ export function ProfessionalExperience({
   headingLevel?: 'h1' | 'h2';
 } = {}) {
   const [openDetail, setOpenDetail] = useState<ExperienceItem | null>(null);
+  const [openerElement, setOpenerElement] = useState<HTMLElement | null>(null);
   const initialDetail: ExperienceDetail = EXPERIENCE_ITEMS[0]?.detail ?? {
     company: '',
     role: '',
@@ -63,8 +64,9 @@ export function ProfessionalExperience({
   };
   const [openDetailContent, setOpenDetailContent] = useState<ExperienceDetail>(initialDetail);
 
-  const handleOpen = (item: ExperienceItem) => {
+  const handleOpen = (item: ExperienceItem, trigger: HTMLElement) => {
     setOpenDetailContent(item.detail);
+    setOpenerElement(trigger);
     setOpenDetail(item);
   };
 
@@ -101,14 +103,21 @@ export function ProfessionalExperience({
           aria-label="Professional experience entries"
         >
           {EXPERIENCE_ITEMS.map((item) => (
-            <ExperienceEntry key={item.id} item={item} onOpen={() => handleOpen(item)} />
+            <ExperienceEntry
+              key={item.id}
+              item={item}
+              isOpen={openDetail?.id === item.id}
+              onOpen={(trigger) => handleOpen(item, trigger)}
+            />
           ))}
         </div>
 
         <ExperienceDetailDialog
+          id={openDetail ? `${openDetail.id}-detail` : undefined}
           open={openDetail !== null}
           onClose={() => setOpenDetail(null)}
           detail={openDetailContent}
+          opener={openerElement}
         />
       </Container>
     </section>
@@ -117,17 +126,22 @@ export function ProfessionalExperience({
 
 interface ExperienceEntryProps {
   item: ExperienceItem;
-  onOpen: () => void;
+  isOpen: boolean;
+  onOpen: (trigger: HTMLElement) => void;
 }
 
-function ExperienceEntry({item, onOpen}: ExperienceEntryProps) {
+function ExperienceEntry({item, isOpen, onOpen}: ExperienceEntryProps) {
   return (
     <article className="py-8 first:pt-0" role="listitem">
       <button
         type="button"
-        onClick={onOpen}
+        onClick={(e) => {
+          e.currentTarget.focus();
+          onOpen(e.currentTarget);
+        }}
         className="group w-full flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-2 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus rounded-lg"
-        aria-expanded="false"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen ? 'true' : 'false'}
         aria-controls={`${item.id}-detail`}
       >
         <div className="flex items-start lg:items-center gap-4 min-w-0 flex-1">

@@ -35,6 +35,7 @@ const read = async <Value>(
   try {
     response = await fetch(`${API_URL}${path}`, {
       headers: {accept: 'application/json'},
+      signal: AbortSignal.timeout(3000),
       next: {revalidate: CACHE_SECONDS, tags: options.tags},
     });
   } catch {
@@ -71,6 +72,7 @@ export const findPublishedArticle = async (slug: string): Promise<PublicArticle 
   try {
     response = await fetch(`${API_URL}/api/knowledge/${encodeURIComponent(slug)}`, {
       headers: {accept: 'application/json'},
+      signal: AbortSignal.timeout(3000),
       next: {revalidate: CACHE_SECONDS, tags: ['articles']},
     });
   } catch {

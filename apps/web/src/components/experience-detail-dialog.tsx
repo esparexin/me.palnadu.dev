@@ -23,9 +23,17 @@ interface ExperienceDetailDialogProps {
   open: boolean;
   onClose: () => void;
   detail: ExperienceDetail;
+  id?: string | undefined;
+  opener?: HTMLElement | null | undefined;
 }
 
-export function ExperienceDetailDialog({open, onClose, detail}: ExperienceDetailDialogProps) {
+export function ExperienceDetailDialog({
+  open,
+  onClose,
+  detail,
+  id,
+  opener,
+}: ExperienceDetailDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -35,6 +43,7 @@ export function ExperienceDetailDialog({open, onClose, detail}: ExperienceDetail
 
   useEffect(() => {
     onCloseRef.current = onClose;
+    if (opener) openerRef.current = opener;
   });
 
   useEffect(() => {
@@ -42,9 +51,11 @@ export function ExperienceDetailDialog({open, onClose, detail}: ExperienceDetail
     const panel = panelRef.current;
     if (!panel) return;
 
-    // Store opener for focus restoration
-    openerRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (opener) {
+      openerRef.current = opener;
+    } else if (!openerRef.current && document.activeElement instanceof HTMLElement) {
+      openerRef.current = document.activeElement;
+    }
 
     // Lock body scroll on mobile
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -129,6 +140,7 @@ export function ExperienceDetailDialog({open, onClose, detail}: ExperienceDetail
         onClick={(e) => e.stopPropagation()}
       />
       <div
+        id={id}
         ref={panelRef}
         tabIndex={-1}
         className={cn(
@@ -185,6 +197,7 @@ export function ExperienceDetailDialog({open, onClose, detail}: ExperienceDetail
             className="mt-6 max-h-[60vh] overflow-y-auto pr-2"
             role="region"
             aria-label="Experience details"
+            tabIndex={0}
           >
             {detail.sections.map((section, sectionIndex) => (
               <div key={sectionIndex} className="space-y-4">
