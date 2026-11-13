@@ -44,8 +44,11 @@ export function createRingAnimator(ctx: RingAnimatorContext) {
 
   let width = 0;
   let height = 0;
-  let progress = 0;
-  let goal = 0;
+  // The ring starts with the newest entry at the front: the front card is
+  // (progress + FRONT), so the rotation starts at -FRONT (UI_UX_STANDARDS 7.3:
+  // "the newest entry is the initial view").
+  let progress = -FRONT;
+  let goal = -FRONT;
   let lastInput = 0;
   let snapped = true;
   let hovered = -1;
