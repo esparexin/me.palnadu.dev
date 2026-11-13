@@ -33,11 +33,16 @@ export function MoltenRingCarousel({
 
   const item = items[active];
 
+  // The visible wordmark is optional; the accessible name is not. A caller
+  // that drops the wordmark supplies its own name, because the fallback would
+  // name the wrong thing.
+  const accessibleName = props['aria-label'] ?? brand ?? 'Core Competencies';
+
   if (!supported) {
     return (
       <section
         aria-roledescription="carousel"
-        aria-label={brand ?? 'Core Competencies'}
+        aria-label={accessibleName}
         className={cn(
           'relative h-full min-h-[24rem] w-full bg-surface text-text-primary',
           className,
@@ -92,7 +97,7 @@ export function MoltenRingCarousel({
   return (
     <section
       aria-roledescription="carousel"
-      aria-label={brand ?? 'Core Competencies'}
+      aria-label={accessibleName}
       className={cn(
         'relative flex h-full min-h-[26rem] w-full flex-col select-none overflow-hidden bg-surface text-text-primary',
         className,

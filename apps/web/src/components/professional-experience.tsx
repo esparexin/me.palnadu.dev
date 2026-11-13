@@ -91,7 +91,7 @@ export function ProfessionalExperience({
         <div className="h-[28rem] sm:h-[32rem] w-full overflow-hidden rounded-2xl border border-border-subtle bg-surface-inverse shadow-md">
           <MoltenRingCarousel
             items={CAREER_MOLTEN_ITEMS}
-            brand="Career Journey"
+            aria-label="Career history"
             arc={1.05}
             cardSize={0.22}
             cardRatio={0.67}
