@@ -25,6 +25,27 @@ const viewports = [
 
 const routes = ['/', '/experience', '/projects', '/knowledge-hub', '/resume', '/contact'];
 
+/**
+ * The article routes the Knowledge Hub links to.
+ *
+ * They are discovered rather than listed, so the suite follows whatever the
+ * hub actually advertises: published articles where there are any, and the
+ * scaffold cards where there are not.
+ */
+const articleRoutes = async (page: Page): Promise<string[]> => {
+  await page.goto('/knowledge-hub', {waitUntil: 'domcontentloaded'});
+  const hrefs = await page.evaluate(() =>
+    Array.from(
+      new Set(
+        Array.from(document.querySelectorAll('a[href^="/knowledge-hub/"]')).map((anchor) =>
+          anchor.getAttribute('href'),
+        ),
+      ),
+    ).filter((href): href is string => href !== null),
+  );
+  return hrefs;
+};
+
 interface CoveredText {
   text: string;
   area: number;
@@ -99,8 +120,10 @@ for (const viewport of viewports) {
   test(`no text is covered by the floating trigger at ${viewport.width}x${viewport.height}`, async ({
     page,
   }) => {
-    for (const route of routes) {
-      await page.setViewportSize(viewport);
+    await page.setViewportSize(viewport);
+    const articles = await articleRoutes(page);
+
+    for (const route of [...routes, ...articles]) {
       await page.goto(route, {waitUntil: 'domcontentloaded'});
       await page.waitForLoadState('load');
 
