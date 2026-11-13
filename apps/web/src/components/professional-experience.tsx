@@ -4,7 +4,8 @@ import {useState} from 'react';
 import Image from 'next/image';
 import {EXPERIENCE_ITEMS, type ExperienceItem} from '@/lib/experience';
 import {ExperienceDetailDialog, type ExperienceDetail} from './experience-detail-dialog';
-import {Container, SectionHeading} from '@me-palnadu/ui';
+import {Container, SectionHeading, cn} from '@me-palnadu/ui';
+import {TRIGGER_CLEARANCE} from '../lib/floating-trigger';
 import {MoltenRingCarousel, type MoltenRingItem} from './ui/molten-ring-carousel';
 
 export const CAREER_MOLTEN_ITEMS: MoltenRingItem[] = [
@@ -82,6 +83,7 @@ export function ProfessionalExperience({
           eyebrow="Professional Experience"
           title="Career History"
           as={headingLevel}
+          className={TRIGGER_CLEARANCE}
           description="Four roles across Apple fleet administration, endpoint security, vulnerability assessment, and infrastructure operations — spanning eight years in Hyderabad and Vijayawada."
         />
 
@@ -98,7 +100,7 @@ export function ProfessionalExperience({
         </div>
 
         <div
-          className="divide-y divide-border-subtle"
+          className={cn('divide-y divide-border-subtle', TRIGGER_CLEARANCE)}
           role="list"
           aria-label="Professional experience entries"
         >
@@ -191,7 +193,7 @@ function ExperienceEntry({item, isOpen, onOpen}: ExperienceEntryProps) {
           </div>
         </div>
         <div
-          className="flex-shrink-0 flex items-center gap-2 text-accent font-medium text-body-sm opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-fast lg:opacity-100"
+          className="flex-shrink-0 flex items-center gap-2 text-accent font-medium text-body-sm"
           aria-hidden="true"
         >
           <span>View Experience</span>
