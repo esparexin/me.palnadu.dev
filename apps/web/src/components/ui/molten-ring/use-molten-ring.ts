@@ -56,11 +56,19 @@ export function useMoltenRing(items: MoltenRingItem[], config: MoltenRingConfig)
 
     const readColor = createColorReader();
     const program = buildProgram(gl, QUAD_VERT, RING_FRAG);
-    if (!program) return;
+    if (!program) {
+      // A driver that cannot build the program cannot render the ring, so the
+      // accessible list is used instead of a blank canvas with dead controls.
+      setSupported(false);
+      return;
+    }
     const u = createUniformGetter(gl, program);
 
     const quadRes = createQuadBuffer(gl);
-    if (!quadRes) return;
+    if (!quadRes) {
+      setSupported(false);
+      return;
+    }
     const {quad, buffer} = quadRes;
 
     const COLS = Math.min(4, count);
