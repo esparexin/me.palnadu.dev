@@ -39,7 +39,7 @@ export function ExperienceEntry({item, isOpen, onOpen}: ExperienceEntryProps) {
         aria-expanded={isOpen ? 'true' : 'false'}
         aria-controls={`${item.id}-detail`}
       >
-        <div className="flex min-w-0 flex-1 items-start gap-4 lg:items-center">
+        <div className="flex w-full min-w-0 flex-1 items-start gap-4 lg:items-center">
           <div
             className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border-subtle bg-surface-subtle lg:h-16 lg:w-16"
             aria-hidden="true"
@@ -71,7 +71,7 @@ export function ExperienceEntry({item, isOpen, onOpen}: ExperienceEntryProps) {
             </div>
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-h3 font-semibold text-text-primary">{item.company}</h3>
+            <h3 className="text-h3 font-semibold text-text-primary">{item.company}</h3>
             <p className="mt-1 flex flex-wrap gap-3 text-body-sm text-text-secondary">
               <span>{item.period}</span>
               <span aria-hidden="true">·</span>
