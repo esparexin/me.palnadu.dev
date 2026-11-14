@@ -1,33 +1,44 @@
+import {redirect} from 'next/navigation';
 import {Container} from '@me-palnadu/ui';
-import {PhaseNotice} from '../../components/phase-notice';
+import {LoginForm} from '../../components/login-form';
+import {getAuthenticatedAdmin, sanitizeRedirectPath} from '../../lib/session';
 
 export const metadata = {title: 'Sign in'};
 
-/**
- * Sign-in entry point.
- *
- * GitHub OAuth is implemented in Phase 6 together with the allowlist and the
- * server-to-server session flow in SECURITY.md section 4.4. No credential form,
- * no local password, and no placeholder "sign in" button that would suggest
- * authentication works before it exists.
- */
-export default function LoginPage() {
+interface LoginPageProps {
+  searchParams: Promise<{
+    redirectTo?: string | string[];
+    from?: string | string[];
+  }>;
+}
+
+export default async function LoginPage({searchParams}: LoginPageProps) {
+  const admin = await getAuthenticatedAdmin();
+  const params = await searchParams;
+  const rawTarget =
+    typeof params.redirectTo === 'string'
+      ? params.redirectTo
+      : typeof params.from === 'string'
+        ? params.from
+        : undefined;
+
+  const redirectTo = sanitizeRedirectPath(rawTarget);
+
+  if (admin !== null) {
+    redirect(redirectTo);
+  }
+
   return (
-    <main id="main-content" className="flex min-h-screen items-center justify-center px-5 py-24">
-      <Container measure className="!max-w-measure !px-0">
-        <div className="rounded-lg border border-border-subtle bg-surface p-8">
-          <h1 className="text-h2 font-semibold">Administrator sign-in</h1>
-          <p className="mt-3 text-body text-text-secondary">
-            Access is restricted to explicitly allowlisted GitHub accounts.
-          </p>
-          <PhaseNotice
-            phase="Phase 6"
-            contents={[
-              'Auth.js with the GitHub OAuth provider',
-              'Allowlist keyed on the immutable numeric GitHub id',
-              'Server-side session validation on every API operation',
-            ]}
-          />
+    <main id="main-content" className="flex min-h-screen items-center justify-center py-24">
+      <Container measure>
+        <div className="rounded-lg border border-border-subtle bg-surface p-8 shadow-sm">
+          <div className="mb-6">
+            <h1 className="text-h2 font-semibold text-text-primary">Administrator sign-in</h1>
+            <p className="mt-2 text-body-sm text-text-secondary">
+              Single-owner administration dashboard. Enter your credentials to continue.
+            </p>
+          </div>
+          <LoginForm redirectTo={redirectTo} />
         </div>
       </Container>
     </main>

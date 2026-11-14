@@ -50,6 +50,46 @@ export const Button = ({
   </button>
 );
 
+/**
+ * An icon-only control.
+ *
+ * The accessible name is a required prop rather than an optional `aria-label`:
+ * an icon button with no name is unusable with a screen reader and with voice
+ * control, so the primitive makes the omission impossible (UI_UX_STANDARDS 6).
+ */
+export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  /** The accessible name. Rendered as `aria-label` on the button. */
+  label: string;
+  children: ReactNode;
+}
+
+const ICON_SIZE_CLASS: Record<ButtonSize, string> = {
+  sm: 'size-8',
+  md: 'size-10',
+  lg: 'size-12',
+};
+
+export const IconButton = ({
+  variant = 'secondary',
+  size = 'md',
+  label,
+  className,
+  type = 'button',
+  children,
+  ...rest
+}: IconButtonProps) => (
+  <button
+    type={type}
+    aria-label={label}
+    className={cn(BASE_CLASS, VARIANT_CLASS[variant], ICON_SIZE_CLASS[size], className)}
+    {...rest}
+  >
+    {children}
+  </button>
+);
+
 export interface ButtonLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;

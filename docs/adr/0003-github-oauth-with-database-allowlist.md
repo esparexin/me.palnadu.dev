@@ -1,6 +1,6 @@
 # ADR-0003 — GitHub OAuth with a database-backed allowlist
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0009
 - **Date:** 2026-10-18
 - **Decision owner:** Repository owner
 

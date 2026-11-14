@@ -152,10 +152,26 @@ Files export the primary symbol by name. `export default` is allowed only for Ne
 | Trailing comma  | All (ES5-safe multi-line)               |
 | Bracket spacing | No (`{ foo }`)                          |
 | Line ending     | LF, final newline required              |
+| File length cap | 250 lines max per file (all source)     |
 
 The committed `.prettierrc` and ESLint flat config land with the toolchain PR; the
 values above are the contract they must encode. Editor-level enforcement comes from
 `.editorconfig`, which is already committed.
+
+### 6.1 Source file line limit (250-line rule)
+
+Every TypeScript, JavaScript, and MJS source file in `apps/`, `packages/`, `scripts/`,
+and `tests/` is subject to a strict 250-line maximum.
+
+- **Why:** Keeps components, services, and tests focused on a single responsibility, prevents
+  monolithic drift, and ensures pull requests remain small and reviewable.
+- **Enforcement:** Mechanically enforced by ESLint (`max-lines: ['error', 250]`) and the
+  governance line-limit check (`scripts/check-line-limits.mjs`, CI Area 1 and Area 5).
+- **Exceptions:** Pre-existing legacy debt is cataloged in `scripts/line-limit-allowlist.json`
+  with a strict ratchet ceiling (`maxLines`) and expiration date (`reviewBy`). Any file that
+  grows beyond its ratcheted ceiling or expires fails immediately. Once a refactored file drops
+  to 250 lines or below, its allowlist entry must be removed. New exceptions require an approved
+  ADR.
 
 ## 7. Forbidden patterns
 

@@ -12,14 +12,14 @@ const siteUrl = process.env['NEXT_PUBLIC_SITE_URL'] ?? 'http://localhost:3000';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'me.palnadu.dev',
-    template: '%s | me.palnadu.dev',
+    default: 'Kalyan V Medaboina',
+    template: '%s | Kalyan V Medaboina',
   },
   description:
     'Portfolio, career timeline, projects, resume, and a technical Knowledge Hub on endpoint management, MDM, and security.',
   openGraph: {
     type: 'website',
-    siteName: 'me.palnadu.dev',
+    siteName: 'Kalyan V Medaboina',
     url: siteUrl,
   },
   robots: {index: true, follow: true},

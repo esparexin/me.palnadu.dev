@@ -1,6 +1,7 @@
 import {Module} from '@nestjs/common';
 import {PrismaModule} from '../../prisma/prisma.module.js';
 import {AdminService} from './admin.service.js';
+import {AdminAuthController} from './admin-auth.controller.js';
 
 /**
  * Administration identity for the API.
@@ -10,6 +11,7 @@ import {AdminService} from './admin.service.js';
  */
 @Module({
   imports: [PrismaModule],
+  controllers: [AdminAuthController],
   providers: [AdminService],
   exports: [AdminService],
 })

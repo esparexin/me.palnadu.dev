@@ -22,6 +22,7 @@ import type {RequestWithAdmin} from './admin-context.js';
 
 export const PUBLIC_THROTTLER = 'public';
 export const ADMIN_THROTTLER = 'admin';
+export const LOGIN_THROTTLER = 'login';
 
 /**
  * A 60-second window in milliseconds, with the per-window limits beside it, so §5 and
@@ -32,6 +33,14 @@ export const ADMIN_THROTTLER = 'admin';
 export const RATE_LIMIT_WINDOW_MS = 60_000;
 export const PUBLIC_LIMIT_PER_WINDOW = 120;
 export const ADMIN_LIMIT_PER_WINDOW = 300;
+
+/**
+ * Sign-in is the one place a wrong guess is free, so it is the strictest limit
+ * (ADR-0009). Tracked by address because no administrator has been identified yet -
+ * that is the only identifier available before credentials are checked.
+ */
+export const LOGIN_WINDOW_MS = 15 * 60_000;
+export const LOGIN_LIMIT_PER_WINDOW = 10;
 
 /**
  * Keys an administrative request on the administrator the guard resolved.
@@ -53,6 +62,12 @@ export const publicThrottlerOptions: ThrottlerOptions = {
   limit: PUBLIC_LIMIT_PER_WINDOW,
 };
 
+export const loginThrottlerOptions: ThrottlerOptions = {
+  name: LOGIN_THROTTLER,
+  ttl: LOGIN_WINDOW_MS,
+  limit: LOGIN_LIMIT_PER_WINDOW,
+};
+
 export const adminThrottlerOptions: ThrottlerOptions = {
   name: ADMIN_THROTTLER,
   ttl: RATE_LIMIT_WINDOW_MS,
@@ -68,9 +83,22 @@ export const adminThrottlerOptions: ThrottlerOptions = {
  * would otherwise also be charged to the administrative budget - keyed by address,
  * because no administrator has been resolved yet.
  */
+/**
+ * Applies the strict sign-in limit to a route.
+ *
+ * Skips the other two throttlers: a sign-in attempt is neither a public read nor an
+ * authenticated administrative write, and charging it to the `admin` budget would let
+ * an anonymous caller exhaust the administrator's allowance.
+ */
+export const LoginRateLimit = (): MethodDecorator & ClassDecorator =>
+  applyDecorators(
+    SkipThrottle({[ADMIN_THROTTLER]: true, [PUBLIC_THROTTLER]: true}),
+    Throttle({[LOGIN_THROTTLER]: {limit: LOGIN_LIMIT_PER_WINDOW, ttl: LOGIN_WINDOW_MS}}),
+  );
+
 export const PublicRateLimit = (): MethodDecorator & ClassDecorator =>
   applyDecorators(
-    SkipThrottle({[ADMIN_THROTTLER]: true}),
+    SkipThrottle({[ADMIN_THROTTLER]: true, [LOGIN_THROTTLER]: true}),
     Throttle({[PUBLIC_THROTTLER]: {limit: PUBLIC_LIMIT_PER_WINDOW, ttl: RATE_LIMIT_WINDOW_MS}}),
   );
 
@@ -86,7 +114,7 @@ export const AdminRateLimit = (): MethodDecorator & ClassDecorator =>
     // Without this the public throttler also applies and administrative writes are cut
     // off at 120/min. That was the first behaviour observed: the 300-request test was
     // refused at request 121.
-    SkipThrottle({[PUBLIC_THROTTLER]: true}),
+    SkipThrottle({[PUBLIC_THROTTLER]: true, [LOGIN_THROTTLER]: true}),
     Throttle({[ADMIN_THROTTLER]: {limit: ADMIN_LIMIT_PER_WINDOW, ttl: RATE_LIMIT_WINDOW_MS}}),
   );
 

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" width="600" height="900">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <rect x="220" y="320" width="70" height="70" rx="12" fill="#3b82f6" opacity="0.8"/>
+  <rect x="310" y="320" width="70" height="70" rx="12" fill="#60a5fa" opacity="0.8"/>
+  <rect x="220" y="410" width="70" height="70" rx="12" fill="#2563eb" opacity="0.8"/>
+  <rect x="310" y="410" width="70" height="70" rx="12" fill="#1d4ed8" opacity="0.8"/>
+  <text x="300" y="580" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="34" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">MICROSOFT INTUNE</text>
+  <text x="300" y="625" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="20" fill="#93c5fd" text-anchor="middle">Entra ID &amp; Conditional Access</text>
+  <text x="300" y="665" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="16" fill="#ffffff" opacity="0.75" text-anchor="middle">MFA &amp; Endpoint Compliance</text>
+</svg>

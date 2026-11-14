@@ -1,6 +1,13 @@
 @import 'tailwindcss';
 @import '@me-palnadu/design-tokens/theme.css';
 
+/* Tailwind scans the application source only. Without this, the utilities used
+   exclusively inside `packages/ui` primitives (px-3, min-h-10, rounded-md, ...)
+   are purged from the production stylesheet, so every shared control renders
+   unstyled in a build while looking correct in tests (UI primitives are the only
+   implementation, UI_UX_STANDARDS section 4). */
+@source '../../../../packages/ui/src';
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;

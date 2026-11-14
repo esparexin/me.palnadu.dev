@@ -13,6 +13,7 @@ export const COLOR_TOKENS = {
   surface: '#ffffff',
   'surface-subtle': '#f5f5f7',
   'surface-muted': '#e8e8ed',
+  'surface-inverse': '#1d1d1f',
   'text-primary': '#1d1d1f',
   'text-secondary': '#424245',
   'text-tertiary': '#6e6e73',
@@ -20,6 +21,7 @@ export const COLOR_TOKENS = {
   accent: '#0071e3',
   'accent-hover': '#0077ed',
   'accent-subtle': '#e8f2fe',
+  highlight: '#c9f24e',
   'accent-text': '#005cb4',
   'border-default': '#d2d2d7',
   'border-subtle': '#e8e8ed',
@@ -47,6 +49,7 @@ export const TYPOGRAPHY_TOKENS = {
   h2: {size: '1.75rem', lineHeight: '2.125rem', letterSpacing: '-0.015em'},
   h1: {size: '2.5rem', lineHeight: '2.875rem', letterSpacing: '-0.02em'},
   display: {size: '3.5rem', lineHeight: '3.75rem', letterSpacing: '-0.02em'},
+  hero: {size: '12rem', lineHeight: '0.95', letterSpacing: '-0.05em'},
 } as const;
 
 export type TypographyToken = keyof typeof TYPOGRAPHY_TOKENS;

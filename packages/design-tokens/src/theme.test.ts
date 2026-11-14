@@ -54,7 +54,7 @@ describe('token parity between theme.css and the runtime mirror', () => {
   });
 
   it('uses fluid clamps for the large type steps', () => {
-    for (const token of ['display', 'h1', 'h2', 'lead']) {
+    for (const token of ['hero', 'display', 'h1', 'h2', 'lead']) {
       const declaration = new RegExp(`--text-${token}:\\s*([^;]+);`).exec(css);
       expect(declaration?.[1]?.trim().startsWith('clamp('), `${token} must use clamp()`).toBe(true);
     }
@@ -109,6 +109,7 @@ describe('token invariants', () => {
       'surface',
       'surface-subtle',
       'surface-muted',
+      'surface-inverse',
       'text-primary',
       'text-secondary',
       'text-tertiary',
@@ -124,6 +125,7 @@ describe('token invariants', () => {
       'danger',
       'info',
       'accent-text',
+      'highlight',
     ]);
     for (const token of Object.keys(COLOR_TOKENS)) {
       expect(allowedColors.has(token)).toBe(true);

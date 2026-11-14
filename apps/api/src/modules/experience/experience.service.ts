@@ -1,11 +1,19 @@
 import {Inject, Injectable} from '@nestjs/common';
 import type {Prisma} from '@prisma/client';
 import {AdminService, type AuditEntry} from '../auth/admin.service.js';
-import {ExperienceKindSchema} from '@me-palnadu/contracts';
-import type {Experience, ExperienceCreateInput, ExperienceUpdateInput} from '@me-palnadu/contracts';
+import type {Experience} from '@me-palnadu/contracts';
 import {PrismaService} from '../../prisma/prisma.service.js';
 import {ApiError} from '../../common/api-error.js';
 import {mapPersistenceError} from '../../common/persistence-error.js';
+import {
+  buildUpdate,
+  toContract,
+  type CreateExperienceRecord,
+  type ExperienceRow,
+  type UpdateExperienceRecord,
+} from './experience.mapper.js';
+
+export type {CreateExperienceRecord, UpdateExperienceRecord};
 
 /**
  * Persistence for the Experience slice.
@@ -13,34 +21,13 @@ import {mapPersistenceError} from '../../common/persistence-error.js';
  * Two rules govern this class:
  *   1. Validation happens in @me-palnadu/contracts at the boundary; this layer
  *      accepts already-validated input and does not re-derive the rules.
- *   2. Prisma rows never leave the API untyped. The mapper below converts a
+ *   2. Prisma rows never leave the API untyped. The mapper converts a
  *      database row into the contract type, so a schema drift surfaces here
  *      rather than in a client (SSOT_POLICY section 7).
  *   3. A write and its audit entry commit in one transaction. An administrative
  *      change that leaves no trace of who made it is not an auditable change, so
  *      the two cannot be allowed to fail independently (SECURITY.md section 3).
  */
-
-interface ExperienceRow {
-  id: string;
-  slug: string;
-  org: string;
-  title: string;
-  location: string | null;
-  startDate: string;
-  endDate: string | null;
-  current: boolean;
-  kind: string;
-  summary: string;
-  highlights: string[];
-  tech: string[];
-  sortIndex: number;
-  published: boolean;
-  publishedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 @Injectable()
 export class ExperienceService {
   // Explicit injection: this application compiles to ESM, where TypeScript does not
@@ -204,65 +191,5 @@ export class ExperienceService {
     }
   }
 }
-
-/**
- * Persistence input is the contract type, not a local copy of it.
- *
- * Phase 6A declared a hand-written `CreateExperienceRecord`; this removes the
- * duplication so a contract change cannot leave persistence accepting a shape the
- * contract no longer describes (SSOT_POLICY section 3).
- */
-export type CreateExperienceRecord = ExperienceCreateInput;
-export type UpdateExperienceRecord = ExperienceUpdateInput;
-
-/**
- * Builds a Prisma update payload that touches only the supplied fields.
- *
- * Explicit `undefined` handling matters here: with `exactOptionalPropertyTypes`,
- * a key present with an undefined value would otherwise clear a stored value.
- */
-const buildUpdate = (changes: UpdateExperienceRecord, existing: ExperienceRow) => {
-  const data: Record<string, unknown> = {};
-
-  if (changes.slug !== undefined) data['slug'] = changes.slug;
-  if (changes.org !== undefined) data['org'] = changes.org;
-  if (changes.title !== undefined) data['title'] = changes.title;
-  if (changes.location !== undefined) data['location'] = changes.location;
-  if (changes.startDate !== undefined) data['startDate'] = changes.startDate;
-  if (changes.endDate !== undefined) data['endDate'] = changes.endDate;
-  if (changes.current !== undefined) data['current'] = changes.current;
-  if (changes.kind !== undefined) data['kind'] = changes.kind;
-  if (changes.summary !== undefined) data['summary'] = changes.summary;
-  if (changes.highlights !== undefined) data['highlights'] = changes.highlights;
-  if (changes.tech !== undefined) data['tech'] = changes.tech;
-  if (changes.sortIndex !== undefined) data['sortIndex'] = changes.sortIndex;
-
-  if (changes.published !== undefined && changes.published !== existing.published) {
-    data['published'] = changes.published;
-    // Publishing stamps the date; unpublishing clears it, so a stale date can
-    // never make an unpublished record look published to a date-based query.
-    data['publishedAt'] = changes.published ? new Date() : null;
-  }
-
-  return data;
-};
-
-/** Database row to contract type. The only place Prisma shapes become contracts. */
-const toContract = (row: ExperienceRow): Experience => ({
-  id: row.id,
-  slug: row.slug,
-  org: row.org,
-  title: row.title,
-  ...(row.location === null ? {} : {location: row.location}),
-  startDate: row.startDate,
-  ...(row.endDate === null ? {} : {endDate: row.endDate}),
-  current: row.current,
-  kind: ExperienceKindSchema.parse(row.kind),
-  summary: row.summary,
-  highlights: row.highlights,
-  tech: row.tech,
-  sortIndex: row.sortIndex,
-  published: row.published,
-});
 
 export const __testing = {toContract, buildUpdate};

@@ -36,7 +36,8 @@ advisory.
 - **Trigger:** pull request, push to `main`
 - **Job:** `lint`
 - **Mechanism:** ESLint flat config with the banned-pattern rules from
-  `CODING_STANDARDS.md` §7 and `AGENTS.md` §3, plus Prettier in check mode.
+  `CODING_STANDARDS.md` §7, the strict 250-line file limit from §6.1, and
+  `AGENTS.md` §3, plus Prettier in check mode.
 - **Runs:** format check → lint → type-aware lint.
 - **Evidence:** job conclusion; the failing rule id and file:line in the log.
 - **Status:** `ENFORCED` in run 39153866220 (job `lint`).
@@ -100,7 +101,9 @@ advisory.
      top-level directory, no missing required one,
   5. no `SPECIFIED` control is described elsewhere as `ENFORCED`,
   6. `CI_GATES.md` job names match the workflows (the inventory test in
-     `TESTING.md` §6).
+     `TESTING.md` §6),
+  7. source file line limit compliance (`scripts/check-line-limits.mjs`) against
+     the strict 250-line limit and ratcheted allowlist ceilings.
 - **Evidence:** script output listing each check.
 - **Status:** `ENFORCED` in run 39153866220 (job `governance`).
 - **On failure:** add the missing document, or correct the claim that is out of date.

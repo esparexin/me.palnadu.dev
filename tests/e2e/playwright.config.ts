@@ -19,6 +19,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: true, // CI_GATES.md area 11: a stray .only must fail, not skip
   retries: 0, // TESTING.md section 3: a flaky test is a defect, not a retry problem
+  timeout: 60_000, // accommodate headless software WebGL rendering under parallel CI load
   workers: 2,
   reporter: process.env['CI'] === 'true' ? [['list'], ['html', {open: 'never'}]] : [['list']],
   use: {

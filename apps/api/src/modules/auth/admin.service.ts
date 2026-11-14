@@ -1,118 +1,236 @@
-import {Inject, Injectable} from '@nestjs/common';
-import {RoleSchema, type Role, type SessionClaims} from '@me-palnadu/contracts';
+import {Inject, Injectable, Logger} from '@nestjs/common';
+import {randomUUID} from 'node:crypto';
+import {
+  RoleSchema,
+  type AdminSessionList,
+  type Role,
+  type SessionClaims,
+  GENERIC_LOGIN_FAILURE,
+  SESSION_MAX_AGE_SECONDS,
+  normalizeEmail,
+} from '@me-palnadu/contracts';
 import type {Prisma} from '@prisma/client';
 import {ApiError} from '../../common/api-error.js';
 import {mapPersistenceError} from '../../common/persistence-error.js';
 import {PrismaService} from '../../prisma/prisma.service.js';
 import type {AuthenticatedAdmin} from '../../auth/admin-context.js';
+import {verifyAgainstDecoy, verifyPassword} from '../../auth/password.js';
+import {ENV} from '../../common/tokens.js';
+import type {Env} from '../../config/env.js';
+import {type AuditEntry, writeAuditEntry} from './admin-audit.js';
+import {issueAdminToken} from './admin-token.js';
+import {
+  listAdminSessions,
+  logoutAdminSession,
+  resolveAdminSession,
+  revokeAdminSession,
+} from './admin-sessions.js';
+import {changeAdminPassword} from './admin-password.js';
+
+export {type AuditEntry, writeAuditEntry};
 
 /**
- * One administrative action to be recorded.
+ * Administrator identity, sessions and audit (ADR-0009).
  *
- * `detail` is typed to what Prisma accepts as JSON input rather than `unknown`, so a
- * value that cannot be persisted is a compile error instead of a runtime surprise.
- */
-export interface AuditEntry {
-  actorId: string;
-  action: string;
-  entityType: string;
-  entityId: string;
-  detail?: Prisma.InputJsonObject;
-}
-
-/**
- * Resolves an administrator session.
+ * Authentication is an email address and a scrypt password hash. The database is the
+ * authority: a token proves who signed in once, it cannot express a revocation, so
+ * `AdminSessionGuard` re-reads the user and the session on every protected request.
  *
- * Every check here is against the database, in the order specified by
- * SECURITY.md section 4.4:
- *
- *   1. the GitHub id in the token names an administrator;
- *   2. that administrator is active;
- *   3. the session exists, belongs to them, and is not revoked;
- *   4. the session has not expired (belt and braces: the token's `exp` was already
- *      enforced during signature verification);
- *   5. the session was issued under the user's current token version.
- *
- * A failure at (1) or (2) is FORBIDDEN, because the token was genuinely signed and
- * the caller is authenticated - they simply are not permitted. A failure at (3), (4)
- * or (5) is UNAUTHENTICATED, because the session is not a live session.
+ * The sign-in path deliberately performs the same amount of work whether or not the
+ * account exists, and returns one message for every failure. See `authenticate`.
  */
 @Injectable()
 export class AdminService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AdminService.name);
 
-  async resolveSession(claims: SessionClaims): Promise<AuthenticatedAdmin> {
-    let user: {
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(ENV) private readonly env: Env,
+  ) {}
+
+  /**
+   * Validates credentials and, on success, issues a session.
+   *
+   * Every failure path produces the same `ApiError` with the same message. Three
+   * specific defences are in play:
+   *
+   * 1. Unknown address and wrong password are indistinguishable in the response.
+   * 2. An unknown address still performs a scrypt verification against a decoy hash,
+   *    so the two paths take comparable time. Equal bodies with unequal timing is
+   *    still an enumeration oracle.
+   * 3. The failure is logged server-side with the reason, because an operator needs
+   *    it and the client must not receive it.
+   */
+  async authenticate(
+    email: string,
+    password: string,
+    context?: {ip?: string; userAgent?: string},
+  ): Promise<{admin: AuthenticatedAdmin; token: string}> {
+    const normalized = normalizeEmail(email);
+    let admin: {
       id: string;
-      githubId: number;
-      login: string;
+      email: string;
       role: string;
       tokenVersion: number;
       active: boolean;
-    } | null;
-    let session: {
-      sessionId: string;
-      tokenVersion: number;
-      expiresAt: Date;
-      revokedAt: Date | null;
-      userId: string;
+      passwordHash: string;
     } | null;
 
     try {
-      [user, session] = await Promise.all([
-        this.prisma.adminUser.findUnique({where: {githubId: claims.gh_id}}),
-        this.prisma.adminSession.findUnique({where: {sessionId: claims.sid}}),
-      ]);
+      admin = await this.prisma.adminUser.findUnique({where: {email: normalized}});
     } catch (error) {
       throw mapPersistenceError(error).error;
     }
 
-    if (user === null || user.active === false || user.githubId !== claims.gh_id) {
-      throw new ApiError('FORBIDDEN', 'This account may not administer the site.');
+    if (admin === null) {
+      await verifyAgainstDecoy(password);
+      throw this.loginFailure('unknown address');
     }
 
-    if (
-      session === null ||
-      session.revokedAt !== null ||
-      session.userId !== user.id ||
-      session.expiresAt.getTime() <= Date.now()
-    ) {
-      throw new ApiError('UNAUTHENTICATED', 'The session token is not valid.');
-    }
-    if (session.tokenVersion !== user.tokenVersion || claims.tv !== user.tokenVersion) {
-      throw new ApiError('UNAUTHENTICATED', 'The session token is not valid.');
+    const passwordMatches = await verifyPassword(password, admin.passwordHash);
+    if (!passwordMatches) {
+      // The counter is recorded but never acted on: acting on it would give an
+      // attacker a denial-of-service against the single administrator.
+      await this.recordFailedAttempt(admin.id);
+      throw this.loginFailure('wrong password');
     }
 
-    // The role is parsed, not cast. A role outside the canonical enum is a data
-    // integrity fault, not a role the caller may be granted by omission.
-    const role: Role = RoleSchema.parse(user.role);
+    if (!admin.active) {
+      await verifyAgainstDecoy(password);
+      throw this.loginFailure('inactive administrator');
+    }
+
+    const authenticatedAdmin = admin;
+    const role: Role = RoleSchema.parse(authenticatedAdmin.role);
+    const sessionId = randomUUID();
+    const now = Date.now();
+    const expiresAt = new Date(now + SESSION_MAX_AGE_SECONDS * 1000);
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.adminSession.create({
+          data: {
+            sessionId,
+            userId: authenticatedAdmin.id,
+            tokenVersion: authenticatedAdmin.tokenVersion,
+            expiresAt,
+            ...(context?.ip === undefined ? {} : {ip: context.ip}),
+            ...(context?.userAgent === undefined ? {} : {userAgent: context.userAgent}),
+          },
+        });
+        await tx.adminUser.update({
+          where: {id: authenticatedAdmin.id},
+          data: {lastLoginAt: new Date(now), failedLoginCount: 0},
+        });
+        await tx.auditLog.create({
+          data: {
+            actorId: authenticatedAdmin.id,
+            action: 'auth_login',
+            entityType: 'admin',
+            entityId: authenticatedAdmin.id,
+          },
+        });
+      });
+    } catch (error) {
+      throw mapPersistenceError(error).error;
+    }
+
+    const token = await issueAdminToken(
+      {
+        sub: authenticatedAdmin.id,
+        email: authenticatedAdmin.email,
+        role,
+        sid: sessionId,
+        tv: authenticatedAdmin.tokenVersion,
+      },
+      this.env,
+    );
 
     return {
-      id: user.id,
-      githubId: user.githubId,
-      login: user.login,
-      role,
-      sessionId: session.sessionId,
+      admin: {id: authenticatedAdmin.id, email: authenticatedAdmin.email, role, sessionId},
+      token,
     };
   }
 
   /**
-   * Writes an audit entry using the caller's transaction client.
+   * The one failure the caller ever sees.
    *
-   * Taking the client as an argument is deliberate. An audit trail is only evidence if
-   * it cannot drift from the change it describes, so the content write and this write
-   * must commit together or not at all. Handing the service its own connection instead
-   * would allow a failure here to leave a content change with no record of who made it.
+   * `INTERNAL_ERROR` is not used: a 500 would say the server broke, and would stand
+   * out in a log against ordinary client errors.
    */
+  private loginFailure(reason: string): ApiError {
+    this.logger.warn(`admin sign-in refused: ${reason}`);
+    return ApiError.unauthenticated(GENERIC_LOGIN_FAILURE);
+  }
+
+  private async recordFailedAttempt(userId: string): Promise<void> {
+    try {
+      await this.prisma.adminUser.update({
+        where: {id: userId},
+        data: {failedLoginCount: {increment: 1}},
+      });
+    } catch (error) {
+      throw mapPersistenceError(error).error;
+    }
+  }
+
+  /**
+   * Revokes one session.
+   *
+   * The row is kept with `revokedAt` set rather than deleted, so "signed out at" stays
+   * answerable after the fact.
+   */
+  async logout(sessionId: string, actorId: string): Promise<void> {
+    return logoutAdminSession(this.prisma, sessionId, actorId);
+  }
+
+  /**
+   * Changes the password and invalidates every existing session.
+   *
+   * `tokenVersion` is incremented in the same transaction as the hash write.
+   */
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    return changeAdminPassword(this.prisma, userId, currentPassword, newPassword);
+  }
+
+  /**
+   * Resolves a session claim to a live administrator.
+   *
+   * Order follows SECURITY.md §4: the user must exist and be active, the session must
+   * exist and belong to them, must not be revoked or expired, and must have been
+   * issued under the current token version.
+   */
+  async resolveSession(claims: SessionClaims): Promise<AuthenticatedAdmin> {
+    return resolveAdminSession(this.prisma, claims);
+  }
+
+  /**
+   * Sessions belonging to the signed-in administrator, newest first.
+   *
+   * A session is only ever listed to its owner, and only the owner's id is used in
+   * the query, so a session id from another account cannot be enumerated.
+   */
+  async listSessions(userId: string, currentSessionId: string): Promise<AdminSessionList> {
+    return listAdminSessions(this.prisma, userId, currentSessionId);
+  }
+
+  /**
+   * Revokes one of the caller's sessions.
+   *
+   * The predicate includes `userId`, so a session id belonging to someone else is
+   * reported as missing rather than revoked (or confirmed to exist). Revoking the
+   * current session is permitted and signs the caller out.
+   */
+  async revokeSession(userId: string, sessionId: string): Promise<void> {
+    return revokeAdminSession(this.prisma, userId, sessionId);
+  }
+
+  /** Writes an audit entry using the caller's transaction client (ADR-0006 §4). */
   async writeAudit(tx: Prisma.TransactionClient, entry: AuditEntry): Promise<void> {
-    await tx.auditLog.create({
-      data: {
-        actorId: entry.actorId,
-        action: entry.action,
-        entityType: entry.entityType,
-        entityId: entry.entityId,
-        ...(entry.detail === undefined ? {} : {detail: entry.detail}),
-      },
-    });
+    return writeAuditEntry(tx, entry);
   }
 }

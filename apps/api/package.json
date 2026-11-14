@@ -14,6 +14,7 @@
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:push": "prisma db push --skip-generate",
+    "owner:provision": "node dist/cli/provision-owner.js",
     "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {

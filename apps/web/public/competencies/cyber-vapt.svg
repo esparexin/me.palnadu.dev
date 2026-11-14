@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" width="600" height="900">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2e1065"/>
+      <stop offset="100%" stop-color="#581c87"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <circle cx="300" cy="380" r="100" fill="none" stroke="#a855f7" stroke-width="4" stroke-dasharray="8 6"/>
+  <circle cx="300" cy="380" r="60" fill="none" stroke="#c084fc" stroke-width="3"/>
+  <line x1="300" y1="260" x2="300" y2="500" stroke="#a855f7" stroke-width="2" opacity="0.6"/>
+  <line x1="180" y1="380" x2="420" y2="380" stroke="#a855f7" stroke-width="2" opacity="0.6"/>
+  <circle cx="340" cy="350" r="8" fill="#f43f5e"/>
+  <text x="300" y="580" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="34" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">VAPT &amp; THREAT RECON</text>
+  <text x="300" y="625" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="20" fill="#e9d5ff" text-anchor="middle">50+ Engagements · QRadar SIEM</text>
+  <text x="300" y="665" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="16" fill="#ffffff" opacity="0.75" text-anchor="middle">Burp Suite · Nmap · OWASP ZAP</text>
+</svg>

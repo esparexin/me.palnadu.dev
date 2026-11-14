@@ -1,6 +1,19 @@
 import {render, screen} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
-import {Button, ButtonLink, Container, Field, SectionHeading, TextInput, cn} from './index.js';
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Container,
+  Field,
+  IconButton,
+  Prose,
+  SectionHeading,
+  Select,
+  TextInput,
+  Textarea,
+  cn,
+} from './index.js';
 
 describe('cn', () => {
   it('joins truthy values and drops falsy ones', () => {
@@ -36,6 +49,34 @@ describe('Button', () => {
   });
 });
 
+describe('IconButton', () => {
+  it('carries the accessible name an icon-only control needs', () => {
+    render(
+      <IconButton label="Previous entry">
+        <span aria-hidden="true">‹</span>
+      </IconButton>,
+    );
+    expect(screen.getByRole('button', {name: 'Previous entry'})).toHaveAttribute(
+      'aria-label',
+      'Previous entry',
+    );
+  });
+
+  it('defaults to a non-submitting button', () => {
+    render(<IconButton label="Next entry">›</IconButton>);
+    expect(screen.getByRole('button', {name: 'Next entry'})).toHaveAttribute('type', 'button');
+  });
+
+  it('keeps a 48px square target for the large size', () => {
+    render(
+      <IconButton size="lg" label="Next entry">
+        ›
+      </IconButton>,
+    );
+    expect(screen.getByRole('button', {name: 'Next entry'}).className).toContain('size-12');
+  });
+});
+
 describe('Field', () => {
   it('binds the label to the input by id', () => {
     render(
@@ -54,7 +95,19 @@ describe('Field', () => {
     );
     const input = screen.getByLabelText('Email address');
     expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toHaveAttribute('aria-describedby', 'email-error');
     expect(screen.getByText('Enter a valid email address')).toHaveAttribute('id', 'email-error');
+  });
+
+  it('links a hint without marking the field invalid', () => {
+    render(
+      <Field id="email" label="Email" hint="Work address preferred">
+        <TextInput id="email" />
+      </Field>,
+    );
+    const input = screen.getByLabelText('Email');
+    expect(input).toHaveAttribute('aria-describedby', 'email-hint');
+    expect(input).not.toHaveAttribute('aria-invalid');
   });
 
   it('does not render a hint alongside an error', () => {
@@ -82,5 +135,61 @@ describe('layout primitives', () => {
   it('can render a page-level h1', () => {
     render(<SectionHeading as="h1" title="Kalyan Medaboina" />);
     expect(screen.getByRole('heading', {level: 1})).toBeInTheDocument();
+  });
+});
+
+describe('Badge', () => {
+  it('conveys status in text and uses token classes only', () => {
+    render(<Badge tone="success">Published</Badge>);
+    const badge = screen.getByText('Published');
+    expect(badge.className).toContain('text-success');
+    expect(badge.className).not.toMatch(/#[0-9a-f]{3}/i);
+  });
+});
+
+describe('form controls', () => {
+  it('binds a textarea to its label and marks invalidity', () => {
+    render(
+      <Field id="body" label="Article body" error="Body is required">
+        <Textarea id="body" invalid />
+      </Field>,
+    );
+    const field = screen.getByLabelText('Article body');
+    expect(field.tagName).toBe('TEXTAREA');
+    expect(field).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('binds a select to its label', () => {
+    render(
+      <Field id="kind" label="Article kind">
+        <Select id="kind" defaultValue="tutorial">
+          <option value="tutorial">Tutorial</option>
+        </Select>
+      </Field>,
+    );
+    expect(screen.getByLabelText('Article kind')).toHaveValue('tutorial');
+  });
+});
+
+describe('Prose', () => {
+  it('renders the Markdown subset as elements with heading anchors', () => {
+    render(<Prose source={'## Evidence first\n\nA claim needs **proof**.\n\n- one\n- two'} />);
+    expect(screen.getByRole('heading', {level: 2, name: 'Evidence first'})).toHaveAttribute(
+      'id',
+      'evidence-first',
+    );
+    expect(screen.getByText('proof').closest('strong')).not.toBeNull();
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+  });
+
+  it('never interprets raw HTML from stored Markdown', () => {
+    const {container} = render(<Prose source={'<script>alert(1)</script>'} />);
+    expect(container.querySelector('script')).toBeNull();
+    expect(screen.getByText('<script>alert(1)</script>')).toBeInTheDocument();
+  });
+
+  it('drops an unsafe link scheme rather than rendering it', () => {
+    render(<Prose source={'[click](javascript:alert(1))'} />);
+    expect(screen.getByRole('link', {name: 'click'})).toHaveAttribute('href', '#');
   });
 });

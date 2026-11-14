@@ -56,6 +56,68 @@ export const MESSAGE_STATUSES = ['new', 'read', 'replied', 'archived'] as const;
 export const MessageStatusSchema = z.enum(MESSAGE_STATUSES);
 export type MessageStatus = z.infer<typeof MessageStatusSchema>;
 
+/** Cloudinary resource kinds the media library accepts. */
+export const MEDIA_RESOURCE_TYPES = ['image', 'raw'] as const;
+export const MediaResourceTypeSchema = z.enum(MEDIA_RESOURCE_TYPES);
+export type MediaResourceType = z.infer<typeof MediaResourceTypeSchema>;
+
+/** Accepted upload formats, deliberately narrower than what Cloudinary accepts. */
+export const MEDIA_FORMATS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'pdf'] as const;
+export const MediaFormatSchema = z.enum(MEDIA_FORMATS);
+export type MediaFormat = z.infer<typeof MediaFormatSchema>;
+
+/**
+ * Actions that appear in the administrative audit trail.
+ *
+ * The FAQ actions remain part of the vocabulary because the audit log is
+ * append-only: rows written before the FAQ surface was removed must still be
+ * readable. No current route emits them.
+ */
+export const AUDIT_ACTIONS = [
+  'article_create',
+  'article_update',
+  'article_publish',
+  'article_unpublish',
+  'article_archive',
+  'article_delete',
+  'faq_create',
+  'faq_update',
+  'faq_publish',
+  'faq_unpublish',
+  'faq_archive',
+  'faq_delete',
+  'experience_create',
+  'experience_update',
+  'experience_publish',
+  'experience_unpublish',
+  'experience_delete',
+  'media_register',
+  'media_delete',
+  'content_import',
+  'auth_login',
+  'auth_logout',
+  'auth_password_change',
+  'auth_session_revoke',
+] as const;
+export const AuditActionSchema = z.enum(AUDIT_ACTIONS);
+export type AuditAction = z.infer<typeof AuditActionSchema>;
+
+/**
+ * Entity types an audit entry may reference.
+ *
+ * `faq` is retained for historical audit rows; the FAQ surface no longer exists.
+ */
+export const AUDIT_ENTITY_TYPES = [
+  'article',
+  'faq',
+  'media',
+  'admin',
+  'experience',
+  'content',
+] as const;
+export const AuditEntityTypeSchema = z.enum(AUDIT_ENTITY_TYPES);
+export type AuditEntityType = z.infer<typeof AuditEntityTypeSchema>;
+
 /** Administrator roles. Roles are advisory in a token; the database is authority. */
 export const ROLES = ['owner', 'editor'] as const;
 export const RoleSchema = z.enum(ROLES);

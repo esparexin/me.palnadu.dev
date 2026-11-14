@@ -5,6 +5,8 @@ import {ApiErrorEnvelopeSchema, SESSION_LIFETIME_SECONDS} from '@me-palnadu/cont
 import {createTestApp, TEST_AUTH_SECRET, TEST_ISSUER, TEST_AUDIENCE} from './test-app.js';
 import {
   ADMIN_LIMIT_PER_WINDOW,
+  LOGIN_LIMIT_PER_WINDOW,
+  LOGIN_WINDOW_MS,
   PUBLIC_LIMIT_PER_WINDOW,
   RATE_LIMIT_WINDOW_MS,
 } from '../../src/auth/throttling.js';
@@ -50,7 +52,12 @@ beforeEach(async () => {
 /** Issues a valid administrator token with a live session. */
 const seedAdmin = async () => {
   const user = await prisma.adminUser.create({
-    data: {githubId: 230946749, login: 'esparexin', role: 'owner', tokenVersion: 0},
+    data: {
+      email: 'owner@me.palnadu.dev',
+      passwordHash: 'scrypt$65536$8$1$dummySalt$dummyHash',
+      role: 'owner',
+      tokenVersion: 0,
+    },
   });
   await prisma.adminSession.create({
     data: {
@@ -61,7 +68,7 @@ const seedAdmin = async () => {
     },
   });
   const token = await new SignJWT({
-    gh_id: user.githubId,
+    email: user.email,
     role: user.role,
     sid: 'throttle-session',
     tv: 0,
@@ -81,6 +88,8 @@ describe('rate limiting configuration', () => {
     expect(PUBLIC_LIMIT_PER_WINDOW).toBe(120);
     expect(ADMIN_LIMIT_PER_WINDOW).toBe(300);
     expect(RATE_LIMIT_WINDOW_MS).toBe(60_000);
+    expect(LOGIN_LIMIT_PER_WINDOW).toBe(10);
+    expect(LOGIN_WINDOW_MS).toBe(15 * 60_000);
   });
 });
 
@@ -170,4 +179,57 @@ describe('administrative rate limiting', () => {
       await limited.close();
     }
   }, 120_000);
+
+  it('refuses login attempts beyond the login limit', async () => {
+    const limited = await newApp();
+    try {
+      for (let attempt = 0; attempt < LOGIN_LIMIT_PER_WINDOW; attempt += 1) {
+        const response = await request(limited.getHttpServer())
+          .post('/api/auth/login')
+          .send({email: 'unknown@example.com', password: 'password-123456'});
+        expect(response.status).toBe(401);
+      }
+
+      const refused = await request(limited.getHttpServer())
+        .post('/api/auth/login')
+        .send({email: 'unknown@example.com', password: 'password-123456'})
+        .expect(429);
+
+      expect(ApiErrorEnvelopeSchema.safeParse(refused.body).success).toBe(true);
+      expect(refused.body.error.code).toBe('RATE_LIMITED');
+    } finally {
+      await limited.close();
+    }
+  }, 30_000);
+});
+
+describe('authenticated routes and the sign-in budget', () => {
+  it('does not charge session reads to the sign-in budget', async () => {
+    const {token} = await seedAdmin();
+    const limited = await newApp();
+    try {
+      // The dashboard layout reads this endpoint on every page render. Routes
+      // without an explicit throttle decorator are charged to every registered
+      // throttler, including the sign-in budget, so the eleventh page load in a
+      // fifteen-minute window was refused with 429 while a valid session cookie
+      // was still held: the administrator was silently signed out, and the next
+      // sign-in attempt shared the exhausted budget.
+      for (let attempt = 0; attempt <= LOGIN_LIMIT_PER_WINDOW; attempt += 1) {
+        const response = await request(limited.getHttpServer())
+          .get('/api/auth/session')
+          .set('Authorization', `Bearer ${token}`);
+        expect(response.status).toBe(200);
+      }
+
+      // One budget-spending request proves the sign-in budget was untouched:
+      // a wrong password answers 401 from the credential check, never 429 from
+      // the limiter those session reads must not have consumed.
+      const login = await request(limited.getHttpServer())
+        .post('/api/auth/login')
+        .send({email: 'unknown@example.com', password: 'password-123456'});
+      expect(login.status).toBe(401);
+    } finally {
+      await limited.close();
+    }
+  }, 60_000);
 });
