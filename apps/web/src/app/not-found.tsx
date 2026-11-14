@@ -2,6 +2,7 @@ import Link from 'next/link';
 import {WEB_ROUTES} from '@me-palnadu/contracts';
 import {SectionHeading} from '@me-palnadu/ui';
 import {Navigation} from '../components/navigation';
+import {TRIGGER_CLEARANCE} from '../lib/floating-trigger';
 
 export const metadata = {title: 'Page not found'};
 
@@ -15,11 +16,12 @@ export default function WebNotFound() {
     <>
       <Navigation />
       <main id="main-content">
-        <section className="mx-auto max-w-page px-5 py-16 md:px-8 md:py-24">
+        <section className={`mx-auto max-w-page px-5 py-16 md:px-8 md:py-24 ${TRIGGER_CLEARANCE}`}>
           <SectionHeading
             as="h1"
             eyebrow="Kalyan V Medaboina"
             title="Page not found"
+            className={TRIGGER_CLEARANCE}
             description="The page you asked for does not exist, or the article has not been published."
           />
           <p className="mt-10 text-body text-text-secondary">
