@@ -1,3 +1,6 @@
+import {cn} from '@me-palnadu/ui';
+import {TRIGGER_CLEARANCE} from '../lib/floating-trigger';
+
 /**
  * A Phase 3 scaffold surface.
  *
@@ -11,7 +14,12 @@ export const PhaseNotice = ({phase, contents}: {phase: string; contents: readonl
     <p className="text-meta font-semibold uppercase tracking-widest text-text-tertiary">
       Scheduled for {phase}
     </p>
-    <ul className="flex list-disc flex-col gap-2 pl-5 text-body-sm text-text-secondary">
+    <ul
+      className={cn(
+        'flex list-disc flex-col gap-2 pl-5 text-body-sm text-text-secondary',
+        TRIGGER_CLEARANCE,
+      )}
+    >
       {contents.map((item) => (
         <li key={item}>{item}</li>
       ))}

@@ -1,6 +1,6 @@
 export interface GestureHandlers {
   onWheel: (deltaY: number) => void;
-  onPointerDown: (clientY: number) => void;
+  onPointerDown: (nx: number, ny: number) => void;
   onPointerMove: (nx: number, ny: number, deltaTravel: number) => void;
   onPointerUp: (wasClick: boolean) => void;
   onPointerLeave: () => void;
@@ -20,10 +20,11 @@ export function attachRingGestures(
   };
 
   const onDown = (event: PointerEvent) => {
+    const box = canvas.getBoundingClientRect();
     dragFrom = event.clientY;
     dragTravel = 0;
     canvas.setPointerCapture(event.pointerId);
-    handlers.onPointerDown(event.clientY);
+    handlers.onPointerDown(event.clientX - box.left, event.clientY - box.top);
   };
 
   const onMove = (event: PointerEvent) => {

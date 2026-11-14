@@ -14,6 +14,9 @@ export function buildProgram(
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      // The reason is reported, because a silent blank canvas is
+      // indistinguishable from a rendering bug on the user's device.
+      console.warn('molten ring: shader compile failed', gl.getShaderInfoLog(shader));
       return null;
     }
     gl.attachShader(program, shader);
@@ -22,6 +25,7 @@ export function buildProgram(
   gl.bindAttribLocation(program, 0, 'aPos');
   gl.linkProgram(program);
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.warn('molten ring: program link failed', gl.getProgramInfoLog(program));
     return null;
   }
   return program;

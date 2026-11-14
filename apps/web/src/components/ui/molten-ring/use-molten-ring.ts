@@ -16,6 +16,8 @@ export interface MoltenRingConfig {
   fuse: number;
   threads: boolean;
   glass: boolean;
+  /** Called when a card is pressed rather than dragged. */
+  onCardClick?: ((index: number) => void) | undefined;
 }
 
 export function useMoltenRing(items: MoltenRingItem[], config: MoltenRingConfig) {
@@ -29,6 +31,7 @@ export function useMoltenRing(items: MoltenRingItem[], config: MoltenRingConfig)
   const settingsRef = React.useRef(config);
   settingsRef.current = config;
   const stepRef = React.useRef<(by: number) => void>(() => {});
+  const stepToRef = React.useRef<(index: number) => void>(() => {});
 
   const count = Math.min(items.length, MAX_CARDS);
   const sources = items.map((item) => item.image).join(' ');
@@ -56,11 +59,19 @@ export function useMoltenRing(items: MoltenRingItem[], config: MoltenRingConfig)
 
     const readColor = createColorReader();
     const program = buildProgram(gl, QUAD_VERT, RING_FRAG);
-    if (!program) return;
+    if (!program) {
+      // A driver that cannot build the program cannot render the ring, so the
+      // accessible list is used instead of a blank canvas with dead controls.
+      setSupported(false);
+      return;
+    }
     const u = createUniformGetter(gl, program);
 
     const quadRes = createQuadBuffer(gl);
-    if (!quadRes) return;
+    if (!quadRes) {
+      setSupported(false);
+      return;
+    }
     const {quad, buffer} = quadRes;
 
     const COLS = Math.min(4, count);
@@ -77,6 +88,7 @@ export function useMoltenRing(items: MoltenRingItem[], config: MoltenRingConfig)
       reduced,
       getConfig: () => settingsRef.current,
       onActiveChange: (near) => setActive((prev) => (prev === near ? prev : near)),
+      onCardClick: (index) => settingsRef.current.onCardClick?.(index),
     });
 
     const {cleanup: cleanupAtlas} = loadAtlasTexture(
@@ -94,12 +106,13 @@ export function useMoltenRing(items: MoltenRingItem[], config: MoltenRingConfig)
     observer.observe(canvas);
 
     stepRef.current = (by: number) => animator.step(by);
+    stepToRef.current = (index: number) => animator.stepTo(index);
 
     const cleanupGestures = attachRingGestures(
       canvas,
       {
         onWheel: (deltaY) => animator.onWheel(deltaY),
-        onPointerDown: () => animator.onPointerDown(),
+        onPointerDown: (nx, ny) => animator.onPointerDown(nx, ny),
         onPointerMove: (nx, ny, travel) => animator.onPointerMove(nx, ny, travel),
         onPointerUp: (wasClick) => animator.onPointerUp(wasClick),
         onPointerLeave: () => animator.onPointerLeave(),
@@ -125,5 +138,12 @@ export function useMoltenRing(items: MoltenRingItem[], config: MoltenRingConfig)
     };
   }, [sources, count, reduced]);
 
-  return {canvasRef, active, step: (by: number) => stepRef.current(by), supported, count};
+  return {
+    canvasRef,
+    active,
+    step: (by: number) => stepRef.current(by),
+    stepTo: (index: number) => stepToRef.current(index),
+    supported,
+    count,
+  };
 }

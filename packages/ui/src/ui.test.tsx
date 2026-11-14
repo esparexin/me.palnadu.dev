@@ -6,6 +6,7 @@ import {
   ButtonLink,
   Container,
   Field,
+  IconButton,
   Prose,
   SectionHeading,
   Select,
@@ -45,6 +46,34 @@ describe('Button', () => {
     const link = screen.getByRole('link', {name: 'View Resume'});
     expect(link.tagName).toBe('A');
     expect(link).toHaveAttribute('href', '/resume');
+  });
+});
+
+describe('IconButton', () => {
+  it('carries the accessible name an icon-only control needs', () => {
+    render(
+      <IconButton label="Previous entry">
+        <span aria-hidden="true">‹</span>
+      </IconButton>,
+    );
+    expect(screen.getByRole('button', {name: 'Previous entry'})).toHaveAttribute(
+      'aria-label',
+      'Previous entry',
+    );
+  });
+
+  it('defaults to a non-submitting button', () => {
+    render(<IconButton label="Next entry">›</IconButton>);
+    expect(screen.getByRole('button', {name: 'Next entry'})).toHaveAttribute('type', 'button');
+  });
+
+  it('keeps a 48px square target for the large size', () => {
+    render(
+      <IconButton size="lg" label="Next entry">
+        ›
+      </IconButton>,
+    );
+    expect(screen.getByRole('button', {name: 'Next entry'}).className).toContain('size-12');
   });
 });
 

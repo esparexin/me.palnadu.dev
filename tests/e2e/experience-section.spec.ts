@@ -37,6 +37,49 @@ test('the list renders every role newest first with each detail as plain text', 
   await expect(page.getByText('Cybersecurity & ISO 27001')).toHaveCount(0);
 });
 
+test('the experience page gives the ring the whole screen', async ({page}) => {
+  await page.setViewportSize(desktop);
+  await page.goto('/experience');
+
+  const section = page.locator('section#experience');
+  const box = await section.boundingBox();
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(desktop.height);
+
+  // The ring fills the card it is in, rather than leaving a band of the
+  // card's own background below the control row.
+  const card = page.locator('section[aria-roledescription="carousel"]').first();
+  const carouselBox = await card.boundingBox();
+  const holderBox = await page
+    .locator('section[aria-roledescription="carousel"]')
+    .first()
+    .evaluate((element) => {
+      const parent = element.parentElement;
+      if (parent === null) return null;
+      const rect = parent.getBoundingClientRect();
+      return {top: rect.top, bottom: rect.bottom};
+    });
+  expect(carouselBox).not.toBeNull();
+  expect(holderBox).not.toBeNull();
+  expect(
+    Math.abs((carouselBox?.height ?? 0) - ((holderBox?.bottom ?? 0) - (holderBox?.top ?? 0))),
+  ).toBeLessThanOrEqual(2);
+});
+
+test('the rows are cards and carry no separate link', async ({page}) => {
+  await page.setViewportSize(desktop);
+  await page.goto('/experience');
+
+  const rows = rowList(page).getByRole('listitem');
+  await expect(rows).toHaveCount(4);
+
+  // The whole row is the control, so there is no second link inside it.
+  await expect(page.getByText('View Experience')).toHaveCount(0);
+  for (const row of await rows.all()) {
+    await expect(row.getByRole('button')).toHaveCount(1);
+    await expect(row.getByRole('link')).toHaveCount(0);
+  }
+});
+
 test('activating a row opens the detail popup with a visible Close and scroll region', async ({
   page,
 }) => {

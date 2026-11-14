@@ -3,7 +3,8 @@
 import {useEffect, useMemo, useRef, useState, type FC} from 'react';
 import Image from 'next/image';
 import {ChevronDown} from 'lucide-react';
-import {ButtonLink, Container} from '@me-palnadu/ui';
+import {ButtonLink, Container, cn} from '@me-palnadu/ui';
+import {TRIGGER_CLEARANCE} from '../lib/floating-trigger';
 
 interface BlurTextProps {
   text: string;
@@ -148,7 +149,7 @@ export const PortfolioHero = ({
   };
 
   return (
-    <section aria-labelledby="hero-title" className="bg-surface-inverse py-14 md:py-20 lg:py-24">
+    <section aria-labelledby="hero-title" className="bg-surface-inverse py-10 md:py-20 lg:py-24">
       <Container className="flex flex-col items-center gap-10 text-center md:gap-12">
         <p className="text-eyebrow font-semibold uppercase tracking-widest text-surface-muted">
           {eyebrow}
@@ -171,7 +172,11 @@ export const PortfolioHero = ({
           </h1>
 
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="h-32 w-20 shrink-0 overflow-hidden rounded-pill bg-surface-inverse ring-1 ring-surface-muted/20 sm:h-36 sm:w-24 md:h-48 md:w-32 lg:h-56 lg:w-40 xl:h-64 xl:w-48">
+            {/* The portrait straddles both name lines, so its width decides how
+                much of the wordmark it covers. The base step is sized so that
+                the covered share of the longest name line stays near the
+                desktop share (about a fifth) instead of a third at 320px. */}
+            <div className="h-24 w-16 shrink-0 overflow-hidden rounded-pill bg-surface-inverse ring-1 ring-surface-muted/20 sm:h-36 sm:w-24 md:h-48 md:w-32 lg:h-56 lg:w-40 xl:h-64 xl:w-48">
               <Image
                 src={profileImageSrc}
                 alt={profileImageAlt}
@@ -184,7 +189,16 @@ export const PortfolioHero = ({
           </div>
         </div>
 
-        <p className="max-w-measure text-balance text-lead text-surface-muted sm:text-h3">
+        <p
+          className={cn(
+            // w-full: the hero stack centres its items, so the tagline needs an
+            // explicit width for the trigger clearance to shorten its measure
+            // instead of widening it.
+            'w-full max-w-measure text-balance text-lead text-surface-muted sm:text-h3',
+            TRIGGER_CLEARANCE,
+            'text-left lg:text-center',
+          )}
+        >
           {tagline}
         </p>
 

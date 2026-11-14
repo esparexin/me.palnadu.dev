@@ -8,10 +8,12 @@
 export {
   Button,
   ButtonLink,
+  IconButton,
   type ButtonProps,
   type ButtonLinkProps,
   type ButtonVariant,
   type ButtonSize,
+  type IconButtonProps,
 } from './components/button.js';
 export {
   Field,

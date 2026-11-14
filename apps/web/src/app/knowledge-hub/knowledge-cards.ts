@@ -102,11 +102,14 @@ export const DEFAULT_KNOWLEDGE_CARDS: FloatingGalleryCard[] = [
 
 const SVG_BY_TAG: Record<string, string> = {
   jamf: '/competencies/jamf-mdm.svg',
+  'jamf pro': '/competencies/jamf-mdm.svg',
   intune: '/competencies/intune-cloud.svg',
   autopilot: '/competencies/zero-touch.svg',
+  abm: '/competencies/zero-touch.svg',
   cis: '/competencies/endpoint-security.svg',
   security: '/competencies/endpoint-security.svg',
   iso: '/competencies/iso-governance.svg',
+  'iso 27001': '/competencies/iso-governance.svg',
   vapt: '/competencies/cyber-vapt.svg',
 };
 

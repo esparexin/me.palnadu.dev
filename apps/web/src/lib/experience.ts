@@ -222,3 +222,7 @@ export const EXPERIENCE_ITEMS: ExperienceItem[] = [
     },
   },
 ] as const;
+
+export const EXPERIENCE_BY_ID: ReadonlyMap<string, ExperienceItem> = new Map(
+  EXPERIENCE_ITEMS.map((item) => [item.id, item]),
+);

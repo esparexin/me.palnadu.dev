@@ -34,14 +34,16 @@ export const SectionHeading = ({
   description,
   as: Tag = 'h2',
   id,
+  className,
 }: {
   eyebrow?: string;
   title: string;
   description?: string;
   as?: 'h1' | 'h2' | 'h3';
   id?: string;
+  className?: string;
 }) => (
-  <div className="flex flex-col gap-3">
+  <div className={cn('flex flex-col gap-3', className)}>
     {eyebrow !== undefined && (
       <p className="text-eyebrow font-semibold uppercase tracking-widest text-accent-text">
         {eyebrow}

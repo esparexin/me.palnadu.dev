@@ -10,6 +10,7 @@ import {
 import {Button, Field, SectionHeading, Select, TextInput} from '@me-palnadu/ui';
 import {Navigation} from '../../components/navigation';
 import {FloatingCardGallery} from '../../components/ui/floating-card-gallery';
+import {TRIGGER_CLEARANCE} from '../../lib/floating-trigger';
 import {listPublishedArticles} from '../../lib/api';
 import {DEFAULT_KNOWLEDGE_CARDS, mapArticlesToGalleryCards} from './knowledge-cards';
 
@@ -70,6 +71,7 @@ export default async function KnowledgeHubPage({searchParams}: PageProps) {
             as="h1"
             eyebrow="Kalyan V Medaboina"
             title="Knowledge Hub"
+            className={TRIGGER_CLEARANCE}
             description="Practical writing on endpoint management, MDM, identity, and security. Explore interactive 3D guides, troubleshooting playbooks, and architecture blueprints."
           />
         </section>

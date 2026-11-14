@@ -7,6 +7,13 @@ export interface MoltenRingItem {
   title: string;
   /** The line to the right of the ring - discipline, year, credential. */
   meta?: string;
+  /**
+   * The detail this card opens.
+   *
+   * A key into the detail lookup the owner of the ring provides. A card
+   * without one is decorative: it rotates, but it does not open anything.
+   */
+  detailId?: string;
 }
 
 export interface MoltenRingCarouselProps extends Omit<
@@ -16,6 +23,14 @@ export interface MoltenRingCarouselProps extends Omit<
   items: MoltenRingItem[];
   /** Wordmark in the top-left. Omit to drop it. @default undefined */
   brand?: string;
+  /**
+   * Called with the index of a card that was opened.
+   *
+   * A card is opened by pressing it. The control row carries the equivalent
+   * button for the card at the front, so the ring is operable without a
+   * pointer.
+   */
+  onCardOpen?: (index: number) => void;
   /** Ring radius, in stage widths. Larger flattens the arc. @default 1 */
   arc?: number;
   /** Card long edge, as a fraction of the stage width. @default 0.265 */
