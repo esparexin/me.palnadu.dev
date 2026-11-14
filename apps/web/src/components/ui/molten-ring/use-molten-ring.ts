@@ -16,6 +16,8 @@ export interface MoltenRingConfig {
   fuse: number;
   threads: boolean;
   glass: boolean;
+  /** Called when a card is pressed rather than dragged. */
+  onCardClick?: ((index: number) => void) | undefined;
 }
 
 export function useMoltenRing(items: MoltenRingItem[], config: MoltenRingConfig) {
@@ -85,6 +87,7 @@ export function useMoltenRing(items: MoltenRingItem[], config: MoltenRingConfig)
       reduced,
       getConfig: () => settingsRef.current,
       onActiveChange: (near) => setActive((prev) => (prev === near ? prev : near)),
+      onCardClick: (index) => settingsRef.current.onCardClick?.(index),
     });
 
     const {cleanup: cleanupAtlas} = loadAtlasTexture(
@@ -107,7 +110,7 @@ export function useMoltenRing(items: MoltenRingItem[], config: MoltenRingConfig)
       canvas,
       {
         onWheel: (deltaY) => animator.onWheel(deltaY),
-        onPointerDown: () => animator.onPointerDown(),
+        onPointerDown: (nx, ny) => animator.onPointerDown(nx, ny),
         onPointerMove: (nx, ny, travel) => animator.onPointerMove(nx, ny, travel),
         onPointerUp: (wasClick) => animator.onPointerUp(wasClick),
         onPointerLeave: () => animator.onPointerLeave(),

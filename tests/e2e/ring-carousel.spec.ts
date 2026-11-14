@@ -76,3 +76,31 @@ test('the arrow keys and Home and End reach the same entries', async ({page}) =>
   await page.keyboard.press('End');
   await expect(page.getByText('06 / 06')).toBeVisible();
 });
+
+test('the details of the entry in front open from the control row', async ({page}) => {
+  await openHome(page);
+
+  await page.getByRole('button', {name: 'Open details for Zazz IT Solutions'}).click();
+  const dialog = page.getByRole('dialog', {name: 'Zazz IT Solutions Private Limited'});
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('region', {name: 'Experience details'})).toBeVisible();
+});
+
+test('pressing a card in the ring opens the details it stands for', async ({page}) => {
+  await openHome(page);
+
+  // The card at the front is the first entry, and it is the one the readout
+  // names. A press on the canvas resolves the card under the pointer. The ring
+  // sits below the fold, so it is brought into view first: a mouse click works
+  // in viewport coordinates and does not scroll on its own.
+  const canvas = page.locator('section[aria-roledescription="carousel"] canvas');
+  await canvas.scrollIntoViewIfNeeded();
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.click(
+    (box?.x ?? 0) + (box?.width ?? 0) / 2,
+    (box?.y ?? 0) + (box?.height ?? 0) / 2,
+  );
+
+  await expect(page.getByRole('dialog', {name: 'Zazz IT Solutions Private Limited'})).toBeVisible();
+});

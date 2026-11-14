@@ -35,11 +35,25 @@ export interface RingAnimatorContext {
   reduced: boolean;
   getConfig: () => MoltenRingConfig;
   onActiveChange: (active: number) => void;
+  /** A card was pressed rather than dragged. */
+  onCardClick: (index: number) => void;
 }
 
 export function createRingAnimator(ctx: RingAnimatorContext) {
-  const {canvas, gl, program, quad, u, readColor, count, cols, reduced, getConfig, onActiveChange} =
-    ctx;
+  const {
+    canvas,
+    gl,
+    program,
+    quad,
+    u,
+    readColor,
+    count,
+    cols,
+    reduced,
+    getConfig,
+    onActiveChange,
+    onCardClick,
+  } = ctx;
   const FRONT = Math.floor(count / 2);
 
   let width = 0;
@@ -94,8 +108,12 @@ export function createRingAnimator(ctx: RingAnimatorContext) {
       lastInput = performance.now();
       snapped = false;
     },
-    onPointerDown() {
+    onPointerDown(nx: number, ny: number) {
       tween = null;
+      // The press position is recorded so that a press that never moves can
+      // still be resolved to the card under the pointer.
+      pointerX = nx;
+      pointerY = ny;
     },
     onPointerMove(nx: number, ny: number, travel: number) {
       pointerSpeed = Math.hypot(nx - pointerX, ny - pointerY);
@@ -108,14 +126,29 @@ export function createRingAnimator(ctx: RingAnimatorContext) {
       }
     },
     onPointerUp(wasClick: boolean) {
-      if (!wasClick || hovered < 0) return;
-      const want = (((hovered - FRONT) % count) + count) % count;
+      if (!wasClick) return;
+      // The card under the pointer is resolved here rather than read from the
+      // last frame: a fast approach suppresses the hover, and a press that
+      // follows one would otherwise be lost.
+      const conf = getConfig();
+      const long = width * conf.cardSize;
+      const short = long / conf.cardRatio;
+      const mx = pointerX >= 0 ? pointerX - width / 2 : 0;
+      const my = pointerY >= 0 ? height / 2 - pointerY : 0;
+      const pressed = detectHoveredCard(count, at, mx, my, long, short, pointerX >= 0 ? 1 : 0, 0);
+      if (pressed < 0) return;
+      hovered = pressed;
+      const want = (((pressed - FRONT) % count) + count) % count;
+      const base = tween ? tween.to : goal;
       tween = {
         from: goal,
-        to: want + Math.round((goal - want) / count) * count,
+        to: want + Math.round((base - want) / count) * count,
         at: performance.now(),
       };
       snapped = true;
+      // The press is reported as well as the rotation, so the owner of the
+      // ring can open what the card stands for.
+      onCardClick(pressed);
     },
     onPointerLeave() {
       pointerX = -1;

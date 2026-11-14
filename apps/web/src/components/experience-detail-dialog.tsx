@@ -165,11 +165,15 @@ export function ExperienceDetailDialog({
                 {detail.company}
               </p>
               <p className="mt-1 text-body-sm text-text-secondary">{detail.role}</p>
-              <p className="mt-0.5 text-meta text-text-tertiary flex flex-wrap gap-3">
-                <span>{detail.period}</span>
-                <span>·</span>
-                <span>{detail.location}</span>
-              </p>
+              {detail.period !== '' || detail.location !== '' ? (
+                <p className="mt-0.5 text-meta text-text-tertiary flex flex-wrap gap-3">
+                  {detail.period !== '' ? <span>{detail.period}</span> : null}
+                  {detail.period !== '' && detail.location !== '' ? (
+                    <span aria-hidden="true">·</span>
+                  ) : null}
+                  {detail.location !== '' ? <span>{detail.location}</span> : null}
+                </p>
+              ) : null}
             </div>
             <button
               type="button"

@@ -8,7 +8,7 @@ export default function ExperiencePage() {
     <>
       <Navigation />
       <main id="main-content">
-        <ProfessionalExperience headingLevel="h1" />
+        <ProfessionalExperience headingLevel="h1" fullScreen />
       </main>
       <footer className="border-t border-border-subtle py-10">
         <p className="text-meta text-text-tertiary text-center">Kalyan V Medaboina</p>

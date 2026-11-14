@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {ChevronLeft, ChevronRight} from 'lucide-react';
+import {ChevronLeft, ChevronRight, BookOpen} from 'lucide-react';
 import {IconButton, cn} from '@me-palnadu/ui';
 import {TRIGGER_CLEARANCE} from '../../lib/floating-trigger';
 import {FUSE} from './molten-ring/constants';
@@ -13,6 +13,7 @@ export type {MoltenRingItem, MoltenRingCarouselProps};
 export function MoltenRingCarousel({
   items,
   brand,
+  onCardOpen,
   arc = 1,
   cardSize = 0.265,
   cardRatio = 1.5,
@@ -29,6 +30,7 @@ export function MoltenRingCarousel({
     fuse,
     threads,
     glass,
+    onCardClick: (index) => onCardOpen?.(index),
   });
 
   const item = items[active];
@@ -99,7 +101,10 @@ export function MoltenRingCarousel({
       aria-roledescription="carousel"
       aria-label={accessibleName}
       className={cn(
-        'relative flex h-full min-h-[26rem] w-full flex-col select-none overflow-hidden bg-surface text-text-primary',
+        // flex-1 rather than h-full: the card that holds this section is
+        // sized by the page layout, and a percentage height does not resolve
+        // against a box whose height comes from the flex algorithm.
+        'relative flex min-h-[26rem] w-full flex-1 flex-col select-none overflow-hidden bg-surface text-text-primary',
         className,
       )}
       {...props}
@@ -177,6 +182,17 @@ export function MoltenRingCarousel({
             >
               <ChevronRight className="h-5 w-5" aria-hidden="true" />
             </IconButton>
+            {onCardOpen !== undefined ? (
+              <IconButton
+                label={`Open details for ${item?.title ?? 'the current entry'}`}
+                size="lg"
+                onClick={() => {
+                  onCardOpen(active);
+                }}
+              >
+                <BookOpen className="h-5 w-5" aria-hidden="true" />
+              </IconButton>
+            ) : null}
           </div>
         </div>
       </div>
