@@ -35,5 +35,11 @@ minimumReleaseAgeExclude:
 # rather than suppressing the audit, because a high-severity finding that a gate can
 # resolve should be resolved rather than allowlisted. Verified after the change:
 # prisma validate, prisma generate, prisma db push, and the integration suite.
+# body-parser < 2.4.0 is affected by GHSA-27r3-jxmh-p828 (DoS via trailing bytes).
+# multer < 2.5.0 is affected by GHSA-q7qp-rjg7-q26m (DoS via pending fileFilter).
+# Both reach us transitively via @nestjs/platform-express. Overrides pin the patched
+# releases across the workspace to satisfy the dependency audit gate.
 overrides:
   deepmerge-ts: 8.0.0
+  body-parser: 2.4.0
+  multer: 2.5.0
