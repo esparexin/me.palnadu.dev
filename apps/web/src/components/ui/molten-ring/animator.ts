@@ -98,7 +98,25 @@ export function createRingAnimator(ctx: RingAnimatorContext) {
       canvas.height = Math.round(h * dpr);
     },
     step(by: number) {
-      tween = {from: goal, to: Math.round(goal) + by, at: performance.now()};
+      // The step accumulates on the target the ring is already heading to, not
+      // on the rounded position of the moment: a key pressed while the previous
+      // tween is still in flight must not lose its step to rounding.
+      const base = tween ? tween.to : Math.round(goal);
+      tween = {from: goal, to: base + by, at: performance.now()};
+      lastInput = performance.now();
+      snapped = true;
+    },
+    stepTo(index: number) {
+      // The shortest rotation that brings the named card to the front, taken
+      // from wherever the ring is heading rather than from where it happens to
+      // be mid-tween, so a jump issued during a glide still lands on the card.
+      const want = (((index - FRONT) % count) + count) % count;
+      const base = tween ? tween.to : goal;
+      tween = {
+        from: goal,
+        to: want + Math.round((base - want) / count) * count,
+        at: performance.now(),
+      };
       lastInput = performance.now();
       snapped = true;
     },

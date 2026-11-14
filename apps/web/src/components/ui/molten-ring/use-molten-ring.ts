@@ -31,6 +31,7 @@ export function useMoltenRing(items: MoltenRingItem[], config: MoltenRingConfig)
   const settingsRef = React.useRef(config);
   settingsRef.current = config;
   const stepRef = React.useRef<(by: number) => void>(() => {});
+  const stepToRef = React.useRef<(index: number) => void>(() => {});
 
   const count = Math.min(items.length, MAX_CARDS);
   const sources = items.map((item) => item.image).join(' ');
@@ -105,6 +106,7 @@ export function useMoltenRing(items: MoltenRingItem[], config: MoltenRingConfig)
     observer.observe(canvas);
 
     stepRef.current = (by: number) => animator.step(by);
+    stepToRef.current = (index: number) => animator.stepTo(index);
 
     const cleanupGestures = attachRingGestures(
       canvas,
@@ -136,5 +138,12 @@ export function useMoltenRing(items: MoltenRingItem[], config: MoltenRingConfig)
     };
   }, [sources, count, reduced]);
 
-  return {canvasRef, active, step: (by: number) => stepRef.current(by), supported, count};
+  return {
+    canvasRef,
+    active,
+    step: (by: number) => stepRef.current(by),
+    stepTo: (index: number) => stepToRef.current(index),
+    supported,
+    count,
+  };
 }

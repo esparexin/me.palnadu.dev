@@ -23,7 +23,7 @@ export function MoltenRingCarousel({
   className,
   ...props
 }: MoltenRingCarouselProps) {
-  const {canvasRef, active, step, supported, count} = useMoltenRing(items, {
+  const {canvasRef, active, step, stepTo, supported, count} = useMoltenRing(items, {
     arc,
     cardSize,
     cardRatio,
@@ -73,13 +73,10 @@ export function MoltenRingCarousel({
    * anyone who cannot drag (WCAG 2.5.7) and a keyboard path into the same
    * state. Both live in the control row below the canvas.
    *
-   * `step` moves the ring by a number of cards and wraps, so the distance to a
-   * named card is the difference between the target and the active index,
-   * taken modulo the number of cards.
+   * Arrows and buttons step one entry at a time; Home and End name their card
+   * directly. The ring resolves both against the position it is heading to, so
+   * input issued while a glide is still in flight is never lost.
    */
-  const distanceTo = (target: number) =>
-    count === 0 ? 0 : (((target - active) % count) + count) % count;
-
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
     if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
       event.preventDefault();
@@ -89,10 +86,10 @@ export function MoltenRingCarousel({
       step(1);
     } else if (event.key === 'Home') {
       event.preventDefault();
-      step(distanceTo(0));
+      stepTo(0);
     } else if (event.key === 'End') {
       event.preventDefault();
-      step(distanceTo(count - 1));
+      stepTo(count - 1);
     }
   };
 
